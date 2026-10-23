@@ -59,7 +59,7 @@ A single HTML file that shows what the student side could feel like. It is built
 - **Quest map:** each homework task is a "room". Marking it done earns XP and coins.
 - **Level and streak:** XP raises the student's level; a streak counts consecutive days of work.
 - **Today's timetable and a weekly timetable**, including a marker when a relief teacher covers a lesson.
-- **This week's torches:** weekday reminders, sent in the afternoon only.
+- **Torch streak:** at the top of the page. Five torches for the school week light up as the student finishes at least one quest each day, with a running count of days in a row. Reminders are sent in the afternoon only.
 - **Relics:** milestone badges that unlock as the student progresses.
 - **Subject mastery** bars and a **class party** progress bar.
 - **Weekly guardian:** a boss whose health falls as the week's quests are finished.
@@ -105,7 +105,7 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 
 ## Technology
 
-**Prototypes:** plain HTML, CSS and JavaScript (no build step). Pixel art is drawn from letter grids as SVG. Text uses the Pixelify Sans font from Google Fonts.
+**Prototypes:** plain HTML, CSS and JavaScript (no build step). Pixel art is drawn from letter grids as SVG. All text uses the VT323 pixel font from Google Fonts, chosen because its digits and letters (5 and S, 0 and 8) are easy to tell apart.
 
 **Planned back end and web app** (decisions are in the plan and may change): Node.js LTS, Fastify, PostgreSQL 16 or later, pg-boss for scheduled jobs, React with Vite as an installable web app, Zod for validation, Luxon for time zones, Vitest and Playwright for tests. Argon2id password hashing, HttpOnly cookies and rate limiting are planned for sign-in.
 

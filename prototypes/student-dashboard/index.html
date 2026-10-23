@@ -7,7 +7,7 @@
 <link rel="icon" type="image/jpeg" href="../login/assets/sapientia_logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
 <style>
 *, *::before, *::after { box-sizing: border-box; }
@@ -15,8 +15,9 @@
 /* ==========================================================================
    TOKENS. Direction: a dungeon crawler's interface, built like a product.
    Flat slate panels, one amber accent, crisp stepped corners, pixel-art
-   sprites for the game objects. One typeface, Pixelify Sans, for labels and
-   reading text alike. Components never hard-code colours.
+   sprites for the game objects. One typeface, VT323, for labels and reading
+   text alike: its 5, S, 0 and 8 are easy to tell apart, which the earlier pixel
+   face got wrong. Components never hard-code colours.
    ========================================================================== */
 :root {
   --bg: #0d1016; --brick: rgba(255, 255, 255, .035);
@@ -28,7 +29,7 @@
   --focus: #8ab4ff;
   --frame: #c9962c; --frame-dim: rgba(201, 150, 44, .38);
   --bl: 24px; --bt: 4px; --rv: 6px; --ro: 9px; --ri: 7px; --inner-style: solid;
-  --heading: "Pixelify Sans", "Courier New", monospace; --font: "Pixelify Sans", "Courier New", monospace;
+  --heading: "VT323", "Courier New", monospace; --font: "VT323", "Courier New", monospace;
 }
 :root[data-theme="light"] {
   --bg: #e4e8ee; --brick: rgba(20, 30, 50, .05);
@@ -39,8 +40,8 @@
   --frame: #9a6a10; --frame-dim: rgba(154, 106, 16, .4);
   --veil: linear-gradient(rgba(236, 228, 208, .86), rgba(228, 220, 198, .93));
 }
-/* Pixel type reads smaller than the same size of a normal face, so the whole scale (rem) is nudged up 6%. */
-html { color-scheme: dark; font-size: 106.25%; }
+/* VT323 has a small body, so the whole scale (rem) is raised 37.5% to keep text comfortable. It has one weight, so faux bold is switched off. */
+html { color-scheme: dark; font-size: 137.5%; font-synthesis: none; }
 html[data-theme="light"] { color-scheme: light; }
 
 /* ===== Shop: colour themes (skins) ===== */
@@ -224,21 +225,18 @@ main section { scroll-margin-top: 24px; }
     linear-gradient(var(--frame), var(--frame)) right bottom / var(--bt) var(--bl) no-repeat,
     linear-gradient(var(--frame), var(--frame)) right var(--ro) bottom var(--ro) / var(--rv) var(--rv) no-repeat; }
 
-.card h2 { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 16px; padding-bottom: 14px;
+.card h2 { position: relative; display: flex; justify-content: flex-start; align-items: center; gap: 10px; margin: 0 0 16px; padding-bottom: 14px;
   font: 600 .95rem/1.2 var(--heading); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-text); }
 /* Rule under the heading: a short gold run (like an inlaid strip) that continues as the plain slate line. */
 .card h2::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
   background: linear-gradient(90deg, var(--frame) 0 56px, var(--bd) 56px 100%); }
-/* Pixel heater shield: gold field, dark outline, red cross. Drawn as an SVG data URI, so it stays crisp and needs no file. */
-.card h2 > span:first-child::before { content: ""; display: inline-block; width: 18px; height: 20px; margin-right: 10px; vertical-align: -4px;
-  image-rendering: pixelated; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 10' shape-rendering='crispEdges'%3E%3Cpath fill='%230f1218' d='M1 0h7v1h1v5h-1v1h-1v1h-1v1h-1v1H4V9H3V8H2V7H1V6H0V1h1z'/%3E%3Cpath fill='%23f2b632' d='M1 1h7v5H7v1H6v1H5v1H4V8H3V7H2V6H1z'/%3E%3Cpath fill='%238a2b1f' d='M4 1h1v7H4zM1 3h7v1H1z'/%3E%3C/svg%3E"); }
-.card h2 small { font: 500 .85rem var(--font); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.card h2 small { margin-left: auto; font: 500 .85rem var(--font); letter-spacing: 0; text-transform: none; color: var(--muted); }
 
 /* Flat grid with named areas: on a wide screen the quest map runs down the left beside the schedule; below that it stacks in reading order. */
 .grid { display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 1240px) {
   .grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    grid-template-areas: "quests time" "quests week" "lair lair" "relics skill" "relics party"; }
+    grid-template-areas: "week week" "time skill" "quests relics" "quests party" "lair lair"; }
   .a-quests { grid-area: quests; } .a-time { grid-area: time; } .a-week { grid-area: week; }
   .a-relics { grid-area: relics; } .a-skill { grid-area: skill; } .a-party { grid-area: party; } .a-lair { grid-area: lair; }
 }
@@ -417,6 +415,7 @@ dialog.knight-dlg h3 { margin: 0; }
 .pill.relief { background: transparent; color: var(--accent-text); border: 1px solid var(--accent-text); }
 
 /* ===== Week ===== */
+#wStreak { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-text); }
 .week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; text-align: center; }
 .day { display: grid; justify-items: center; gap: 6px; padding: 10px 0 8px; background: var(--panel-2); border: 2px solid var(--bd); font: 600 .78rem var(--heading); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
 .day .sprite.off { filter: grayscale(1) brightness(1.1); opacity: .5; }
@@ -534,11 +533,12 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
 .wd-day h4 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; }
 .wd-tag { padding: 1px 8px; font: 600 .66rem var(--font); letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--seal); }
 .wd-slots { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.wd-slots li { display: grid; grid-template-columns: 46px 1fr auto; gap: 10px; align-items: center; padding: 6px 8px; background: rgba(255, 255, 255, .45); border: 1px solid #d3bb82; }
+.wd-slots li { display: grid; grid-template-columns: 46px 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 8px; background: rgba(255, 255, 255, .45); border: 1px solid #d3bb82; }
 .wd-slots time { font: 600 .8rem var(--heading); color: var(--seal); }
 .wd-slots b { font-weight: 600; font-size: .9rem; color: var(--ink); }
 .wd-slots .sub { font-size: .78rem; color: var(--ink-muted); }
 .wd-slots .now { border: 2px solid var(--seal); background: #fff8e6; }
+.wd-slots .tt-ico .sprite { width: 24px; }
 .wd-slots .past { opacity: .5; }
 .scroll .pill.relief { color: var(--seal); border-color: var(--seal); }
 
@@ -569,8 +569,43 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
   .room { grid-template-columns: 56px 1fr; gap: 12px; }
   .tile { width: 56px; height: 56px; }
   .room .btn { grid-column: 2; justify-self: start; }
-  .tt li { grid-template-columns: 48px 1fr auto; }
 }
+/* ===== Polish: card icons, torch streak, timetable, suggested practice ===== */
+/* Each card title has its own pixel icon (the same one as its menu row), so the page can be scanned by picture. */
+.h-ico { display: grid; place-items: center; flex: none; width: 24px; height: 28px; }
+
+/* Torch streak: a big running count beside the five torches. Lit torches flicker; today's torch pulses until a quest lights it. */
+.streak-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.streak-big { display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 128px; padding: 8px 14px; text-align: center;
+  background: var(--panel-2); border: 2px solid var(--accent); }
+.streak-big b { font: 400 2.8rem/1 var(--heading); color: var(--accent-text); }
+.streak-big small { font-size: .8rem; line-height: 1.2; color: var(--muted); }
+.streak-big .sprite, .day.lit .sprite { transform-origin: 50% 100%; animation: flicker 1.4s steps(2, end) infinite; }
+.day.lit:nth-child(2) .sprite { animation-delay: -.35s; } .day.lit:nth-child(3) .sprite { animation-delay: -.7s; }
+.day.lit:nth-child(4) .sprite { animation-delay: -1.05s; } .day.lit:nth-child(5) .sprite { animation-delay: -.2s; }
+.day.today:not(.lit) { animation: todayPulse 1.2s steps(2, end) infinite; }
+@keyframes flicker { 0%, 100% { transform: scaleY(1); filter: brightness(1); } 50% { transform: scaleY(1.09); filter: brightness(1.18); } }
+@keyframes todayPulse { 0%, 100% { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); } 50% { border-color: var(--bd); box-shadow: none; } }
+.streak-note span + span { color: var(--muted); }
+@media (max-width: 560px) { .streak-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* Timetable: a subject icon on every row; the current lesson says "now" and shows how far through it is. */
+.tt li { grid-template-columns: 56px 34px minmax(0, 1fr) auto; }
+.tt-ico { display: grid; place-items: center; }
+.tt-ico .sprite { width: 30px; height: auto; }
+.pills { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.tt-progress { grid-column: 1 / -1; height: 6px; margin-top: 2px; background: var(--track); }
+.tt-progress > i { display: block; height: 100%; background: var(--accent); }
+@media (max-width: 560px) { .tt li { grid-template-columns: 48px 28px minmax(0, 1fr) auto; } .tt-ico .sprite { width: 26px; } }
+
+/* Suggested practice: the weakest subject's monster, one tap from a fight. */
+.next-foe { margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--bd); }
+.next-head { margin: 0 0 10px; font: 600 .8rem var(--heading); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.next-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px; background: var(--panel-2); border: 2px solid var(--bd); }
+.next-row b { display: block; font: 600 .95rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
+.next-row span { display: block; margin-top: 2px; font-size: .85rem; color: var(--muted); }
+.next-row .btn { margin: 0; min-height: 38px; font-size: .75rem; }
+@media (max-width: 420px) { .next-row { grid-template-columns: auto minmax(0, 1fr); } .next-row .btn { grid-column: 1 / -1; justify-self: start; } }
 </style>
 </head>
 <body>
@@ -583,7 +618,7 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
     </div>
 
     <section class="card px" aria-labelledby="profTitle">
-      <h2 id="profTitle"><span data-i18n="profile">Profil Pelajar</span></h2>
+      <h2 id="profTitle"><span class="h-ico" data-ico="mage" aria-hidden="true"></span><span data-i18n="profile">Profil Pelajar</span></h2>
       <div class="player">
         <div class="avatar-wrap">
           <div class="avatar" id="avatarBox" aria-hidden="true"></div>
@@ -612,14 +647,14 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
     </section>
 
     <section class="card px" aria-labelledby="menuTitle">
-      <h2 id="menuTitle"><span data-i18n="menu">Menu</span></h2>
+      <h2 id="menuTitle"><span class="h-ico" data-ico="key" aria-hidden="true"></span><span data-i18n="menu">Menu</span></h2>
       <nav class="nav" aria-label="Sections">
+        <a href="#week"><span class="nav-ico" data-ico="flame" aria-hidden="true"></span><span data-i18n="week">Rentetan Obor</span></a>
         <a href="#quests"><span class="nav-ico" data-ico="door" aria-hidden="true"></span><span data-i18n="map">Peta Misi</span></a>
         <a href="#lair"><span class="nav-ico" data-ico="skull" aria-hidden="true"></span><span data-i18n="lair">Sarang Raksasa</span></a>
         <button id="weekBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-ico="scroll" aria-hidden="true"></span><span data-i18n="weekBtn">Jadual Seminggu</span></button>
         <button id="shopBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-ico="coin" aria-hidden="true"></span><span data-i18n="shop">Kedai</span></button>
         <button id="knightBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-ico="knight" aria-hidden="true"></span><span data-i18n="knightNav">Kesatria Saya</span></button>
-        <a href="#week"><span class="nav-ico" data-ico="flame" aria-hidden="true"></span><span data-i18n="week">Obor Minggu Ini</span></a>
         <a href="#relics"><span class="nav-ico" data-ico="crown" aria-hidden="true"></span><span data-i18n="relics">Peninggalan</span></a>
         <a href="#mastery"><span class="nav-ico" data-ico="owl" aria-hidden="true"></span><span data-i18n="mastery">Penguasaan Subjek</span></a>
         <a href="#party"><span class="nav-ico" data-ico="squire" aria-hidden="true"></span><span data-i18n="party">Pasukan Kelas</span></a>
@@ -638,8 +673,27 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
     </header>
 
     <div class="grid">
+      <section class="card px a-week" id="week" aria-labelledby="wTitle">
+        <h2 id="wTitle"><span class="h-ico" data-ico="flame" aria-hidden="true"></span><span data-i18n="week">Rentetan Obor</span></h2>
+        <div class="streak-row">
+          <div class="streak-big" id="wStreak"></div>
+          <div class="week" id="weekDays"></div>
+        </div>
+        <p class="note streak-note"><span id="torchHint"></span> <span data-i18n="reminderNote"></span></p>
+      </section>
+
+      <section class="card px a-time" id="timetable" aria-labelledby="tTitle">
+        <h2 id="tTitle"><span class="h-ico" data-ico="scroll" aria-hidden="true"></span><span data-i18n="timetable">Jadual Hari Ini</span><small id="ttDay"></small></h2>
+        <ul class="tt" id="timetableList"></ul>
+      </section>
+
+      <section class="card px a-skill" id="mastery" aria-labelledby="sTitle">
+        <h2 id="sTitle"><span class="h-ico" data-ico="owl" aria-hidden="true"></span><span data-i18n="mastery">Penguasaan Subjek</span></h2>
+        <div class="subjects" id="subjects"></div>
+      </section>
+
       <section class="card px a-quests" id="quests" aria-labelledby="mTitle">
-        <h2 id="mTitle"><span data-i18n="map">Peta Misi</span><small id="qCount"></small></h2>
+        <h2 id="mTitle"><span class="h-ico" data-ico="door" aria-hidden="true"></span><span data-i18n="map">Peta Misi</span><small id="qCount"></small></h2>
         <ol class="map" id="map"></ol>
         <div class="boss" id="boss">
           <div class="tile" id="bossFace" aria-hidden="true"></div>
@@ -651,39 +705,24 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
         </div>
       </section>
 
-      <section class="card px a-lair" id="lair" aria-labelledby="lairTitle">
-        <h2 id="lairTitle"><span data-i18n="lair">Sarang Raksasa</span></h2>
-        <p class="note" data-i18n="lairIntro"></p>
-        <div class="lair" id="lairGrid"></div>
-      </section>
-
-      <section class="card px a-time" id="timetable" aria-labelledby="tTitle">
-        <h2 id="tTitle"><span data-i18n="timetable">Jadual Hari Ini</span><small id="ttDay"></small></h2>
-        <ul class="tt" id="timetableList"></ul>
-      </section>
-
-      <section class="card px a-week" id="week" aria-labelledby="wTitle">
-        <h2 id="wTitle"><span data-i18n="week">Obor Minggu Ini</span></h2>
-        <div class="week" id="weekDays"></div>
-        <p class="note" data-i18n="reminderNote"></p>
-      </section>
-
       <section class="card px a-relics" id="relics" aria-labelledby="rTitle">
-        <h2 id="rTitle"><span data-i18n="relics">Peninggalan</span><small id="rCount"></small></h2>
+        <h2 id="rTitle"><span class="h-ico" data-ico="crown" aria-hidden="true"></span><span data-i18n="relics">Peninggalan</span><small id="rCount"></small></h2>
         <div class="relics" id="relicGrid"></div>
       </section>
 
-      <section class="card px a-skill" id="mastery" aria-labelledby="sTitle">
-        <h2 id="sTitle"><span data-i18n="mastery">Penguasaan Subjek</span></h2>
-        <div class="subjects" id="subjects"></div>
-      </section>
-
       <section class="card px party a-party" id="party" aria-labelledby="pTitle">
-        <h2 id="pTitle"><span data-i18n="party">Pasukan Kelas</span></h2>
+        <h2 id="pTitle"><span class="h-ico" data-ico="squire" aria-hidden="true"></span><span data-i18n="party">Pasukan Kelas</span></h2>
         <div class="bar" role="progressbar" id="partyBar" aria-valuemin="0" aria-labelledby="pTitle"><i id="partyFill"></i></div>
         <p id="partyText"></p>
         <p class="note" data-i18n="partyNote"></p>
       </section>
+
+      <section class="card px a-lair" id="lair" aria-labelledby="lairTitle">
+        <h2 id="lairTitle"><span class="h-ico" data-ico="skull" aria-hidden="true"></span><span data-i18n="lair">Sarang Raksasa</span></h2>
+        <p class="note" data-i18n="lairIntro"></p>
+        <div class="lair" id="lairGrid"></div>
+      </section>
+
     </div>
 
     <p class="foot" data-i18n="proto">Prototaip. Data contoh sahaja.</p>
@@ -959,9 +998,12 @@ const TEXT = {
     weekIntro: 'Semua kelas anda dari Isnin hingga Jumaat. Hari ini ditandakan dan kelas semasa diserlahkan.',
     daysFull: ['Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat'],
     theme: 'Tema', subtitle: 'Papan Pelajar', level: 'TAHAP', map: 'Peta Misi', relics: 'Peninggalan', mastery: 'Penguasaan Subjek',
-    timetable: 'Jadual Hari Ini', week: 'Obor Minggu Ini', party: 'Pasukan Kelas', continue: 'Teruskan',
+    timetable: 'Jadual Hari Ini', week: 'Rentetan Obor', party: 'Pasukan Kelas', continue: 'Teruskan',
     proto: 'Prototaip. Data contoh sahaja.',
     reminderNote: 'Peringatan dihantar pada waktu petang sahaja.',
+    torchOff: 'Siapkan satu misi hari ini untuk menyalakan obor hari ini.', torchOn: 'Obor hari ini sudah menyala. Jumpa lagi esok!',
+    streakUnit: () => 'hari berturut-turut', nextHead: 'Latihan disyorkan', nextWhy: (subject, pct) => subject + ' ' + pct + '%: subjek paling rendah anda',
+    minsLeft: (n) => n + ' minit lagi',
     partyNote: 'Sasaran bersama. Tiada nama dan tiada kedudukan murid.',
     hello: (n) => `Selamat datang, ${n}!`,
     xpText: (xp) => `${xp} XP`,
@@ -1016,9 +1058,12 @@ const TEXT = {
     weekIntro: 'All your lessons from Monday to Friday. Today is marked and the current lesson is highlighted.',
     daysFull: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
     theme: 'Theme', subtitle: 'Student Board', level: 'LEVEL', map: 'Quest Map', relics: 'Relics', mastery: 'Subject Mastery',
-    timetable: "Today's Timetable", week: "This Week's Torches", party: 'Class Party', continue: 'Continue',
+    timetable: "Today's Timetable", week: 'Torch Streak', party: 'Class Party', continue: 'Continue',
     proto: 'Prototype. Sample data only.',
     reminderNote: 'Reminders are sent in the afternoon only.',
+    torchOff: "Finish one quest today to light today's torch.", torchOn: "Today's torch is lit. See you tomorrow!",
+    streakUnit: (n) => (n === 1 ? 'day in a row' : 'days in a row'), nextHead: 'Suggested practice', nextWhy: (subject, pct) => subject + ' ' + pct + '%: your lowest subject',
+    minsLeft: (n) => n + ' min left',
     partyNote: 'A shared goal. No names and no student rankings.',
     hello: (n) => `Welcome back, ${n}!`,
     xpText: (xp) => `${xp} XP`,
@@ -1208,7 +1253,7 @@ function renderHero() {
   $('xpBar').setAttribute('aria-valuenow', pct);
   $('xpText').textContent = t().xpText(inLevel);
   $('xpNext').textContent = t().xpNext(XP_PER_LEVEL - inLevel, level + 1);
-  setStat('streakStat', 'flame', t().streak(state.streak));
+  setStat('streakStat', 'flame', t().streak(currentStreak()));
   setStat('coinStat', 'coin', t().coins(totalCoins()));
   setStat('relicStat', 'trophy', t().relicStat(relics.filter(isRelicEarned).length, relics.length));
 }
@@ -1289,6 +1334,16 @@ function toMinutes(hhmm) {
 }
 
 /* One timetable slot. Used by the "today" card and the weekly scroll, so both show "now" and relief the same way. */
+// Each subject wears its monster from the Lair. Physical Education gets a trophy; any other subject without a monster gets a book.
+function slotIcon(subject) {
+  const monster = MONSTERS.find((m) => m.subj === SUBJECT_KEY_BY_MS[subject.ms]);
+  const box = document.createElement('span');
+  box.className = 'tt-ico';
+  box.setAttribute('aria-hidden', 'true');
+  box.append(sprite(monster ? monster.sprite : subject.ms === 'Pendidikan Jasmani' ? 'trophy' : 'scroll', 2));
+  return box;
+}
+
 function slotElement(slot, isToday) {
   const li = document.createElement('li');
   const start = toMinutes(slot.from);
@@ -1304,15 +1359,25 @@ function slotElement(slot, isToday) {
   name.textContent = pick(slot.subject);
   const room = document.createElement('div');
   room.className = 'sub';
-  room.textContent = pick(slot.room) + ' \u2022 ' + slot.from + '\u2013' + slot.to;
+  room.textContent = pick(slot.room) + ' \u2022 ' + slot.from + '\u2013' + slot.to + (isNow ? ' \u2022 ' + t().minsLeft(end - DEMO_NOW_MINUTES) : '');
   info.append(name, room);
-  li.append(time, info);
+  li.append(time, slotIcon(slot.subject), info);
 
   if (isNow || slot.relief) {
-    const pill = document.createElement('span');
-    pill.className = 'pill' + (slot.relief ? ' relief' : '');
-    pill.textContent = slot.relief ? t().relief : t().now;
-    li.append(pill);
+    const pills = document.createElement('span');
+    pills.className = 'pills';
+    if (isNow) pills.append(Object.assign(document.createElement('span'), {className: 'pill', textContent: t().now}));
+    if (slot.relief) pills.append(Object.assign(document.createElement('span'), {className: 'pill relief', textContent: t().relief}));
+    li.append(pills);
+  }
+  if (isNow) {
+    const progress = document.createElement('div');
+    progress.className = 'tt-progress';
+    progress.setAttribute('aria-hidden', 'true');
+    const fill = document.createElement('i');
+    fill.style.width = Math.round(((DEMO_NOW_MINUTES - start) / (end - start)) * 100) + '%';
+    progress.append(fill);
+    li.append(progress);
   }
   return li;
 }
@@ -1323,13 +1388,23 @@ function renderTimetable() {
   list.replaceChildren(...timetable.map((slot) => slotElement(slot, true)));
 }
 
+const todayTorchLit = () => quests.some((q) => q.done);
+const currentStreak = () => state.streak + (todayTorchLit() ? 1 : 0);
+
 function renderWeek() {
   const week = $('weekDays');
   week.replaceChildren();
   const todayIndex = 3; // Thursday in the demo
+  const todayLit = todayTorchLit();
+  const streakCount = document.createElement('b');
+  streakCount.textContent = String(currentStreak());
+  const streakUnit = document.createElement('small');
+  streakUnit.textContent = t().streakUnit(currentStreak());
+  $('wStreak').replaceChildren(sprite('flame', 4), streakCount, streakUnit);
+  $('torchHint').textContent = todayLit ? t().torchOn : t().torchOff;
   t().days.forEach((label, i) => {
     const d = document.createElement('div');
-    const lit = i < todayIndex;
+    const lit = i < todayIndex || (i === todayIndex && todayLit);
     d.className = `day${lit ? ' lit' : ''}${i === todayIndex ? ' today' : ''}`;
     const icon = sprite('flame', 3);
     if (!lit) icon.classList.add('off');
@@ -1363,6 +1438,39 @@ function renderSubjects() {
     row.append(name, pct, bar);
     box.append(row);
   }
+  box.append(nextFoeBlock());
+}
+
+// The weakest subject's monster, so the empty space under the bars points somewhere useful.
+const SUBJECT_KEY_BY_MS = {'Matematik': 'maths', 'Sains': 'science', 'Bahasa Melayu': 'malay', 'Bahasa Inggeris': 'english'};
+
+function nextFoeBlock() {
+  const weakest = subjects.reduce((low, s) => (s.pct < low.pct ? s : low));
+  const monster = MONSTERS.find((m) => m.subj === SUBJECT_KEY_BY_MS[weakest.name.ms]);
+  const wrap = document.createElement('div');
+  wrap.className = 'next-foe';
+  const head = document.createElement('p');
+  head.className = 'next-head';
+  head.textContent = t().nextHead;
+  wrap.append(head);
+  if (!monster) return wrap;
+  const row = document.createElement('div');
+  row.className = 'next-row';
+  const info = document.createElement('div');
+  const name = document.createElement('b');
+  name.textContent = pick(monster.name);
+  const why = document.createElement('span');
+  why.textContent = t().nextWhy(pick(weakest.name), weakest.pct);
+  info.append(name, why);
+  const fight = document.createElement('button');
+  fight.type = 'button';
+  fight.className = 'btn';
+  fight.textContent = t().lairFight;
+  fight.setAttribute('aria-label', t().lairFight + ': ' + pick(monster.name));
+  fight.addEventListener('click', () => openBattle(monster.id));
+  row.append(sprite(monster.sprite, 3), info, fight);
+  wrap.append(row);
+  return wrap;
 }
 
 function renderRelics(freshIds) {

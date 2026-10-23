@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapientia | Landing page designs</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #0b0a0e; --text: #efe4c6; --muted: #b9ad94; --gold: #c9a24a; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 400 1rem/1.5 "Inter", system-ui, sans-serif; display: grid; place-items: center; padding: 32px 16px; }
+main { width: min(960px, 100%); text-align: center; }
+h1 { font: 700 clamp(1.5rem, 4vw, 2.2rem)/1.2 "Cinzel", serif; margin: 16px 0 6px; }
+p { color: var(--muted); margin: 0 0 32px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; text-align: left; }
+a.choice { display: block; padding: 22px; border: 1px solid rgba(201, 162, 74, .45); border-radius: 14px; text-decoration: none; color: inherit; background: rgba(255, 255, 255, .03); }
+a.choice:hover, a.choice:focus-visible { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px rgba(201, 162, 74, .35); }
+.choice b { display: block; font: 700 1.1rem/1.2 "Cinzel", serif; color: var(--gold); margin-bottom: 6px; }
+.choice span { color: var(--muted); font-size: .92rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sapientia landing pages</h1>
+  <p>Three prototype directions. Same content, same logo, different personality.</p>
+  <div class="grid">
+    <a class="choice" href="./index.html"><b>A. Sanctum</b><span>Immersive hall photo, medallion logo and parchment cards. Closest to the login page.</span></a>
+    <a class="choice" href="./b-scroll.html"><b>B. Scroll</b><span>Light editorial parchment page with a memo scroll and burgundy band.</span></a>
+    <a class="choice" href="./c-obsidian.html"><b>C. Obsidian</b><span>Calm modern layout with gold hairlines and a bento grid. Matches the teacher screens.</span></a>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapientia | Satu platform penyelarasan sekolah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./shared.css">
+<style>
+/* DESIGN C: OBSIDIAN. Calm, modern, gold hairlines. Matches the teacher and admin screens (calm scope). */
+:root {
+  --bg: #f7f4ec; --surface: #ffffff; --text: #17140f; --muted: #5c5546; --gold: #8a6a22; --line: #ddd3bb;
+  --accent: #6e1622; --accent-text: #fdf5e0; --focus: #6e1622; --glow: rgba(201, 162, 74, .25);
+  --tb-bg: #17140f; --tb-text: #f1e8d0; --tb-line: rgba(201, 162, 74, .4); --tb-accent: #6e1622;
+  --demo-bg: var(--surface); --demo-text: var(--text); --demo-muted: var(--muted); --demo-line: var(--line);
+  --demo-field: #fbf9f3; --demo-result-bg: rgba(110, 22, 34, .06);
+  --heading-font: "Cinzel", Georgia, serif; --demo-radius: 14px; --night: #e9e3d2; --day: #c9a24a;
+}
+:root[data-theme="dark"] {
+  --bg: #0b0b0f; --surface: #14141a; --text: #ece6d4; --muted: #a9a290; --gold: #d9b45c; --line: #2a2a33;
+  --accent: #c9a24a; --accent-text: #15110a; --focus: #e0be6a; --glow: rgba(201, 162, 74, .22);
+  --night: #1d1d26; --demo-field: #1d1d26; --demo-result-bg: rgba(201, 162, 74, .1);
+}
+body { font-family: "Inter", system-ui, sans-serif; font-size: 17px; }
+h1, h2, h3 { margin: 0; line-height: 1.2; }
+h1, h2 { font-family: var(--heading-font); font-weight: 700; }
+h3 { font-weight: 600; }
+.wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 13px 24px; border-radius: 999px; cursor: pointer;
+  font: 600 .95rem/1 "Inter", sans-serif; text-decoration: none; background: var(--accent); color: var(--accent-text);
+  border: 1.5px solid var(--accent); transition: transform .2s, box-shadow .2s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px var(--glow); }
+.btn-outline { background: transparent; color: var(--text); border-color: var(--line); }
+.btn-outline:hover { border-color: var(--gold); box-shadow: none; }
+.btn .ico { width: 1.15em; height: 1.15em; }
+
+/* Nav */
+.site-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font: 800 1.05rem/1 "Cinzel", serif; letter-spacing: .1em; }
+.medal { border-radius: 50%; overflow: hidden; background: #0b0a0e; box-shadow: 0 0 0 2px #c9a24a; flex: none; }
+.medal img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.03); }
+.brand .medal { width: 40px; height: 40px; }
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a { text-decoration: none; font-size: .9rem; font-weight: 500; color: var(--muted); }
+.nav-links a:hover { color: var(--text); }
+.nav-links .nav-cta { padding: 9px 18px; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.nav-links .nav-cta:hover { color: var(--accent-text); filter: brightness(1.1); }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; padding: 56px 0 72px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 20px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: .8rem; font-weight: 600; letter-spacing: .04em; color: var(--gold); }
+.eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+.hero h1 { font-size: clamp(1.9rem, 3.8vw, 3rem); max-width: 20ch; }
+.hero-sub { margin: 20px 0 30px; max-width: 50ch; font-size: 1.15rem; color: var(--muted); }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-note { margin: 18px 0 0; font-size: .88rem; color: var(--muted); }
+.orb { position: relative; display: grid; place-items: center; aspect-ratio: 1; width: min(100%, 400px); justify-self: center; }
+.orb::before {
+  content: ""; position: absolute; inset: -6%; border-radius: 50%; z-index: 0;
+  background: conic-gradient(from 0deg, transparent, #c9a24a, transparent 40%, #e8cd85, transparent 80%);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%, #000 66%, transparent 67%);
+  mask: radial-gradient(circle, transparent 62%, #000 63%, #000 66%, transparent 67%); animation: turn 24s linear infinite;
+}
+.orb::after { content: ""; position: absolute; inset: 5%; border-radius: 50%; box-shadow: 0 0 80px 10px var(--glow); z-index: 0; }
+.orb .medal { position: relative; z-index: 1; width: 78%; height: 78%; }
+@keyframes turn { to { transform: rotate(360deg); } }
+
+/* Facts strip */
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow: hidden; }
+.fact { padding: 20px 24px; display: flex; align-items: center; gap: 14px; font-weight: 600; }
+.fact + .fact { border-left: 1px solid var(--line); }
+.fact .ico { color: var(--gold); }
+
+/* Sections */
+.section { padding: 88px 0 0; }
+.section-head { margin-bottom: 36px; display: grid; gap: 10px; max-width: 620px; }
+.section-head h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); }
+.section-head p { margin: 0; color: var(--muted); font-size: 1.05rem; }
+
+/* Bento features */
+.bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+.tile { position: relative; padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); display: grid; align-content: start; gap: 10px; transition: border-color .2s, transform .2s; }
+.tile:hover { border-color: var(--gold); transform: translateY(-3px); }
+.tile .ico-wrap { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line); color: var(--gold); }
+.tile h3 { font-size: 1.08rem; }
+.tile p { margin: 0; color: var(--muted); font-size: .98rem; }
+.tile .tag { position: absolute; top: 22px; right: 22px; }
+.span-4 { grid-column: span 4; } .span-2 { grid-column: span 2; } .span-6 { grid-column: span 6; }
+.tile.hero-tile { background-image: radial-gradient(circle at 100% 0%, var(--glow), transparent 55%); }
+.tag { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--line); padding: 4px 9px; border-radius: 999px; }
+/* Day strip: the gold block is the example working day, the rest is held time. */
+.daybar { position: relative; height: 34px; margin-top: 8px; border-radius: 10px; background: repeating-linear-gradient(135deg, var(--night) 0 6px, transparent 6px 12px); border: 1px solid var(--line); }
+.daybar::before { content: ""; position: absolute; top: 0; bottom: 0; left: 31.25%; width: 39.58%; background: var(--day); border-radius: 8px; opacity: .85; }
+.daybar-labels { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-top: 6px; }
+
+/* How it works */
+.how { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.timeline li { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); counter-increment: n; }
+.timeline li::before { content: counter(n); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font: 800 1rem/1 "Cinzel", serif; color: var(--accent-text); background: var(--accent); }
+.timeline h3 { font-size: 1.02rem; margin-bottom: 4px; }
+.timeline p { margin: 0; color: var(--muted); font-size: .96rem; }
+.timeline { counter-reset: n; }
+
+/* Roles and trust */
+.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.col { padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); display: grid; gap: 10px; align-content: start; }
+.col .ico-wrap { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--gold); border: 1px solid var(--line); }
+.col h3 { font-size: 1.02rem; }
+.col p { margin: 0; color: var(--muted); font-size: .96rem; }
+.col .tag { justify-self: start; }
+
+/* Closing panel */
+.closing { margin: 88px 0; padding: 56px 24px; text-align: center; border: 1px solid var(--gold); border-radius: 24px; display: grid; justify-items: center; gap: 14px; background: radial-gradient(ellipse at 50% 0%, var(--glow), transparent 65%), var(--surface); }
+.closing .medal { width: 76px; height: 76px; }
+.closing h2 { font-size: clamp(1.5rem, 3.2vw, 2.2rem); }
+.closing p { margin: 0 0 8px; color: var(--muted); }
+
+footer { border-top: 1px solid var(--line); padding: 26px 0 40px; text-align: center; color: var(--muted); font-size: .88rem; }
+footer p { margin: 4px 0; }
+
+@media (max-width: 900px) {
+  .hero, .how { grid-template-columns: 1fr; }
+  .orb { width: min(70%, 300px); order: -1; }
+  .cols { grid-template-columns: 1fr 1fr; }
+  .span-4, .span-2 { grid-column: span 6; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+@media (max-width: 600px) {
+  .facts { grid-template-columns: 1fr; }
+  .fact + .fact { border-left: 0; border-top: 1px solid var(--line); }
+  .cols { grid-template-columns: 1fr; }
+  .section { padding-top: 64px; }
+}
+</style>
+</head>
+<body data-design="c" data-default-theme="dark">
+<a class="skip-link" href="#main" data-i18n="skip"></a>
+<div id="toolbar" class="toolbar" role="region"></div>
+
+<div class="wrap">
+  <nav class="site-nav" aria-label="Utama">
+    <a class="brand" href="#top"><span class="medal"><img src="../login/assets/sapientia_logo.jpg" alt=""></span><span>Sapientia</span></a>
+    <div class="nav-links">
+      <a href="#features" data-i18n="navFeatures"></a>
+      <a href="#how" data-i18n="navHow"></a>
+      <a href="#roles" data-i18n="navRoles"></a>
+      <a href="#trust" data-i18n="navTrust"></a>
+      <a class="nav-cta" href="../login/index.html" data-i18n="navLogin"></a>
+    </div>
+  </nav>
+</div>
+
+<main id="main">
+  <div class="wrap">
+    <section class="hero" id="top">
+      <div>
+        <p class="eyebrow" data-i18n="heroEyebrow"></p>
+        <h1 data-i18n="heroTitle"></h1>
+        <p class="hero-sub" data-i18n="heroSub"></p>
+        <div class="cta-row">
+          <a class="btn" href="../login/index.html"><span data-i18n="heroCta"></span><span data-icon="arrow"></span></a>
+          <a class="btn btn-outline" href="#how" data-i18n="heroCta2"></a>
+        </div>
+        <p class="hero-note" data-i18n="heroNote"></p>
+      </div>
+      <div class="orb"><span class="medal"><img src="../login/assets/sapientia_logo.jpg" alt="Lencana Sapientia: burung hantu, pen dan buku"></span></div>
+    </section>
+
+    <div class="facts">
+      <div class="fact"><span data-icon="moon"></span><span data-i18n="fact1"></span></div>
+      <div class="fact"><span data-icon="eyeoff"></span><span data-i18n="fact2"></span></div>
+      <div class="fact"><span data-icon="phone"></span><span data-i18n="fact3"></span></div>
+    </div>
+
+    <section class="section" id="features">
+      <div class="section-head">
+        <h2 data-i18n="featuresTitle"></h2>
+        <p data-i18n="featuresSub"></p>
+      </div>
+      <div class="bento">
+        <article class="tile hero-tile span-4">
+          <span class="tag" data-i18n="phase1"></span>
+          <div class="ico-wrap" data-icon="hourglass"></div>
+          <h3 data-i18n="f2t"></h3>
+          <p data-i18n="f2d"></p>
+          <div class="daybar" aria-hidden="true"></div>
+          <div class="daybar-labels" aria-hidden="true"><span>00:00</span><span>7:30</span><span>17:00</span><span>24:00</span></div>
+        </article>
+        <article class="tile span-2"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="board"></div><h3 data-i18n="f1t"></h3><p data-i18n="f1d"></p></article>
+        <article class="tile span-6"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="phone"></div><h3 data-i18n="f6t"></h3><p data-i18n="f6d"></p></article>
+        <article class="tile span-2"><span class="tag" data-i18n="phase2"></span><div class="ico-wrap" data-icon="gauge"></div><h3 data-i18n="f3t"></h3><p data-i18n="f3d"></p></article>
+        <article class="tile span-2"><span class="tag" data-i18n="phase2"></span><div class="ico-wrap" data-icon="swap"></div><h3 data-i18n="f4t"></h3><p data-i18n="f4d"></p></article>
+        <article class="tile span-2"><span class="tag" data-i18n="phase3"></span><div class="ico-wrap" data-icon="scroll"></div><h3 data-i18n="f5t"></h3><p data-i18n="f5d"></p></article>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="how">
+        <div>
+          <div class="section-head">
+            <h2 data-i18n="howTitle"></h2>
+            <p data-i18n="howSub"></p>
+          </div>
+          <ol class="timeline">
+            <li><div><h3 data-i18n="s1t"></h3><p data-i18n="s1d"></p></div></li>
+            <li><div><h3 data-i18n="s2t"></h3><p data-i18n="s2d"></p></div></li>
+            <li><div><h3 data-i18n="s3t"></h3><p data-i18n="s3d"></p></div></li>
+          </ol>
+        </div>
+        <form class="demo" id="demo" onsubmit="return false">
+          <h3 data-i18n="demoTitle"></h3>
+          <div class="demo-fields">
+            <label><span data-i18n="demoDay"></span><select id="demoDay"></select></label>
+            <label><span data-i18n="demoTime"></span><input id="demoTime" type="time" value="22:00"></label>
+            <label class="demo-check"><input id="demoUrgent" type="checkbox"><span data-i18n="demoUrgent"></span></label>
+          </div>
+          <p class="demo-result" id="demoResult" role="status" aria-live="polite"></p>
+          <p class="demo-note" data-i18n="demoNote"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section" id="roles">
+      <div class="section-head">
+        <h2 data-i18n="rolesTitle"></h2>
+        <p data-i18n="rolesSub"></p>
+      </div>
+      <div class="cols">
+        <article class="col"><div class="ico-wrap" data-icon="user"></div><h3 data-i18n="r1t"></h3><p data-i18n="r1d"></p><span class="tag" data-i18n="phase1"></span></article>
+        <article class="col"><div class="ico-wrap" data-icon="school"></div><h3 data-i18n="r2t"></h3><p data-i18n="r2d"></p><span class="tag" data-i18n="phase1"></span></article>
+        <article class="col"><div class="ico-wrap" data-icon="book"></div><h3 data-i18n="r3t"></h3><p data-i18n="r3d"></p><span class="tag" data-i18n="phase4"></span></article>
+        <article class="col"><div class="ico-wrap" data-icon="heart"></div><h3 data-i18n="r4t"></h3><p data-i18n="r4d"></p><span class="tag" data-i18n="phase4"></span></article>
+      </div>
+    </section>
+
+    <section class="section" id="trust">
+      <div class="section-head">
+        <h2 data-i18n="trustTitle"></h2>
+        <p data-i18n="trustSub"></p>
+      </div>
+      <div class="cols">
+        <article class="col"><div class="ico-wrap" data-icon="eyeoff"></div><h3 data-i18n="t1t"></h3><p data-i18n="t1d"></p></article>
+        <article class="col"><div class="ico-wrap" data-icon="shield"></div><h3 data-i18n="t2t"></h3><p data-i18n="t2d"></p></article>
+        <article class="col"><div class="ico-wrap" data-icon="school"></div><h3 data-i18n="t3t"></h3><p data-i18n="t3d"></p></article>
+        <article class="col"><div class="ico-wrap" data-icon="scroll"></div><h3 data-i18n="t4t"></h3><p data-i18n="t4d"></p></article>
+      </div>
+    </section>
+
+    <section class="closing">
+      <span class="medal"><img src="../login/assets/sapientia_logo.jpg" alt=""></span>
+      <h2 data-i18n="ctaTitle"></h2>
+      <p data-i18n="ctaSub"></p>
+      <a class="btn" href="../login/index.html"><span data-i18n="ctaBtn"></span><span data-icon="arrow"></span></a>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p data-i18n="footDisclaimer"></p>
+  <p data-i18n="footNote"></p>
+</footer>
+
+<script src="./landing.js"></script>
+</body>
+</html>

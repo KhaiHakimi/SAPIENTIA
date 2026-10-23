@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meja Guru | Portal Masuk Rasmi</title>
+<!-- Google Fonts: decorative display, medieval calligraphy and Garamond body -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@500;600;700;800;900&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=MedievalSharp&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   DESIGN TOKENS & BASE STYLES
+   ========================================================================== */
+:root {
+  --bg: #f5f7fb; --surface: #ffffff; --text: #1b2430; --muted: #5d6877;
+  --border: #d5dae1; --brand: #1f6f6b; --brand-text: #ffffff; --brand-soft: #e3f1f0;
+  --danger: #b3261e; --danger-soft: #fdecea; --ok: #1d6b3a; --ok-soft: #e6f4ea;
+  --focus: #1a5fd1; --radius: 12px; --shadow: 0 6px 24px rgba(20, 30, 45, .08);
+  --font: "Inter", system-ui, -apple-system, sans-serif;
+  --panel-bg: var(--brand); --panel-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171d; --surface: #1b222b; --text: #e8ecf1; --muted: #9aa5b3;
+    --border: #36404c; --brand: #4fb3ad; --brand-text: #0b1a19; --brand-soft: #1f3533;
+    --danger: #f2a09b; --danger-soft: #3a1f1d; --ok: #8fd6a6; --ok-soft: #1c3326;
+    --focus: #7fb0ff; --shadow: none; --panel-bg: #173c3a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171d; --surface: #1b222b; --text: #e8ecf1; --muted: #9aa5b3;
+  --border: #36404c; --brand: #4fb3ad; --brand-text: #0b1a19; --brand-soft: #1f3533;
+  --danger: #f2a09b; --danger-soft: #3a1f1d; --ok: #8fd6a6; --ok-soft: #1c3326;
+  --focus: #7fb0ff; --shadow: none; --panel-bg: #173c3a;
+}
+
+/* Variant B: Split */
+body[data-variant="split"] { --brand: #0f5c8c; --brand-soft: #e1eef7; --panel-bg: #0f3d5e; --radius: 8px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body[data-variant="split"] { --brand: #6db6ea; --brand-text: #08202f; --brand-soft: #1b2f3f; --panel-bg: #0c2a40; }
+}
+:root[data-theme="dark"] body[data-variant="split"] { --brand: #6db6ea; --brand-text: #08202f; --brand-soft: #1b2f3f; --panel-bg: #0c2a40; }
+
+/* Variant C: Warm */
+body[data-variant="warm"] { --bg: #fff6e9; --brand: #c4561b; --brand-soft: #fde6d4; --radius: 22px; --border: #ecd3b8; --muted: #6b5a49; --text: #2b2118; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body[data-variant="warm"] { --bg: #1f1812; --surface: #2a2119; --brand: #f09a62; --brand-text: #2a1608; --brand-soft: #3d2a1c; --border: #4a3a2b; --muted: #bda78f; --text: #f6ebdd; }
+}
+:root[data-theme="dark"] body[data-variant="warm"] { --bg: #1f1812; --surface: #2a2119; --brand: #f09a62; --brand-text: #2a1608; --brand-soft: #3d2a1c; --border: #4a3a2b; --muted: #bda78f; --text: #f6ebdd; }
+
+/* ==========================================================================
+   VARIANT D: SPELLBOUND AESTHETIC (CLEAN & IMMERSIVE)
+   ========================================================================== */
+body[data-variant="spell"] {
+  --bg: #080612;
+  --surface: #fbf5e6;
+  --text: #2c1a0e;
+  --muted: #6b5037;
+  --border: #c49d48;
+  --brand: #6e1622;
+  --brand-text: #fdf5e0;
+  --brand-soft: rgba(211, 166, 37, 0.18);
+  --danger: #8a1313;
+  --danger-soft: #f9d8d6;
+  --ok: #195b35;
+  --ok-soft: #d3ebd9;
+  --focus: #d3a625;
+  --glow: rgba(211, 166, 37, 0.45);
+  --radius: 8px;
+  --font: "EB Garamond", Georgia, serif;
+  --display: "Cinzel Decorative", "Cinzel", Georgia, serif;
+  --heading: "Cinzel", serif;
+  font-size: 18px;
+
+  /* IMMERSIVE CLASSROOM BACKDROP */
+  background-color: #06050e;
+  background-image: 
+    radial-gradient(ellipse at 50% 30%, rgba(10, 8, 24, 0.25) 0%, rgba(5, 3, 12, 0.78) 75%, #04030a 100%),
+    linear-gradient(to top, rgba(4,3,9,0.92) 0%, rgba(6,5,16,0.3) 50%, rgba(8,6,20,0.5) 100%),
+    url("./assets/classroom_bg.jpg");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; }
+body { font-family: var(--font); background-color: var(--bg); color: var(--text); line-height: 1.5; }
+
+/* ==========================================================================
+   PROTOTYPE TOOLBAR
+   ========================================================================== */
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+  padding: 8px 18px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: .85rem;
+  position: relative; z-index: 100;
+}
+.toolbar .group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.toolbar button {
+  font-family: inherit; font-size: .82rem; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer;
+  transition: all .2s ease;
+}
+.toolbar button:hover { background: rgba(120, 100, 70, 0.12); }
+.toolbar button[aria-pressed="true"] { background: var(--brand); color: var(--brand-text); border-color: var(--brand); }
+.toolbar .label { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+
+body[data-variant="spell"] .toolbar {
+  background: rgba(10, 7, 22, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #eeddb2;
+  border-bottom: 1px solid rgba(211, 166, 37, 0.35);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+body[data-variant="spell"] .toolbar .label { color: #caa76b; font-family: var(--heading); }
+body[data-variant="spell"] .toolbar button {
+  color: #eeddb2; border-color: rgba(211, 166, 37, 0.35); background: rgba(255,255,255,0.04);
+}
+body[data-variant="spell"] .toolbar button:hover {
+  background: rgba(211, 166, 37, 0.18); border-color: #d3a625;
+}
+body[data-variant="spell"] .toolbar button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #740001, #30050a);
+  color: #fceecb; border-color: #d3a625;
+  box-shadow: 0 0 10px rgba(211, 166, 37, 0.45);
+}
+
+/* ==========================================================================
+   STAGE & SPLIT LAYOUT
+   ========================================================================== */
+.stage { min-height: calc(100vh - 49px); display: grid; position: relative; }
+body[data-variant="split"] .stage { grid-template-columns: 1fr 1fr; }
+.panel { display: none; background: var(--panel-bg); color: var(--panel-text); padding: 48px; flex-direction: column; justify-content: space-between; }
+body[data-variant="split"] .panel { display: flex; }
+.panel h2 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; max-width: 18ch; }
+.panel p { margin: 0; max-width: 40ch; opacity: .9; }
+.panel ul { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.panel li::before { content: "\2713"; margin-right: 10px; font-weight: 700; }
+.panel small { opacity: .75; }
+
+.pane { display: grid; place-items: center; padding: 40px 16px; min-width: 0; position: relative; z-index: 10; }
+
+/* Standard Default Card */
+.card {
+  width: 100%; max-width: 440px; background: var(--surface); border-radius: var(--radius);
+  padding: 34px 30px; box-shadow: var(--shadow); border: 1px solid var(--border);
+  position: relative; transition: all .3s ease;
+}
+body[data-variant="split"] .card { box-shadow: none; border: none; background: transparent; padding: 0; }
+body[data-variant="warm"] .card { border-width: 2px; box-shadow: 0 10px 0 var(--brand-soft); }
+
+/* Standard Brand Header (for Clean, Split, Warm) */
+.brand-standard { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: 700; font-size: 1.15rem; }
+.logo-standard { width: 38px; height: 38px; border-radius: 10px; background: var(--brand); color: var(--brand-text); display: grid; place-items: center; font-weight: 800; }
+body[data-variant="warm"] .logo-standard { border-radius: 50%; }
+
+/* Spellbound-Only and Standard-Only Visibility Toggle */
+.magic-only { display: none; }
+.standard-only { display: block; }
+body[data-variant="spell"] .magic-only { display: block; }
+body[data-variant="spell"] .standard-only { display: none; }
+
+/* Wand Particles Canvas (cursor trail) */
+#wandCanvas {
+  display: none; position: fixed; inset: 0; width: 100vw; height: 100vh;
+  pointer-events: none; z-index: 6;
+}
+body[data-variant="spell"] #wandCanvas { display: block; }
+
+/* ==========================================================================
+   PARCHMENT CARD STYLING
+   ========================================================================== */
+body[data-variant="spell"] .card {
+  max-width: 470px;
+  background: #fbf5e6;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.85) 0%, transparent 60%),
+    linear-gradient(145deg, #fbf4e1 0%, #f6e9c6 50%, #edd9a6 100%);
+  border: 2px solid #b89146;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 50px rgba(120, 75, 20, 0.25),
+    0 0 0 1px rgba(255, 230, 150, 0.5),
+    0 0 25px rgba(211, 166, 37, 0.45),
+    0 25px 65px rgba(0, 0, 0, 0.85);
+  padding: 38px 34px 30px;
+  color: #2c1a0e;
+  position: relative;
+  transition: transform .4s ease, opacity .4s ease, box-shadow .3s ease;
+}
+
+/* Antique Baroque Brass Corners */
+.corner-ornament {
+  position: absolute; width: 28px; height: 28px; pointer-events: none;
+  border-color: #b89146; border-style: solid; opacity: 0.85;
+}
+.corner-ornament.top-left { top: 8px; left: 8px; border-width: 3px 0 0 3px; border-top-left-radius: 4px; }
+.corner-ornament.top-right { top: 8px; right: 8px; border-width: 3px 3px 0 0; border-top-right-radius: 4px; }
+.corner-ornament.bottom-left { bottom: 8px; left: 8px; border-width: 0 0 3px 3px; border-bottom-left-radius: 4px; }
+.corner-ornament.bottom-right { bottom: 8px; right: 8px; border-width: 0 3px 3px 0; border-bottom-right-radius: 4px; }
+
+/* Crest Header */
+.crest-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  margin-bottom: 16px; text-align: center;
+}
+.crest-bezel {
+  width: 104px; height: 104px; border-radius: 50%; overflow: hidden;
+  padding: 3px; margin-bottom: 10px;
+  background: radial-gradient(circle at 35% 30%, #f6dc8e 0%, #c49d48 45%, #6e4e1a 100%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 18px rgba(211, 166, 37, 0.45);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.crest-bezel:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 25px rgba(211, 166, 37, 0.6);
+}
+.crest-img {
+  width: 100%; height: 100%; border-radius: 50%;
+  object-fit: cover; display: block; transform: scale(1.16);
+}
+
+.school-title {
+  font-family: var(--display);
+  font-size: 1.3rem; font-weight: 900; letter-spacing: .06em;
+  color: #2e1709; text-transform: uppercase; margin: 0; line-height: 1.2;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.7);
+}
+.school-sub {
+  font-family: "Cinzel", serif; font-size: .82rem; font-weight: 700;
+  letter-spacing: .12em; color: #735028; text-transform: uppercase; margin: 4px 0 2px;
+}
+.school-motto {
+  font-family: "MedievalSharp", cursive, serif; font-size: .86rem;
+  font-style: italic; color: #8a6538; margin: 3px 0 14px;
+}
+
+/* Headings */
+h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.sub { margin: 0 0 24px; color: var(--muted); font-size: .95rem; }
+
+body[data-variant="spell"] h1 {
+  font-family: var(--display); font-size: 1.35rem; font-weight: 800;
+  text-align: center; color: #2b180d; margin: 0 0 4px;
+}
+body[data-variant="spell"] h1::after {
+  content: "✦ ✦ ✦"; display: block; text-align: center;
+  font-size: .7rem; letter-spacing: .4em; color: #b89146; margin: 6px auto 0;
+}
+body[data-variant="spell"] .sub {
+  font-family: "EB Garamond", serif; font-size: .95rem; font-style: italic;
+  text-align: center; color: #6b4d2a; margin: 0 0 20px;
+}
+
+/* Fields & Inputs */
+.field { margin-bottom: 16px; }
+label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 6px; }
+
+body[data-variant="spell"] label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: "Cinzel", serif; font-size: .8rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: #3c2415; margin-bottom: 5px;
+}
+
+.control { position: relative; }
+input[type="email"], input[type="password"], input[type="text"] {
+  width: 100%; padding: 12px 14px; font: inherit; color: var(--text); background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  transition: all .2s ease;
+}
+body[data-variant="split"] input { background: var(--bg); }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+input[aria-invalid="true"] { border-color: var(--danger); }
+
+/* Magical Input Styling */
+body[data-variant="spell"] input[type="email"],
+body[data-variant="spell"] input[type="password"],
+body[data-variant="spell"] input[type="text"] {
+  background: rgba(255, 252, 245, 0.9);
+  border: 1.5px solid #c29e55;
+  border-radius: 5px;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 1.1rem;
+  color: #23160c;
+  box-shadow: inset 0 2px 4px rgba(110, 75, 30, 0.12);
+}
+body[data-variant="spell"] input[type="email"]:focus,
+body[data-variant="spell"] input[type="password"]:focus,
+body[data-variant="spell"] input[type="text"]:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #740001;
+  box-shadow: 0 0 0 3px rgba(211, 166, 37, 0.45), inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  border: none; background: transparent; color: var(--brand);
+  font: inherit; font-weight: 600; padding: 6px 10px; cursor: pointer; border-radius: 8px;
+}
+body[data-variant="spell"] .toggle {
+  font-family: "Cinzel", serif; font-size: .75rem; color: #825b29;
+  display: flex; align-items: center; gap: 4px;
+}
+body[data-variant="spell"] .toggle:hover {
+  color: #740001; background: rgba(184, 145, 70, 0.15);
+}
+
+.hint { color: var(--danger); font-size: .85rem; margin-top: 4px; min-height: 1.2em; }
+.row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 20px; font-size: .9rem; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 0; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--brand); }
+a { color: var(--brand); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+body[data-variant="spell"] .check {
+  font-family: "EB Garamond", serif; font-size: 1rem; color: #432a18;
+}
+body[data-variant="spell"] .check input { accent-color: #740001; }
+body[data-variant="spell"] a {
+  color: #740001; font-family: "Cinzel", serif; font-weight: 700;
+  font-size: .8rem; text-decoration: none; border-bottom: 1px dotted currentColor;
+}
+
+/* Submit Button: Standard & Wax Seal */
+.submit {
+  width: 100%; padding: 13px 16px; font: inherit; font-weight: 700; border: none; cursor: pointer;
+  background: var(--brand); color: var(--brand-text); border-radius: calc(var(--radius) - 2px);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all .2s ease;
+}
+body[data-variant="warm"] .submit { border-radius: 999px; }
+.submit:disabled { opacity: .7; cursor: progress; }
+
+/* 3D Wax Seal Button in Spellbound Mode */
+body[data-variant="spell"] .submit {
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 800; font-size: 1.05rem;
+  letter-spacing: .12em; text-transform: uppercase;
+  border: 2px solid #deb860;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #740001 0%, #3e0b12 100%);
+  color: #fdf2d0;
+  box-shadow:
+    0 4px 0 #200509,
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 230, 160, 0.4);
+  padding: 14px 20px;
+}
+body[data-variant="spell"] .submit:hover:not(:disabled) {
+  filter: brightness(1.15);
+  box-shadow:
+    0 5px 0 #200509,
+    0 10px 25px rgba(211, 166, 37, 0.45),
+    inset 0 1px 0 rgba(255, 240, 190, 0.6);
+  transform: translateY(-2px);
+}
+body[data-variant="spell"] .submit:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #200509, 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2.5px solid currentColor; border-right-color: transparent;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Alerts */
+.alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: .9rem; display: none; }
+.alert.show { display: block; }
+.alert.error { background: var(--danger-soft); color: var(--danger); }
+.alert.ok { background: var(--ok-soft); color: var(--ok); }
+body[data-variant="spell"] .alert.error { background: rgba(142, 25, 25, 0.12); color: #851212; border: 1px solid #a63232; font-family: "EB Garamond", serif; }
+body[data-variant="spell"] .alert.ok { background: rgba(25, 98, 50, 0.12); color: #11572b; border: 1px solid #288448; font-family: "EB Garamond", serif; }
+
+.note { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+.demo { margin-top: 12px; font-size: .8rem; color: var(--muted); }
+code { background: var(--brand-soft); padding: 1px 6px; border-radius: 6px; }
+
+body[data-variant="spell"] .note {
+  border-top: 1px dashed #c49d48; text-align: center; color: #6d5137; font-family: "EB Garamond", serif;
+}
+body[data-variant="spell"] .demo { text-align: center; color: #7a5f45; font-family: "EB Garamond", serif; }
+
+/* ==========================================================================
+   SUCCESS MODAL: WELCOME SCROLL
+   ========================================================================== */
+.banner {
+  display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 50; width: min(92vw, 480px); padding: 36px 32px; text-align: center;
+  background: #fdf6e7;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,0.7), transparent 60%),
+    linear-gradient(145deg, #fbf3df 0%, #f6e8c4 50%, #ecd79f 100%);
+  border: 2px solid #b89146; border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 225, 140, 0.4), 0 30px 80px rgba(0, 0, 0, 0.95);
+}
+.stage.opening .banner { display: block; animation: bannerRise .8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.stage.opening .card { opacity: 0; transform: scale(0.92) translateY(20px); pointer-events: none; }
+@keyframes bannerRise {
+  from { opacity: 0; transform: translate(-50%, -42%) scale(0.85); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.banner h2 {
+  font-family: var(--display); font-size: 1.45rem; color: #2e1a0e; margin: 10px 0 6px;
+}
+.banner p {
+  font-family: "EB Garamond", serif; font-size: 1.05rem; color: #523720; margin: 0 0 20px; line-height: 1.6;
+}
+.banner .submit { width: auto; margin: 0 auto; padding: 12px 28px; }
+
+/* Responsive Adjustments */
+@media (max-width: 800px) {
+  body[data-variant="split"] .stage { grid-template-columns: 1fr; }
+  body[data-variant="split"] .panel { display: none; }
+  body[data-variant="split"] .card { padding: 0; }
+}
+@media (max-width: 500px) {
+  .card { padding: 26px 18px 22px; }
+  .school-title { font-size: 1.1rem; }
+}
+</style>
+</head>
+
+<body data-variant="spell">
+
+<!-- PROTOTYPE CONTROLS TOOLBAR -->
+<div class="toolbar" role="region" aria-label="Kawalan Prototaip">
+  <div class="group">
+    <span class="label">Pilihan Gaya:</span>
+    <button type="button" data-variant-btn="spell" aria-pressed="true">✨ D. Meja Guru (Spellbound)</button>
+    <button type="button" data-variant-btn="clean" aria-pressed="false">A. Clean</button>
+    <button type="button" data-variant-btn="split" aria-pressed="false">B. Split</button>
+    <button type="button" data-variant-btn="warm" aria-pressed="false">C. Warm</button>
+  </div>
+  <div class="group">
+    <button type="button" id="soundToggle" class="sound-toggle-btn" aria-label="Bunyi Sihir">
+      <span id="soundIcon">🔊</span> <span id="soundLabel">Bunyi: Aktif</span>
+    </button>
+    <span class="label">Bahasa:</span>
+    <button type="button" data-lang-btn="ms" aria-pressed="true">BM</button>
+    <button type="button" data-lang-btn="en" aria-pressed="false">EN</button>
+    <span class="label">Tema:</span>
+    <button type="button" data-theme-btn="auto" aria-pressed="true">Auto</button>
+    <button type="button" data-theme-btn="light" aria-pressed="false">Cerah</button>
+    <button type="button" data-theme-btn="dark" aria-pressed="false">Gelap</button>
+  </div>
+</div>
+
+<!-- MAIN STAGE -->
+<main class="stage" id="stage">
+
+  <!-- Wand Cursor Sparks Canvas -->
+  <canvas id="wandCanvas"></canvas>
+
+  <!-- Variant B Split Screen Panel -->
+  <aside class="panel" aria-hidden="true">
+    <div class="brand-standard"><span class="logo-standard">MG</span> Meja Guru</div>
+    <div>
+      <h2 data-i18n="panelTitle"></h2>
+      <p data-i18n="panelText"></p>
+      <ul>
+        <li data-i18n="panelPoint1"></li>
+        <li data-i18n="panelPoint2"></li>
+        <li data-i18n="panelPoint3"></li>
+      </ul>
+    </div>
+    <small data-i18n="disclaimer"></small>
+  </aside>
+
+  <!-- Main Login Pane -->
+  <section class="pane" id="pane">
+    <div class="card" id="loginCard">
+
+      <!-- Antique Brass Corners (Spellbound Mode) -->
+      <div class="magic-only">
+        <div class="corner-ornament top-left" aria-hidden="true"></div>
+        <div class="corner-ornament top-right" aria-hidden="true"></div>
+        <div class="corner-ornament bottom-left" aria-hidden="true"></div>
+        <div class="corner-ornament bottom-right" aria-hidden="true"></div>
+      </div>
+
+      <!-- Standard Logo (for Clean, Split, Warm) -->
+      <div class="standard-only">
+        <div class="brand-standard"><span class="logo-standard" aria-hidden="true">MG</span><span>Meja Guru</span></div>
+      </div>
+
+      <!-- Meja Guru Crest & Official Seal -->
+      <div class="magic-only">
+        <div class="crest-wrap">
+          <div class="crest-bezel">
+            <img src="./assets/meja_guru_logo.jpg" alt="Lencana Meja Guru: burung hantu, pen dan buku" class="crest-img">
+          </div>
+          <h2 class="school-title">Meja Guru</h2>
+          <div class="school-sub" data-i18n="schoolSub"></div>
+          <div class="school-motto" data-i18n="motto"></div>
+        </div>
+      </div>
+
+      <!-- Card Title & Subtitle -->
+      <h1 data-i18n="title"></h1>
+      <p class="sub" data-i18n="subtitle"></p>
+
+      <!-- Alert Box -->
+      <div id="alert" class="alert" role="alert" aria-live="assertive"></div>
+
+      <!-- Login Form -->
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="email">
+            <span data-i18n="email"></span>
+            <span class="magic-only" aria-hidden="true">📜</span>
+          </label>
+          <div class="control">
+            <input id="email" name="email" type="email" autocomplete="username" inputmode="email"
+                   aria-describedby="email-hint" placeholder="cikgu.aminah@contoh.edu.my" required>
+          </div>
+          <div id="email-hint" class="hint"></div>
+        </div>
+
+        <div class="field">
+          <label for="password">
+            <span data-i18n="password"></span>
+            <span class="magic-only" aria-hidden="true">🗝️</span>
+          </label>
+          <div class="control">
+            <input id="password" name="password" type="password" autocomplete="current-password"
+                   aria-describedby="password-hint" placeholder="••••••••" required>
+            <button type="button" id="toggle" class="toggle" aria-controls="password">
+              <span id="toggle-icon">👁️</span> <span id="toggle-text"></span>
+            </button>
+          </div>
+          <div id="password-hint" class="hint"></div>
+        </div>
+
+        <div class="row">
+          <label class="check">
+            <input type="checkbox" name="remember" id="remember">
+            <span data-i18n="remember"></span>
+          </label>
+          <a href="#" id="forgot" data-i18n="forgot"></a>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="submit" class="submit">
+          <span id="submit-label"></span>
+        </button>
+      </form>
+
+      <p class="note" data-i18n="note"></p>
+      <p class="demo" data-i18n-html="demo"></p>
+    </div>
+  </section>
+
+  <!-- DOOR OPENED BANNER -->
+  <div class="banner" id="banner" role="status">
+    <div class="crest-bezel" style="width: 80px; height: 80px; margin: 0 auto 14px;">
+      <img src="./assets/meja_guru_logo.jpg" alt="Lencana Meja Guru" class="crest-img">
+    </div>
+    <h2 data-i18n="successTitle">Pintu Terbuka!</h2>
+    <p data-i18n="success"></p>
+    <button type="button" id="replay" class="submit">
+      <span data-i18n="replay"></span>
+    </button>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+/* ==========================================================================
+   BILINGUAL LOCALIZATION STRINGS
+   ========================================================================== */
+const TEXT = {
+  ms: {
+    title: 'Log Masuk Guru',
+    subtitle: 'Gunakan akaun rasmi yang dibekalkan oleh pentadbir sekolah anda.',
+    email: 'Emel Rasmi',
+    password: 'Kata Laluan',
+    remember: 'Ingat saya dalam peranti ini',
+    forgot: 'Lupa kata laluan?',
+    submit: 'Log Masuk',
+    submitting: 'Sedang log masuk…',
+    show: 'Tunjuk',
+    hide: 'Sembunyi',
+    replay: 'Tutup Semula Pintu',
+    emailRequired: 'Sila masukkan alamat emel anda.',
+    emailInvalid: 'Format emel tidak sah.',
+    passwordRequired: 'Sila masukkan kata laluan anda.',
+    badCredentials: 'Emel atau kata laluan tidak betul.',
+    successTitle: 'Berjaya Log Masuk!',
+    success: 'Pintu gerbang istana telah terbuka. Anda kini dibenarkan memasuki Papan Tugas Meja Guru.',
+    forgotInfo: 'Hubungi pentadbir sekolah anda untuk menetapkan semula kata laluan.',
+    note: 'Tiada pendaftaran sendiri. Akaun dicipta oleh pentadbir sekolah.',
+    schoolSub: 'Papan Tugas Guru • Teacher’s Desk',
+    motto: 'Arahan boleh menunggu pagi.',
+    demo: 'Demo: kata laluan <code>demo1234</code> berjaya membuka pintu; yang lain gagal.',
+    panelTitle: 'Tugas yang menghormati masa guru.',
+    panelText: 'Arahan selepas waktu bekerja dipegang sehingga pagi hari bekerja yang seterusnya.',
+    panelPoint1: 'Setiap tugas ada pemilik, tarikh akhir dan status',
+    panelPoint2: 'Amaran jika tarikh akhir tidak realistik',
+    panelPoint3: 'Bukti kerja tanpa laporan tambahan',
+    disclaimer: 'Projek portfolio bebas Meja Guru. Fiksyen & demonstrasi sahaja.'
+  },
+  en: {
+    title: 'Teacher Sign In',
+    subtitle: 'Use the official credentials dispatched by your school administrator.',
+    email: 'Official Email',
+    password: 'Password',
+    remember: 'Remember me on this device',
+    forgot: 'Forgot password?',
+    submit: 'Sign In',
+    submitting: 'Signing in…',
+    show: 'Show',
+    hide: 'Hide',
+    replay: 'Close the Gate',
+    emailRequired: 'Please enter your email address.',
+    emailInvalid: 'That email format is not valid.',
+    passwordRequired: 'Please enter your password.',
+    badCredentials: 'Incorrect email or password.',
+    successTitle: 'Signed In Successfully!',
+    success: 'The enchanted doors swing open. Welcome to the Meja Guru Teacher Board.',
+    forgotInfo: 'Contact your school administrator to reset your password.',
+    note: 'There is no self sign-up. Accounts are created by your administrator.',
+    schoolSub: 'Teacher’s Desk',
+    motto: 'Instructions can wait for morning.',
+    demo: 'Demo: password <code>demo1234</code> succeeds; anything else fails.',
+    panelTitle: 'Tasks that respect teachers’ time.',
+    panelText: 'Instructions sent after working hours are held until the next working morning.',
+    panelPoint1: 'Every task has an owner, deadline and status',
+    panelPoint2: 'A warning when a deadline is unrealistic',
+    panelPoint3: 'Evidence of work with no extra reporting',
+    disclaimer: 'Meja Guru independent portfolio prototype. Fictional demo.'
+  }
+};
+
+const SPELL_TEXT = {
+  ms: {
+    title: 'Buka Pintu Meja Guru',
+    subtitle: 'Masukkan kelayakan staf anda untuk melangkah masuk ke meja anda.',
+    email: 'Alamat Emel Rasmi',
+    password: 'Kata Laluan Rahsia',
+    remember: 'Ingat saya dalam peranti ini',
+    forgot: 'Lupa kata laluan?',
+    submit: '⚡ Buka Pintu • Log Masuk',
+    submitting: 'Sedang membuka pintu…',
+    replay: 'Tutup Semula Pintu',
+    badCredentials: 'Emel atau kata laluan tidak betul.',
+    successTitle: 'Pintu Terbuka!',
+    success: 'Pintu Meja Guru terbuka luas. Selamat datang ke Papan Tugas anda.',
+    forgotInfo: 'Hubungi pentadbir sekolah anda untuk menetapkan semula kata laluan.'
+  },
+  en: {
+    title: 'Open the Door to Your Desk',
+    subtitle: 'Enter your staff credentials to step up to your desk.',
+    email: 'Official Email',
+    password: 'Secret Password',
+    remember: 'Remember me on this device',
+    forgot: 'Forgot password?',
+    submit: '⚡ Open the Door • Sign In',
+    submitting: 'Opening the door…',
+    replay: 'Close the Door',
+    badCredentials: 'Incorrect email or password.',
+    successTitle: 'The Door Is Open!',
+    success: 'The Meja Guru door swings open. Welcome to your Task Board.',
+    forgotInfo: 'Contact your school administrator to reset your password.'
+  }
+};
+
+/* ==========================================================================
+   APPLICATION STATE
+   ========================================================================== */
+const state = {
+  lang: 'ms',
+  variant: 'spell',
+  showPassword: false,
+  loading: false,
+  soundEnabled: true
+};
+
+const $ = (id) => document.getElementById(id);
+const form = $('form');
+const alertBox = $('alert');
+
+function t(key) {
+  if (state.variant === 'spell' && SPELL_TEXT[state.lang] && SPELL_TEXT[state.lang][key]) {
+    return SPELL_TEXT[state.lang][key];
+  }
+  return TEXT[state.lang][key] || '';
+}
+
+/* ==========================================================================
+   WEB AUDIO API SYNTHESIZER
+   ========================================================================== */
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!state.soundEnabled) return null;
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) audioCtx = new AudioContextClass();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playSparkleSound() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+  notes.forEach((freq, idx) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+    gain.gain.setValueAtTime(0.06, now + idx * 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.05 + 0.4);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + idx * 0.05);
+    osc.stop(now + idx * 0.05 + 0.45);
+  });
+}
+
+function playUnlockSound() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const bass = ctx.createOscillator();
+  const bassGain = ctx.createGain();
+  bass.type = 'triangle';
+  bass.frequency.setValueAtTime(130.81, now);
+  bassGain.gain.setValueAtTime(0.3, now);
+  bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+  bass.connect(bassGain);
+  bassGain.connect(ctx.destination);
+  bass.start(now);
+  bass.stop(now + 2.6);
+
+  const chord = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+  chord.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+    gain.gain.setValueAtTime(0.08, now + i * 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + i * 0.08);
+    osc.stop(now + 2.3);
+  });
+}
+
+function playSoftClick() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(700, now);
+  osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+  gain.gain.setValueAtTime(0.04, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.05);
+}
+
+/* ==========================================================================
+   WAND SPARK PARTICLE SYSTEM
+   ========================================================================== */
+const canvas = $('wandCanvas');
+let ctx = canvas ? canvas.getContext('2d') : null;
+let particles = [];
+
+function resizeCanvas() {
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class SparkParticle {
+  constructor(x, y, isWand = false) {
+    this.x = x;
+    this.y = y;
+    this.isWand = isWand;
+    this.radius = isWand ? Math.random() * 2.8 + 1.2 : Math.random() * 2 + 0.6;
+    this.colorHue = 42; // Pure golden sparkles
+    this.life = 1;
+    this.decay = isWand ? Math.random() * 0.025 + 0.02 : Math.random() * 0.008 + 0.004;
+    this.vx = (Math.random() - 0.5) * (isWand ? 1.6 : 0.8);
+    this.vy = isWand ? (Math.random() - 0.5) * 1.6 : -(Math.random() * 0.9 + 0.3);
+    this.alpha = isWand ? 0.9 : Math.random() * 0.6 + 0.2;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.decay;
+  }
+  draw(context) {
+    if (this.life <= 0) return;
+    context.save();
+    context.globalAlpha = this.life * this.alpha;
+    context.fillStyle = `hsl(${this.colorHue}, 90%, 75%)`;
+    context.shadowBlur = 8;
+    context.shadowColor = `hsl(${this.colorHue}, 100%, 65%)`;
+    context.beginPath();
+    context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+}
+
+function animateParticles() {
+  if (ctx && canvas && state.variant === 'spell') {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (particles.length < 35 && Math.random() < 0.2) {
+      particles.push(new SparkParticle(Math.random() * window.innerWidth, window.innerHeight + 10, false));
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      particles[i].update();
+      particles[i].draw(ctx);
+      if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+  }
+  requestAnimationFrame(animateParticles);
+}
+requestAnimationFrame(animateParticles);
+
+window.addEventListener('mousemove', (e) => {
+  if (state.variant !== 'spell') return;
+  for (let i = 0; i < 2; i++) {
+    particles.push(new SparkParticle(e.clientX, e.clientY, true));
+  }
+});
+
+/* ==========================================================================
+   RENDER & UI UPDATES
+   ========================================================================== */
+function render() {
+  document.documentElement.lang = state.lang;
+  document.body.dataset.variant = state.variant;
+
+  // Update text
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+
+  // Inputs placeholder
+  $('email').placeholder = 'cikgu.aminah@contoh.edu.my';
+
+  // Password toggle text
+  $('toggle-text').textContent = state.showPassword ? t('hide') : t('show');
+  $('toggle-icon').textContent = state.showPassword ? (state.variant === 'spell' ? '🔮' : '🙈') : (state.variant === 'spell' ? '👁️' : '👁️');
+
+  // Submit button text
+  $('submit-label').textContent = state.loading ? t('submitting') : t('submit');
+
+  // Toolbar active states
+  document.querySelectorAll('[data-lang-btn]').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.langBtn === state.lang));
+  });
+  document.querySelectorAll('[data-variant-btn]').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.variantBtn === state.variant));
+  });
+}
+
+function showAlert(kind, message) {
+  alertBox.className = `alert show ${kind}`;
+  alertBox.textContent = message;
+}
+
+function clearAlert() {
+  alertBox.className = 'alert';
+  alertBox.textContent = '';
+}
+
+function setFieldError(inputId, hintId, message) {
+  const input = $(inputId);
+  input.setAttribute('aria-invalid', message ? 'true' : 'false');
+  $(hintId).textContent = message || '';
+}
+
+function validate() {
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  let emailMsg = '';
+  if (!email) emailMsg = t('emailRequired');
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) emailMsg = t('emailInvalid');
+  const passwordMsg = password ? '' : t('passwordRequired');
+
+  setFieldError('email', 'email-hint', emailMsg);
+  setFieldError('password', 'password-hint', passwordMsg);
+
+  if (emailMsg) $('email').focus();
+  else if (passwordMsg) $('password').focus();
+  return !emailMsg && !passwordMsg;
+}
+
+function openGates() {
+  $('stage').classList.add('opening');
+  $('pane').inert = true;
+  playUnlockSound();
+  setTimeout(() => $('replay').focus(), 800);
+}
+
+function resetGates() {
+  $('stage').classList.remove('opening');
+  $('pane').inert = false;
+  playSoftClick();
+}
+
+function fakeSignIn(password) {
+  return new Promise((resolve) => setTimeout(() => resolve(password === 'demo1234'), 900));
+}
+
+/* ==========================================================================
+   EVENT LISTENERS
+   ========================================================================== */
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (state.loading) return;
+  clearAlert();
+  if (!validate()) return;
+
+  state.loading = true;
+  $('submit').disabled = true;
+  $('submit-label').insertAdjacentHTML('beforebegin', '<span class="spinner" aria-hidden="true"></span>');
+  playSparkleSound();
+  render();
+
+  const ok = await fakeSignIn($('password').value);
+
+  state.loading = false;
+  $('submit').disabled = false;
+  document.querySelector('#submit .spinner')?.remove();
+  render();
+
+  if (ok) {
+    if (state.variant === 'spell') {
+      openGates();
+    } else {
+      showAlert('ok', t('success'));
+    }
+  } else {
+    showAlert('error', t('badCredentials'));
+    $('password').value = '';
+    $('password').focus();
+  }
+});
+
+$('toggle').addEventListener('click', () => {
+  state.showPassword = !state.showPassword;
+  $('password').type = state.showPassword ? 'text' : 'password';
+  playSoftClick();
+  render();
+});
+
+$('forgot').addEventListener('click', (event) => {
+  event.preventDefault();
+  showAlert('ok', t('forgotInfo'));
+  playSparkleSound();
+});
+
+['email', 'password'].forEach((id) => {
+  $(id).addEventListener('input', () => setFieldError(id, `${id}-hint`, ''));
+  $(id).addEventListener('focus', () => playSoftClick());
+});
+
+// Sound Toggle
+$('soundToggle').addEventListener('click', () => {
+  state.soundEnabled = !state.soundEnabled;
+  $('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+  $('soundLabel').textContent = state.soundEnabled ? (state.lang === 'ms' ? 'Bunyi: Aktif' : 'Sound: On') : (state.lang === 'ms' ? 'Bunyi: Nyahaktif' : 'Sound: Muted');
+  if (state.soundEnabled) playSparkleSound();
+});
+
+// Style Variant Buttons (A. Clean, B. Split, C. Warm, D. Spellbound)
+document.querySelectorAll('[data-variant-btn]').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.variant = button.dataset.variantBtn;
+    resetGates();
+    clearAlert();
+    playSoftClick();
+    render();
+  });
+});
+
+// Theme Buttons (Dark, Light, Auto)
+document.querySelectorAll('[data-theme-btn]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const choice = button.dataset.themeBtn;
+    if (choice === 'auto') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.dataset.theme = choice;
+    }
+    document.querySelectorAll('[data-theme-btn]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b === button));
+    });
+    playSoftClick();
+  });
+});
+
+// Language Buttons
+document.querySelectorAll('[data-lang-btn]').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.lang = button.dataset.langBtn;
+    clearAlert();
+    setFieldError('email', 'email-hint', '');
+    setFieldError('password', 'password-hint', '');
+    $('soundLabel').textContent = state.soundEnabled ? (state.lang === 'ms' ? 'Bunyi: Aktif' : 'Sound: On') : (state.lang === 'ms' ? 'Bunyi: Nyahaktif' : 'Sound: Muted');
+    playSoftClick();
+    render();
+  });
+});
+
+$('replay').addEventListener('click', () => {
+  resetGates();
+  $('password').value = '';
+  $('email').focus();
+});
+
+// Initialize on Load
+render();
+</script>
+</body>
+</html>

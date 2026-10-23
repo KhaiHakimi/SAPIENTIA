@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapientia | Satu platform penyelarasan sekolah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./shared.css">
+<style>
+/* DESIGN A: SANCTUM. Immersive hall, medallion logo, parchment cards. Magic scope. */
+:root {
+  --bg: #f1e6c8; --text: #2a1a0e; --muted: #5f4630; --gold: #7a5a16; --line: #c49d48;
+  --band: #1b1410; --band-text: #f1e3bd; --band-muted: #cdbf9d;
+  --card-a: #fbf5e6; --card-b: #efdcae; --card-text: #2c1a0e; --card-muted: #5f4630;
+  --accent: #6e1622; --accent-text: #fdf5e0; --focus: #7a5a16;
+  --tb-bg: #1b1410; --tb-text: #f1e3bd; --tb-line: rgba(201, 162, 74, .45); --tb-accent: #6e1622;
+  --demo-bg: linear-gradient(145deg, var(--card-a), var(--card-b)); --demo-text: var(--card-text);
+  --demo-muted: var(--card-muted); --demo-line: #b89146; --demo-field: #fffcf5; --demo-result-bg: rgba(110, 22, 34, .08);
+  --heading-font: "Cinzel", Georgia, serif; --demo-radius: 8px;
+}
+:root[data-theme="dark"] {
+  --bg: #07060c; --text: #efe4c6; --muted: #b9ad94; --gold: #e0be6a; --line: #8a6a22;
+  --band: #0f0b15; --focus: #e0be6a;
+}
+body { font-family: "EB Garamond", Georgia, serif; font-size: 18px; }
+h1, h2, h3 { font-family: var(--heading-font); font-weight: 700; line-height: 1.2; margin: 0; }
+.wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 6px;
+  font: 800 .95rem/1 "Cinzel", serif; letter-spacing: .1em; text-transform: uppercase; text-decoration: none;
+  border: 2px solid #deb860; background: linear-gradient(135deg, #740001, #3e0b12); color: #fdf2d0;
+  box-shadow: 0 4px 0 #200509, 0 8px 20px rgba(0, 0, 0, .4); transition: transform .2s, filter .2s;
+}
+.btn:hover { transform: translateY(-2px); filter: brightness(1.15); }
+.btn-ghost { background: rgba(10, 7, 22, .45); border-color: rgba(222, 184, 96, .7); box-shadow: none; color: #f6ead0; }
+.btn .ico { width: 1.2em; height: 1.2em; }
+
+/* Nav and hero */
+.hero {
+  position: relative; isolation: isolate; color: #f6ead0; overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(8, 6, 18, .35) 0%, rgba(5, 3, 12, .85) 80%),
+    linear-gradient(to top, rgba(4, 3, 9, .95) 0%, rgba(6, 5, 16, .35) 55%, rgba(8, 6, 20, .6) 100%),
+    url("../login/assets/classroom_bg.jpg") center / cover no-repeat;
+}
+.site-nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font: 800 1.1rem/1 "Cinzel", serif; letter-spacing: .08em; }
+.medal { border-radius: 50%; overflow: hidden; background: #0b0a0e; box-shadow: 0 0 0 2px #c9a24a, 0 0 22px rgba(201, 162, 74, .5); flex: none; }
+.medal img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.03); }
+.brand .medal { width: 44px; height: 44px; }
+.nav-links { display: flex; gap: 26px; align-items: center; }
+.nav-links a { text-decoration: none; font: 600 .78rem/1 "Cinzel", serif; letter-spacing: .1em; text-transform: uppercase; opacity: .9; }
+.nav-links a:hover { color: #e8cd85; }
+.nav-links .nav-cta { padding: 10px 18px; border: 1.5px solid #c9a24a; border-radius: 6px; background: rgba(110, 22, 34, .7); }
+.hero-body { display: grid; justify-items: center; text-align: center; padding: 48px 0 120px; gap: 20px; position: relative; }
+.hero-body .medal { width: clamp(150px, 22vw, 210px); height: clamp(150px, 22vw, 210px); animation: glow 5s ease-in-out infinite; }
+@keyframes glow { 50% { box-shadow: 0 0 0 2px #e8cd85, 0 0 42px rgba(232, 205, 133, .75); } }
+.eyebrow { margin: 0; font: 700 .8rem/1.2 "Cinzel", serif; letter-spacing: .24em; text-transform: uppercase; color: #e8cd85; }
+.hero h1 { font-family: "Cinzel", Georgia, serif; font-weight: 800; letter-spacing: .02em; font-size: clamp(1.8rem, 4.2vw, 3rem); max-width: 26ch; text-shadow: 0 2px 18px rgba(0, 0, 0, .8); }
+.hero h1::after { content: "✦ ✦ ✦"; display: block; margin-top: 14px; font-size: .9rem; letter-spacing: .5em; color: #c9a24a; }
+.hero-sub { margin: 0; max-width: 56ch; font-size: 1.2rem; color: #eadfc3; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 8px; }
+.hero-note { margin: 0; font-style: italic; font-size: .95rem; color: #cdbf9d; }
+.hero-sparks { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+
+/* Tagline ribbon */
+.ribbon { background: var(--band); color: var(--band-text); border-block: 1px solid #8a6a22; text-align: center; padding: 18px 16px; font: 600 1rem/1.4 "Cinzel", serif; letter-spacing: .14em; text-transform: uppercase; }
+.ribbon .orn { color: #e0be6a; margin-inline: 14px; }
+
+/* Sections */
+.section { padding: 84px 0; }
+.section-head { text-align: center; margin-bottom: 44px; display: grid; gap: 10px; justify-items: center; }
+.section-head h2 { font-size: clamp(1.5rem, 3.2vw, 2.2rem); color: var(--text); }
+.section-head h2::after { content: "✦ ✦ ✦"; display: block; margin-top: 10px; font-size: .75rem; letter-spacing: .5em; color: var(--gold); }
+.section-head p { margin: 0; max-width: 56ch; color: var(--muted); font-style: italic; font-size: 1.1rem; }
+
+/* Parchment cards with brass corners */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.card {
+  position: relative; padding: 30px 26px 26px; border-radius: 8px; color: var(--card-text);
+  border: 2px solid #b89146; background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, .85), transparent 60%),
+    linear-gradient(145deg, var(--card-a), var(--card-b));
+  box-shadow: inset 0 0 40px rgba(120, 75, 20, .22), 0 0 18px rgba(211, 166, 37, .25), 0 14px 30px rgba(0, 0, 0, .35);
+  transition: transform .25s;
+}
+.card:hover { transform: translateY(-4px); }
+.card::before, .card::after { content: ""; position: absolute; width: 22px; height: 22px; border: 0 solid #b89146; pointer-events: none; opacity: .85; }
+.card::before { top: 8px; left: 8px; border-width: 3px 0 0 3px; border-top-left-radius: 4px; }
+.card::after { bottom: 8px; right: 8px; border-width: 0 3px 3px 0; border-bottom-right-radius: 4px; }
+.card .ico-wrap { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; color: #fdf2d0; background: linear-gradient(135deg, #740001, #3e0b12); border: 2px solid #deb860; margin-bottom: 14px; }
+.card h3 { font-size: 1.1rem; margin-bottom: 8px; color: #2e1709; }
+.card p { margin: 0; color: var(--card-muted); font-size: 1.02rem; }
+.tag { position: absolute; top: 16px; right: 18px; font: 700 .66rem/1 "Cinzel", serif; letter-spacing: .12em; text-transform: uppercase; color: #7a5a16; border: 1px solid #b89146; padding: 4px 8px; border-radius: 999px; }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-bottom: 40px; counter-reset: step; position: relative; }
+.step { text-align: center; padding: 0 12px; position: relative; }
+.step::before {
+  counter-increment: step; content: counter(step, upper-roman); display: grid; place-items: center; margin: 0 auto 16px;
+  width: 64px; height: 64px; border-radius: 50%; font: 800 1.3rem/1 "Cinzel", serif; color: #e8cd85;
+  border: 2px solid var(--line); background: var(--band); box-shadow: 0 0 18px rgba(201, 162, 74, .3);
+  position: relative; z-index: 1;
+}
+.step:not(:last-child)::after { content: ""; position: absolute; top: 32px; left: calc(50% + 40px); width: calc(100% - 80px + 22px); border-top: 2px dashed var(--line); }
+.step h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--band-text); }
+.step p { margin: 0; color: var(--band-muted); }
+.demo-wrap { max-width: 640px; margin-inline: auto; }
+
+/* Dark band: roles */
+.band { background: var(--band); color: var(--band-text); border-block: 1px solid #8a6a22; }
+.band .section-head h2 { color: #f1e3bd; }
+.band .section-head h2::after { color: #c9a24a; }
+.band .section-head p { color: var(--band-muted); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.grid-4 .card { padding-top: 56px; }
+
+/* Trust */
+.trust { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px 40px; max-width: 920px; margin-inline: auto; }
+.trust-item { display: grid; grid-template-columns: 48px 1fr; gap: 16px; align-items: start; }
+.trust-item .ico-wrap { width: 48px; height: 48px; display: grid; place-items: center; border: 2px solid var(--line); border-radius: 50%; color: var(--gold); }
+.trust-item h3 { font-size: 1rem; margin-bottom: 4px; }
+.trust-item p { margin: 0; color: var(--muted); }
+
+/* Final call to action */
+.cta {
+  position: relative; isolation: isolate; text-align: center; color: #f6ead0; padding: 90px 0; overflow: hidden;
+  background: linear-gradient(rgba(6, 4, 12, .78), rgba(6, 4, 12, .9)), url("../login/assets/classroom_bg.jpg") center / cover no-repeat;
+}
+.cta .wrap { display: grid; justify-items: center; gap: 16px; }
+.cta .medal { width: 96px; height: 96px; }
+.cta h2 { font-family: "Cinzel", Georgia, serif; font-weight: 800; letter-spacing: .02em; font-size: clamp(1.5rem, 3.4vw, 2.3rem); }
+.cta p { margin: 0 0 8px; color: #eadfc3; font-style: italic; font-size: 1.1rem; }
+
+footer { background: #060509; color: #b9ad94; padding: 28px 0; font-size: .92rem; text-align: center; border-top: 1px solid #8a6a22; }
+footer p { margin: 4px 0; }
+
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+@media (max-width: 640px) {
+  body { font-size: 17px; }
+  .grid-3, .grid-4, .trust, .steps { grid-template-columns: 1fr; }
+  .step:not(:last-child)::after { display: none; }
+  .hero-body { padding-bottom: 80px; }
+  .section { padding: 60px 0; }
+  .ribbon .orn { display: none; }
+}
+</style>
+</head>
+<body data-design="a" data-default-theme="dark">
+<a class="skip-link" href="#main" data-i18n="skip"></a>
+<div id="toolbar" class="toolbar" role="region"></div>
+
+<header class="hero">
+  <div class="hero-sparks" data-sparks aria-hidden="true"></div>
+  <div class="wrap">
+    <nav class="site-nav" aria-label="Utama">
+      <a class="brand" href="#top"><span class="medal"><img src="../login/assets/sapientia_logo.jpg" alt=""></span><span>Sapientia</span></a>
+      <div class="nav-links">
+        <a href="#features" data-i18n="navFeatures"></a>
+        <a href="#how" data-i18n="navHow"></a>
+        <a href="#roles" data-i18n="navRoles"></a>
+        <a href="#trust" data-i18n="navTrust"></a>
+        <a class="nav-cta" href="../login/index.html" data-i18n="navLogin"></a>
+      </div>
+    </nav>
+    <div class="hero-body" id="top">
+      <span class="medal"><img src="../login/assets/sapientia_logo.jpg" alt="Lencana Sapientia: burung hantu, pen dan buku"></span>
+      <p class="eyebrow" data-i18n="heroEyebrow"></p>
+      <h1 data-i18n="heroTitle"></h1>
+      <p class="hero-sub" data-i18n="heroSub"></p>
+      <div class="cta-row">
+        <a class="btn" href="../login/index.html"><span data-i18n="heroCta"></span><span data-icon="arrow"></span></a>
+        <a class="btn btn-ghost" href="#how" data-i18n="heroCta2"></a>
+      </div>
+      <p class="hero-note" data-i18n="heroNote"></p>
+    </div>
+  </div>
+</header>
+
+<div class="ribbon" aria-hidden="true"><span class="orn">✦</span><span data-i18n="tagline"></span><span class="orn">✦</span></div>
+
+<main id="main">
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="featuresTitle"></h2>
+        <p data-i18n="featuresSub"></p>
+      </div>
+      <div class="grid-3">
+        <article class="card"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="board"></div><h3 data-i18n="f1t"></h3><p data-i18n="f1d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="hourglass"></div><h3 data-i18n="f2t"></h3><p data-i18n="f2d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="phone"></div><h3 data-i18n="f6t"></h3><p data-i18n="f6d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase2"></span><div class="ico-wrap" data-icon="gauge"></div><h3 data-i18n="f3t"></h3><p data-i18n="f3d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase2"></span><div class="ico-wrap" data-icon="swap"></div><h3 data-i18n="f4t"></h3><p data-i18n="f4d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase3"></span><div class="ico-wrap" data-icon="scroll"></div><h3 data-i18n="f5t"></h3><p data-i18n="f5d"></p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="howTitle"></h2>
+        <p data-i18n="howSub"></p>
+      </div>
+      <div class="steps">
+        <div class="step"><h3 data-i18n="s1t"></h3><p data-i18n="s1d"></p></div>
+        <div class="step"><h3 data-i18n="s2t"></h3><p data-i18n="s2d"></p></div>
+        <div class="step"><h3 data-i18n="s3t"></h3><p data-i18n="s3d"></p></div>
+      </div>
+      <div class="demo-wrap">
+        <form class="demo" id="demo" onsubmit="return false">
+          <h3 data-i18n="demoTitle"></h3>
+          <div class="demo-fields">
+            <label><span data-i18n="demoDay"></span><select id="demoDay"></select></label>
+            <label><span data-i18n="demoTime"></span><input id="demoTime" type="time" value="22:00"></label>
+            <label class="demo-check"><input id="demoUrgent" type="checkbox"><span data-i18n="demoUrgent"></span></label>
+          </div>
+          <p class="demo-result" id="demoResult" role="status" aria-live="polite"></p>
+          <p class="demo-note" data-i18n="demoNote"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="roles">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="rolesTitle"></h2>
+        <p data-i18n="rolesSub"></p>
+      </div>
+      <div class="grid-4">
+        <article class="card"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="user"></div><h3 data-i18n="r1t"></h3><p data-i18n="r1d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase1"></span><div class="ico-wrap" data-icon="school"></div><h3 data-i18n="r2t"></h3><p data-i18n="r2d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase4"></span><div class="ico-wrap" data-icon="book"></div><h3 data-i18n="r3t"></h3><p data-i18n="r3d"></p></article>
+        <article class="card"><span class="tag" data-i18n="phase4"></span><div class="ico-wrap" data-icon="heart"></div><h3 data-i18n="r4t"></h3><p data-i18n="r4d"></p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="trust" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 data-i18n="trustTitle"></h2>
+        <p data-i18n="trustSub"></p>
+      </div>
+      <div class="trust">
+        <div class="trust-item"><div class="ico-wrap" data-icon="eyeoff"></div><div><h3 data-i18n="t1t"></h3><p data-i18n="t1d"></p></div></div>
+        <div class="trust-item"><div class="ico-wrap" data-icon="shield"></div><div><h3 data-i18n="t2t"></h3><p data-i18n="t2d"></p></div></div>
+        <div class="trust-item"><div class="ico-wrap" data-icon="school"></div><div><h3 data-i18n="t3t"></h3><p data-i18n="t3d"></p></div></div>
+        <div class="trust-item"><div class="ico-wrap" data-icon="scroll"></div><div><h3 data-i18n="t4t"></h3><p data-i18n="t4d"></p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <span class="medal"><img src="../login/assets/sapientia_logo.jpg" alt=""></span>
+      <h2 data-i18n="ctaTitle"></h2>
+      <p data-i18n="ctaSub"></p>
+      <a class="btn" href="../login/index.html"><span data-i18n="ctaBtn"></span><span data-icon="arrow"></span></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p data-i18n="footDisclaimer"></p>
+  <p data-i18n="footNote"></p>
+</footer>
+
+<script src="./landing.js"></script>
+</body>
+</html>

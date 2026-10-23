@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapientia • Portal Rasmi Penyelarasan Tugas Pengajar</title>
+<link rel="icon" type="image/jpeg" href="./assets/sapientia_logo.jpg">
+<!-- Google Fonts: Dignified institutional display and ultra-clear modern typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&family=EB+Garamond:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* Without this, width:100% inputs plus padding overflow their card. */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ==========================================================================
+   DESIGN TOKENS & BASE STYLES
+   ========================================================================== */
+:root {
+  --bg: #f5f7fb; --surface: #ffffff; --text: #1b2430; --muted: #5d6877;
+  --border: #d5dae1; --brand: #1f6f6b; --brand-text: #ffffff; --brand-soft: #e3f1f0;
+  --danger: #b3261e; --danger-soft: #fdecea; --ok: #1d6b3a; --ok-soft: #e6f4ea;
+  --focus: #1a5fd1; --radius: 8px; --shadow: 0 6px 24px rgba(20, 30, 45, .08);
+  --font: "Inter", system-ui, -apple-system, sans-serif;
+  --panel-bg: var(--brand); --panel-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171d; --surface: #1b222b; --text: #e8ecf1; --muted: #9aa5b3;
+    --border: #36404c; --brand: #4fb3ad; --brand-text: #0b1a19; --brand-soft: #1f3533;
+    --danger: #f2a09b; --danger-soft: #3a1f1d; --ok: #8fd6a6; --ok-soft: #1c3326;
+    --focus: #7fb0ff; --shadow: none; --panel-bg: #173c3a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171d; --surface: #1b222b; --text: #e8ecf1; --muted: #9aa5b3;
+  --border: #36404c; --brand: #4fb3ad; --brand-text: #0b1a19; --brand-soft: #1f3533;
+  --danger: #f2a09b; --danger-soft: #3a1f1d; --ok: #8fd6a6; --ok-soft: #1c3326;
+  --focus: #7fb0ff; --shadow: none; --panel-bg: #173c3a;
+}
+
+/* Variant B: Split Standard */
+body[data-variant="split"] { --brand: #0f5c8c; --brand-soft: #e1eef7; --panel-bg: #0f3d5e; --radius: 8px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body[data-variant="split"] { --brand: #6db6ea; --brand-text: #08202f; --brand-soft: #1b2f3f; --panel-bg: #0c2a40; }
+}
+:root[data-theme="dark"] body[data-variant="split"] { --brand: #6db6ea; --brand-text: #08202f; --brand-soft: #1b2f3f; --panel-bg: #0c2a40; }
+
+/* Variant C: Warm */
+body[data-variant="warm"] { --bg: #fff6e9; --brand: #c4561b; --brand-soft: #fde6d4; --radius: 18px; --border: #ecd3b8; --muted: #6b5a49; --text: #2b2118; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body[data-variant="warm"] { --bg: #1f1812; --surface: #2a2119; --brand: #f09a62; --brand-text: #2a1608; --brand-soft: #3d2a1c; --border: #4a3a2b; --muted: #bda78f; --text: #f6ebdd; }
+}
+:root[data-theme="dark"] body[data-variant="warm"] { --bg: #1f1812; --surface: #2a2119; --brand: #f09a62; --brand-text: #2a1608; --brand-soft: #3d2a1c; --border: #4a3a2b; --muted: #bda78f; --text: #f6ebdd; }
+
+/* ==========================================================================
+   VARIANT D: PROFESSIONAL MAGIC CLASSROOM + SPLIT INSTITUTIONAL
+   ========================================================================== */
+body[data-variant="spell"] {
+  --bg: #090710;
+  --surface: #fbf5e9;
+  --text: #1f160e;
+  --muted: #5e4a36;
+  --border: #c49d48;
+  --brand: #5a141e;
+  --brand-text: #fdf6e4;
+  --brand-soft: rgba(196, 157, 72, 0.16);
+  --danger: #9a1a1a;
+  --danger-soft: #fae4e4;
+  --ok: #156335;
+  --ok-soft: #d5eedd;
+  --focus: #c49d48;
+  --radius: 8px;
+  --font: "Inter", system-ui, -apple-system, sans-serif;
+  --heading: "Cinzel", Georgia, serif;
+  font-size: 16px;
+
+  /* MAGIC CLASSROOM BACKDROP */
+  background-color: #08060e;
+  background-image: 
+    radial-gradient(ellipse at 50% 35%, rgba(12, 9, 20, 0.25) 0%, rgba(6, 4, 10, 0.8) 75%, #030206 100%),
+    linear-gradient(to top, rgba(4,3,8,0.96) 0%, rgba(8,6,15,0.2) 50%, rgba(10,7,18,0.52) 100%),
+    url("./assets/classroom_bg.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* ==========================================================================
+   VARIANT D: SUNLIT ACADEMIA (LIGHT THEME FOR MAGIC INSTITUTIONAL)
+   ========================================================================== */
+:root[data-theme="light"] body[data-variant="spell"],
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) body[data-variant="spell"] {
+    --bg: #f8f4ec;
+    --surface: #ffffff;
+    --text: #22150a;
+    --muted: #6b553e;
+    --border: #c49d48;
+    --brand: #6e1925;
+    --brand-text: #fffdf8;
+    --brand-soft: rgba(196, 157, 72, 0.14);
+
+    background-color: #f5efe3;
+    background-image: 
+      radial-gradient(ellipse at 50% 20%, rgba(255, 253, 248, 0.88) 0%, rgba(246, 238, 222, 0.93) 60%, rgba(235, 222, 198, 0.98) 100%),
+      linear-gradient(to top, rgba(243, 233, 214, 0.96) 0%, rgba(255, 250, 240, 0.65) 50%, rgba(238, 226, 204, 0.88) 100%),
+      url("./assets/classroom_bg.jpg");
+    color: #22150a;
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .toolbar {
+    background: rgba(255, 252, 245, 0.94);
+    color: #3b2815;
+    border-bottom: 1px solid rgba(196, 157, 72, 0.4);
+    box-shadow: 0 4px 18px rgba(120, 95, 45, 0.1);
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .toolbar .label { color: #7d5f2a; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .toolbar button {
+    color: #3a2714; border-color: rgba(196, 157, 72, 0.45); background: rgba(255, 255, 255, 0.6);
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .toolbar button:hover {
+    background: rgba(196, 157, 72, 0.2); border-color: #9c731e;
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .toolbar button[aria-pressed="true"] {
+    background: linear-gradient(135deg, #6e1925, #420a12); color: #fdf5e2; border-color: #c49d48;
+    box-shadow: 0 2px 8px rgba(110, 25, 37, 0.25);
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .magic-split-panel {
+    background: linear-gradient(135deg, rgba(255, 253, 247, 0.93) 0%, rgba(247, 239, 224, 0.9) 100%);
+    border-right: 1.5px solid rgba(196, 157, 72, 0.38);
+    box-shadow: 12px 0 36px rgba(110, 85, 35, 0.08);
+    color: #26170d;
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .magic-split-panel .brand-text-wrap h2 { color: #2e1a0d; text-shadow: none; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .magic-split-panel .brand-text-wrap p { color: #7a5c2d; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .magic-split-panel h1 { color: #221408; text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8); }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .magic-split-panel .lead-desc { color: #55412e; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .pillar-card { background: rgba(255, 255, 255, 0.76); border-color: rgba(196, 157, 72, 0.32); box-shadow: 0 2px 8px rgba(120, 95, 45, 0.06); }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .pillar-card:hover { background: rgba(255, 255, 255, 0.96); border-color: rgba(196, 157, 72, 0.65); box-shadow: 0 4px 16px rgba(120, 95, 45, 0.12); }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .pillar-icon-box { background: rgba(196, 157, 72, 0.18); border-color: rgba(196, 157, 72, 0.45); color: #7d5718; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .pillar-body strong { color: #261609; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .pillar-body span { color: #5e4b37; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .magic-split-panel .footer-meta { border-color: rgba(196, 157, 72, 0.3); color: #6e573e; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .card {
+    background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 1) 0%, transparent 68%), linear-gradient(160deg, #ffffff 0%, #faf4e8 60%, #f4ecdc 100%);
+    border: 1.5px solid #c8a355; color: #221408;
+    box-shadow: inset 0 0 35px rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.8), 0 8px 24px rgba(120, 90, 40, 0.12), 0 22px 55px rgba(80, 55, 20, 0.14);
+  }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .card-form-header h2 { color: #221408; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .card-form-header p { color: #624b33; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .btn-sso { background: #ffffff; border-color: #d6c19a; color: #291a0d; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .btn-sso:hover { background: #fdfaf3; border-color: #6e1925; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] input[type="email"],
+  :root:not([data-theme="dark"]) body[data-variant="spell"] input[type="password"] { background: #ffffff; border-color: #ccb688; color: #191007; }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] input[type="email"]:focus,
+  :root:not([data-theme="dark"]) body[data-variant="spell"] input[type="password"]:focus { border-color: #6e1925; box-shadow: 0 0 0 3px rgba(196, 157, 72, 0.35); }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .compliance-badge { color: #6e563d; background: rgba(196, 157, 72, 0.1); border: 1px solid rgba(196, 157, 72, 0.28); }
+  :root:not([data-theme="dark"]) body[data-variant="spell"] .banner {
+    background: linear-gradient(160deg, #ffffff 0%, #faf5eb 60%, #f4ecdc 100%);
+    border-color: #c49d48;
+    box-shadow: 0 20px 60px rgba(100, 75, 30, 0.25);
+    color: #22150a;
+  }
+}
+
+:root[data-theme="light"] body[data-variant="spell"] {
+  --bg: #f8f4ec;
+  --surface: #ffffff;
+  --text: #22150a;
+  --muted: #6b553e;
+  --border: #c49d48;
+  --brand: #6e1925;
+  --brand-text: #fffdf8;
+  --brand-soft: rgba(196, 157, 72, 0.14);
+
+  background-color: #f5efe3;
+  background-image: 
+    radial-gradient(ellipse at 50% 20%, rgba(255, 253, 248, 0.88) 0%, rgba(246, 238, 222, 0.93) 60%, rgba(235, 222, 198, 0.98) 100%),
+    linear-gradient(to top, rgba(243, 233, 214, 0.96) 0%, rgba(255, 250, 240, 0.65) 50%, rgba(238, 226, 204, 0.88) 100%),
+    url("./assets/classroom_bg.jpg");
+  color: #22150a;
+}
+:root[data-theme="light"] body[data-variant="spell"] .toolbar {
+  background: rgba(255, 252, 245, 0.94);
+  color: #3b2815;
+  border-bottom: 1px solid rgba(196, 157, 72, 0.4);
+  box-shadow: 0 4px 18px rgba(120, 95, 45, 0.1);
+}
+:root[data-theme="light"] body[data-variant="spell"] .toolbar .label { color: #7d5f2a; }
+:root[data-theme="light"] body[data-variant="spell"] .toolbar button {
+  color: #3a2714; border-color: rgba(196, 157, 72, 0.45); background: rgba(255, 255, 255, 0.6);
+}
+:root[data-theme="light"] body[data-variant="spell"] .toolbar button:hover {
+  background: rgba(196, 157, 72, 0.2); border-color: #9c731e;
+}
+:root[data-theme="light"] body[data-variant="spell"] .toolbar button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #6e1925, #420a12); color: #fdf5e2; border-color: #c49d48;
+  box-shadow: 0 2px 8px rgba(110, 25, 37, 0.25);
+}
+:root[data-theme="light"] body[data-variant="spell"] .magic-split-panel {
+  background: linear-gradient(135deg, rgba(255, 253, 247, 0.93) 0%, rgba(247, 239, 224, 0.9) 100%);
+  border-right: 1.5px solid rgba(196, 157, 72, 0.38);
+  box-shadow: 12px 0 36px rgba(110, 85, 35, 0.08);
+  color: #26170d;
+}
+:root[data-theme="light"] body[data-variant="spell"] .magic-split-panel .brand-text-wrap h2 { color: #2e1a0d; text-shadow: none; }
+:root[data-theme="light"] body[data-variant="spell"] .magic-split-panel .brand-text-wrap p { color: #7a5c2d; }
+:root[data-theme="light"] body[data-variant="spell"] .magic-split-panel h1 { color: #221408; text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8); }
+:root[data-theme="light"] body[data-variant="spell"] .magic-split-panel .lead-desc { color: #55412e; }
+:root[data-theme="light"] body[data-variant="spell"] .pillar-card { background: rgba(255, 255, 255, 0.76); border-color: rgba(196, 157, 72, 0.32); box-shadow: 0 2px 8px rgba(120, 95, 45, 0.06); }
+:root[data-theme="light"] body[data-variant="spell"] .pillar-card:hover { background: rgba(255, 255, 255, 0.96); border-color: rgba(196, 157, 72, 0.65); box-shadow: 0 4px 16px rgba(120, 95, 45, 0.12); }
+:root[data-theme="light"] body[data-variant="spell"] .pillar-icon-box { background: rgba(196, 157, 72, 0.18); border-color: rgba(196, 157, 72, 0.45); color: #7d5718; }
+:root[data-theme="light"] body[data-variant="spell"] .pillar-body strong { color: #261609; }
+:root[data-theme="light"] body[data-variant="spell"] .pillar-body span { color: #5e4b37; }
+:root[data-theme="light"] body[data-variant="spell"] .magic-split-panel .footer-meta { border-color: rgba(196, 157, 72, 0.3); color: #6e573e; }
+:root[data-theme="light"] body[data-variant="spell"] .card {
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 1) 0%, transparent 68%), linear-gradient(160deg, #ffffff 0%, #faf4e8 60%, #f4ecdc 100%);
+  border: 1.5px solid #c8a355; color: #221408;
+  box-shadow: inset 0 0 35px rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.8), 0 8px 24px rgba(120, 90, 40, 0.12), 0 22px 55px rgba(80, 55, 20, 0.14);
+}
+:root[data-theme="light"] body[data-variant="spell"] .card-form-header h2 { color: #221408; }
+:root[data-theme="light"] body[data-variant="spell"] .card-form-header p { color: #624b33; }
+:root[data-theme="light"] body[data-variant="spell"] .btn-sso { background: #ffffff; border-color: #d6c19a; color: #291a0d; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+:root[data-theme="light"] body[data-variant="spell"] .btn-sso:hover { background: #fdfaf3; border-color: #6e1925; }
+:root[data-theme="light"] body[data-variant="spell"] input[type="email"],
+:root[data-theme="light"] body[data-variant="spell"] input[type="password"] { background: #ffffff; border-color: #ccb688; color: #191007; }
+:root[data-theme="light"] body[data-variant="spell"] input[type="email"]:focus,
+:root[data-theme="light"] body[data-variant="spell"] input[type="password"]:focus { border-color: #6e1925; box-shadow: 0 0 0 3px rgba(196, 157, 72, 0.35); }
+:root[data-theme="light"] body[data-variant="spell"] .compliance-badge { color: #6e563d; background: rgba(196, 157, 72, 0.1); border: 1px solid rgba(196, 157, 72, 0.28); }
+:root[data-theme="light"] body[data-variant="spell"] .banner {
+  background: linear-gradient(160deg, #ffffff 0%, #faf5eb 60%, #f4ecdc 100%);
+  border-color: #c49d48;
+  box-shadow: 0 20px 60px rgba(100, 75, 30, 0.25);
+  color: #22150a;
+}
+html, body { min-height: 100%; margin: 0; }
+body { font-family: var(--font); background-color: var(--bg); color: var(--text); line-height: 1.5; }
+
+/* ==========================================================================
+   PROTOTYPE TOOLBAR (CLEAN, ICONIC, PROFESSIONAL)
+   ========================================================================== */
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+  padding: 8px 18px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: .85rem;
+  position: relative; z-index: 100;
+}
+.toolbar .group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.toolbar button {
+  font-family: inherit; font-size: .82rem; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer;
+  transition: all .2s ease;
+}
+.toolbar button:hover { background: rgba(120, 100, 70, 0.12); }
+.toolbar button[aria-pressed="true"] { background: var(--brand); color: var(--brand-text); border-color: var(--brand); }
+.toolbar .label { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+
+body[data-variant="spell"] .toolbar {
+  background: rgba(11, 8, 20, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #eeddb2;
+  border-bottom: 1px solid rgba(196, 157, 72, 0.35);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+body[data-variant="spell"] .toolbar .label { color: #caa76b; font-family: var(--font); }
+body[data-variant="spell"] .toolbar button {
+  color: #eeddb2; border-color: rgba(196, 157, 72, 0.35); background: rgba(255,255,255,0.04);
+}
+body[data-variant="spell"] .toolbar button:hover {
+  background: rgba(196, 157, 72, 0.18); border-color: #d3a625;
+}
+body[data-variant="spell"] .toolbar button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #5a141e, #2e080e);
+  color: #fceecb; border-color: #d3a625;
+  box-shadow: 0 0 10px rgba(211, 166, 37, 0.35);
+}
+
+.sound-toggle-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.sound-toggle-btn svg { display: block; }
+
+/* ==========================================================================
+   STAGE & SPLIT LAYOUT (COMBINED MAGIC CLASSROOM + INSTITUTIONAL)
+   ========================================================================== */
+.stage { min-height: calc(100vh - 49px); display: grid; position: relative; }
+
+/* 2-Column Split */
+body[data-variant="split"] .stage { grid-template-columns: 1fr 1fr; }
+body[data-variant="spell"] .stage { grid-template-columns: 1.15fr 1fr; }
+
+/* Standard Left Showcase Panel */
+.panel { display: none; background: var(--panel-bg); color: var(--panel-text); padding: 48px; flex-direction: column; justify-content: space-between; }
+body[data-variant="split"] .panel { display: flex; }
+.panel h2 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; max-width: 18ch; }
+.panel p { margin: 0; max-width: 40ch; opacity: .9; }
+.panel ul { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.panel li::before { content: "\2713"; margin-right: 10px; font-weight: 700; }
+.panel small { opacity: .75; }
+
+/* ==========================================================================
+   MAGIC CLASSROOM INSTITUTIONAL FEATURE PANEL (LEFT COLUMN)
+   ========================================================================== */
+.magic-split-panel {
+  display: none;
+  background: linear-gradient(to right, rgba(9, 7, 16, 0.9) 0%, rgba(13, 9, 22, 0.8) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-right: 1.5px solid rgba(196, 157, 72, 0.35);
+  padding: 48px 46px;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fdf6e6;
+  position: relative;
+  z-index: 10;
+}
+body[data-variant="spell"] .magic-split-panel { display: flex; }
+
+.magic-split-panel .brand-header {
+  display: flex; align-items: center; gap: 16px;
+}
+.magic-split-panel .school-badge {
+  width: 62px; height: 62px; border-radius: 50%; padding: 2.5px;
+  background: conic-gradient(from 180deg at 50% 50%, #b88628 0deg, #fceda2 90deg, #a67420 180deg, #fdedad 270deg, #b88628 360deg);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), 0 0 16px rgba(212, 175, 55, 0.35);
+  position: relative;
+  transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .3s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.magic-split-panel .school-badge:hover {
+  transform: scale(1.06) rotate(2deg);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.75), 0 0 24px rgba(230, 190, 75, 0.55);
+}
+.magic-split-panel .school-badge img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;
+}
+.magic-split-panel .brand-text-wrap h2 {
+  font-family: var(--heading); font-size: 1.45rem; font-weight: 800; letter-spacing: .07em;
+  color: #fff2d1; margin: 0; text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.magic-split-panel .brand-text-wrap p {
+  font-size: .8rem; font-weight: 600; color: #d0b57e; margin: 3px 0 0; text-transform: uppercase; letter-spacing: .06em;
+}
+
+.magic-split-panel .hero-content {
+  margin: 32px 0;
+}
+
+.magic-split-panel h1 {
+  font-family: var(--heading); font-size: 2rem; font-weight: 800;
+  line-height: 1.25; color: #ffffff; margin: 0 0 12px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+.magic-split-panel .lead-desc {
+  font-size: .95rem; color: #d7c9b1; line-height: 1.6; margin: 0 0 24px; max-width: 48ch;
+}
+
+/* Feature Pillars List */
+.feature-pillars {
+  display: grid; gap: 14px; list-style: none; padding: 0; margin: 0;
+}
+.pillar-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(196, 157, 72, 0.22);
+  transition: all .2s ease;
+}
+.pillar-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(196, 157, 72, 0.5);
+  transform: translateX(4px);
+}
+.pillar-icon-box {
+  width: 36px; height: 36px; border-radius: 6px;
+  background: rgba(196, 157, 72, 0.16); border: 1px solid rgba(196, 157, 72, 0.35);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: #edd69c;
+}
+.pillar-icon-box svg { display: block; }
+.pillar-body strong {
+  display: block; font-size: .88rem; color: #fbf0d4; margin-bottom: 3px; font-weight: 700;
+}
+.pillar-body span {
+  font-size: .8rem; color: #beae94; line-height: 1.45; display: block;
+}
+
+.magic-split-panel .footer-meta {
+  border-top: 1px solid rgba(196, 157, 72, 0.25);
+  padding-top: 16px; display: flex; justify-content: space-between; align-items: center;
+  font-size: .76rem; color: #9f8c72;
+}
+.footer-meta-item {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+/* ==========================================================================
+   RIGHT COLUMN: LOGIN PANE & CARD
+   ========================================================================== */
+.pane { display: grid; place-items: center; padding: 36px 20px; min-width: 0; position: relative; z-index: 10; }
+
+/* Standard Default Card */
+.card {
+  width: 100%; max-width: 430px; background: var(--surface); border-radius: var(--radius);
+  padding: 34px 30px; box-shadow: var(--shadow); border: 1px solid var(--border);
+  position: relative; transition: all .3s ease;
+}
+body[data-variant="split"] .card { box-shadow: none; border: none; background: transparent; padding: 0; }
+body[data-variant="warm"] .card { border-width: 2px; box-shadow: 0 10px 0 var(--brand-soft); }
+
+/* Standard Brand Header (for Clean, Split Standard, Warm) */
+.brand-standard { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: 700; font-size: 1.15rem; }
+.logo-standard-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid #d5c29b; box-shadow: 0 2px 6px rgba(0,0,0,0.12); flex-shrink: 0; }
+
+/* Visibility Toggles */
+.classroom-formal-only { display: none; }
+.standard-only { display: block; }
+body[data-variant="spell"] .classroom-formal-only { display: block; }
+body[data-variant="spell"] .standard-only { display: none; }
+
+/* Ambient Dust / Light Canvas */
+#wandCanvas {
+  display: none; position: fixed; inset: 0; width: 100vw; height: 100vh;
+  pointer-events: none; z-index: 6;
+}
+body[data-variant="spell"] #wandCanvas { display: block; }
+
+/* Formal Card in Split Magic Classroom */
+body[data-variant="spell"] .card {
+  max-width: 440px;
+  background: #fbf5e8;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.95) 0%, transparent 65%),
+    linear-gradient(160deg, #faf3e2 0%, #f4e7c7 60%, #ecdaaf 100%);
+  border: 1.5px solid #c49d48;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 40px rgba(130, 85, 25, 0.15),
+    0 0 0 1px rgba(255, 235, 170, 0.6),
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    0 24px 60px rgba(0, 0, 0, 0.85);
+  padding: 34px 30px 26px;
+  color: #24160c;
+  position: relative;
+  transition: transform .35s ease, opacity .35s ease, box-shadow .3s ease;
+}
+
+/* Antique Brass Corner Guards */
+.corner-ornament {
+  position: absolute; width: 20px; height: 20px; pointer-events: none;
+  border-color: #b89146; border-style: solid; opacity: 0.75;
+}
+.corner-ornament.top-left { top: 7px; left: 7px; border-width: 2px 0 0 2px; border-top-left-radius: 3px; }
+.corner-ornament.top-right { top: 7px; right: 7px; border-width: 2px 2px 0 0; border-top-right-radius: 3px; }
+.corner-ornament.bottom-left { bottom: 7px; left: 7px; border-width: 0 0 2px 2px; border-bottom-left-radius: 3px; }
+.corner-ornament.bottom-right { bottom: 7px; right: 7px; border-width: 0 2px 2px 0; border-bottom-right-radius: 3px; }
+
+/* Right Column Card Header */
+.card-form-header {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 18px; text-align: left;
+}
+.card-brand-seal {
+  width: 48px; height: 48px; border-radius: 50%; padding: 2px;
+  background: conic-gradient(from 180deg at 50% 50%, #b88628 0deg, #fceda2 90deg, #a67420 180deg, #fdedad 270deg, #b88628 360deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 10px rgba(196, 157, 72, 0.35);
+  flex-shrink: 0;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.card-brand-seal:hover {
+  transform: scale(1.08) rotate(-2deg);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 16px rgba(212, 175, 55, 0.5);
+}
+.card-brand-seal img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;
+}
+.card-header-titles { flex: 1; min-width: 0; }
+.card-form-header h2 {
+  font-family: var(--heading);
+  font-size: 1.35rem; font-weight: 800; letter-spacing: .03em;
+  color: #291508; margin: 0 0 4px;
+}
+.card-form-header p {
+  font-size: .84rem; color: #664d34; margin: 0; line-height: 1.45;
+}
+
+/* SSO Delima / Google Button */
+.sso-group {
+  margin-bottom: 16px;
+}
+.btn-sso {
+  width: 100%; padding: 10px 14px;
+  background: #ffffff;
+  border: 1.5px solid #d5c29b;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: .84rem; font-weight: 600;
+  color: #2a1c12;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  cursor: pointer;
+  transition: all .2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.btn-sso:hover {
+  background: #fdfaf3;
+  border-color: #5a141e;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+.sso-icon { width: 17px; height: 17px; object-fit: contain; flex-shrink: 0; }
+
+.divider-line {
+  display: flex; align-items: center; text-align: center; margin: 14px 0;
+  color: #7b6247; font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600;
+}
+.divider-line::before, .divider-line::after {
+  content: ""; flex: 1; border-bottom: 1px solid rgba(196, 157, 72, 0.35);
+}
+.divider-line::before { margin-right: 10px; }
+.divider-line::after { margin-left: 10px; }
+
+/* Form Elements */
+.field { margin-bottom: 14px; }
+label { display: block; font-weight: 600; font-size: .84rem; margin-bottom: 5px; color: #2e1d10; }
+
+body[data-variant="spell"] label {
+  font-weight: 600; font-size: .82rem; color: #352112;
+}
+
+.control { position: relative; }
+input[type="email"], input[type="password"], input[type="text"] {
+  width: 100%; padding: 11px 13px; font: inherit; color: var(--text); background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: 6px;
+  transition: all .2s ease; font-size: .92rem;
+}
+body[data-variant="split"] input { background: var(--bg); }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 1px; }
+input[aria-invalid="true"] { border-color: var(--danger); }
+
+body[data-variant="spell"] input[type="email"],
+body[data-variant="spell"] input[type="password"],
+body[data-variant="spell"] input[type="text"] {
+  background: #ffffff;
+  border: 1.5px solid #cbb382;
+  border-radius: 6px;
+  color: #1a110a;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+}
+body[data-variant="spell"] input[type="email"]:focus,
+body[data-variant="spell"] input[type="password"]:focus,
+body[data-variant="spell"] input[type="text"]:focus {
+  outline: none;
+  border-color: #5a141e;
+  box-shadow: 0 0 0 3px rgba(196, 157, 72, 0.35);
+}
+
+.toggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  border: none; background: transparent; color: var(--brand);
+  font: inherit; font-weight: 600; padding: 6px 10px; cursor: pointer; border-radius: 6px;
+  font-size: .78rem;
+}
+body[data-variant="spell"] .toggle {
+  color: #5a141e; font-weight: 600;
+}
+
+.hint { color: var(--danger); font-size: .82rem; margin-top: 3px; min-height: 1.2em; }
+.row { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 18px; font-size: .85rem; }
+.check { display: flex; gap: 7px; align-items: center; font-weight: 500; margin: 0; cursor: pointer; }
+.check input { width: 16px; height: 16px; accent-color: var(--brand); }
+a { color: var(--brand); text-decoration: none; font-weight: 600; }
+a:hover { text-decoration: underline; }
+
+body[data-variant="spell"] .check { color: #3c2a1a; font-size: .84rem; }
+body[data-variant="spell"] .check input { accent-color: #5a141e; }
+body[data-variant="spell"] a { color: #5a141e; font-size: .82rem; }
+
+/* Formal Submit Button */
+.submit {
+  width: 100%; padding: 12px 18px; font: inherit; font-weight: 700; border: none; cursor: pointer;
+  background: var(--brand); color: var(--brand-text); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .2s ease; font-size: .95rem;
+}
+body[data-variant="warm"] .submit { border-radius: 999px; }
+.submit:disabled { opacity: .7; cursor: progress; }
+
+/* Classroom Formal Submit Button */
+body[data-variant="spell"] .submit {
+  font-family: var(--font);
+  font-weight: 700; font-size: .95rem;
+  letter-spacing: .02em;
+  border: 1.5px solid #d4b26f;
+  background: linear-gradient(135deg, #5a141e 0%, #360a11 100%);
+  color: #fdf7e7;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 0 12px rgba(196, 157, 72, 0.2);
+  padding: 12px 18px;
+}
+body[data-variant="spell"] .submit:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 18px rgba(196, 157, 72, 0.35);
+  transform: translateY(-1px);
+}
+body[data-variant="spell"] .submit:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.submit-arrow {
+  display: block; transition: transform .2s ease;
+}
+.submit:hover .submit-arrow {
+  transform: translateX(3px);
+}
+
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Alerts */
+.alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: .86rem; display: none; }
+.alert.show { display: block; }
+.alert.error { background: var(--danger-soft); color: var(--danger); }
+.alert.ok { background: var(--ok-soft); color: var(--ok); }
+body[data-variant="spell"] .alert.error { background: #fbeae9; color: #8e1818; border: 1px solid #d99c9c; font-family: var(--font); }
+body[data-variant="spell"] .alert.ok { background: #e8f5ec; color: #125e30; border: 1px solid #9dd4b0; font-family: var(--font); }
+
+.note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .8rem; }
+.demo { margin-top: 8px; font-size: .78rem; color: var(--muted); }
+code { background: var(--brand-soft); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+
+body[data-variant="spell"] .note {
+  border-top: 1px solid rgba(196, 157, 72, 0.3); text-align: center; color: #695039; font-size: .8rem;
+}
+body[data-variant="spell"] .demo { text-align: center; color: #785e45; font-size: .78rem; }
+
+/* Security & Compliance Footer Badge */
+.compliance-badge {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 14px; font-size: .74rem; color: #7a6148; font-weight: 500;
+}
+.compliance-badge svg { color: #8c6c39; }
+
+/* ==========================================================================
+   SUCCESS MODAL: FORMAL DASHBOARD ACCESS
+   ========================================================================== */
+.banner {
+  display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 50; width: min(92vw, 460px); padding: 34px 30px; text-align: center;
+  background: #fbf5e7;
+  border: 1.5px solid #c49d48; border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 235, 170, 0.5), 0 30px 80px rgba(0, 0, 0, 0.95);
+}
+.stage.opening .banner { display: block; animation: bannerRise .7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.stage.opening .card { opacity: 0; transform: scale(0.94) translateY(16px); pointer-events: none; }
+@keyframes bannerRise {
+  from { opacity: 0; transform: translate(-50%, -44%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.school-badge-success {
+  width: 76px; height: 76px; margin: 0 auto 16px; border-radius: 50%; padding: 3px;
+  background: conic-gradient(from 180deg at 50% 50%, #b88628 0deg, #fceda2 90deg, #a67420 180deg, #fdedad 270deg, #b88628 360deg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 22px rgba(212, 175, 55, 0.5);
+  animation: logoPulse 2.8s infinite ease-in-out;
+}
+.school-badge-success img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 18px rgba(212, 175, 55, 0.4); transform: scale(1); }
+  50% { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), 0 0 30px rgba(230, 190, 75, 0.7); transform: scale(1.04); }
+}
+
+.banner h2 {
+  font-family: var(--heading); font-size: 1.35rem; color: #291508; margin: 10px 0 6px;
+}
+.banner p {
+  font-family: var(--font); font-size: .95rem; color: #4e3825; margin: 0 0 20px; line-height: 1.5;
+}
+.banner .submit { width: auto; margin: 0 auto; padding: 10px 24px; font-size: .88rem; }
+
+/* Responsive Adjustments */
+@media (max-width: 960px) {
+  body[data-variant="split"] .stage { grid-template-columns: 1fr; }
+  body[data-variant="spell"] .stage { grid-template-columns: 1fr; }
+  .panel { display: none !important; }
+  .magic-split-panel { display: none !important; }
+  .card { max-width: 440px; margin: 0 auto; }
+}
+@media (max-width: 500px) {
+  .pane { padding: 20px 14px; }
+  .card { padding: 24px 18px 20px; }
+}
+</style>
+</head>
+
+<body data-variant="spell">
+
+<!-- PROTOTYPE CONTROLS TOOLBAR -->
+<div class="toolbar" role="region" aria-label="Kawalan Prototaip">
+  <div class="group">
+    <span class="label">Pilihan Gaya:</span>
+    <button type="button" data-variant-btn="spell" aria-pressed="true">D. Bilik Darjah Split (Magic Institutional)</button>
+    <button type="button" data-variant-btn="split" aria-pressed="false">B. Split Basic</button>
+    <button type="button" data-variant-btn="clean" aria-pressed="false">A. Clean</button>
+    <button type="button" data-variant-btn="warm" aria-pressed="false">C. Warm</button>
+  </div>
+  <div class="group">
+    <button type="button" id="soundToggle" class="sound-toggle-btn" aria-label="Audio Sistem">
+      <svg id="soundIconSvg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>
+      <span id="soundLabel">Audio: Aktif</span>
+    </button>
+    <span class="label">Bahasa:</span>
+    <button type="button" data-lang-btn="ms" aria-pressed="true">BM</button>
+    <button type="button" data-lang-btn="en" aria-pressed="false">EN</button>
+    <span class="label">Tema:</span>
+    <button type="button" data-theme-btn="auto" aria-pressed="true">Auto</button>
+    <button type="button" data-theme-btn="light" aria-pressed="false">Cerah</button>
+    <button type="button" data-theme-btn="dark" aria-pressed="false">Gelap</button>
+  </div>
+</div>
+
+<!-- MAIN STAGE -->
+<main class="stage" id="stage">
+
+  <!-- Subtle Ambient Motes Canvas -->
+  <canvas id="wandCanvas"></canvas>
+
+  <!-- LEFT SHOWCASE PANEL: MAGIC CLASSROOM INSTITUTIONAL (VARIANT D) -->
+  <aside class="magic-split-panel" aria-label="Ringkasan Penyelarasan Sapientia">
+    <div>
+      <div class="brand-header">
+        <div class="school-badge" title="Logo Rasmi Sapientia - Sistem Penyelarasan Pengajar">
+          <img src="./assets/sapientia_logo.jpg" alt="Logo Rasmi Sapientia" width="62" height="62">
+        </div>
+        <div class="brand-text-wrap">
+          <h2>SAPIENTIA</h2>
+          <p data-i18n="portalSubtitle">Sistem Penyelarasan Beban Tugas</p>
+        </div>
+      </div>
+
+      <div class="hero-content">
+        <h1 data-i18n="panelTitle">Tugas yang menghormati masa guru.</h1>
+        <p class="lead-desc" data-i18n="leadDesc">
+          Platform penyelarasan instruksional sekolah yang melindungi waktu rehat tenaga pengajar tanpa mengorbankan ketepatan pentadbiran.
+        </p>
+
+        <!-- Professional Feature Pillars List with Crisp Vector Icons -->
+        <ul class="feature-pillars">
+          <li class="pillar-card">
+            <div class="pillar-icon-box" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="pillar-body">
+              <strong data-i18n="pillar1Title">Penahanan Tugas Luar Waktu (Held Delivery)</strong>
+              <span data-i18n="pillar1Desc">Arahan dihantar selepas waktu bertugas disimpan automatik sehingga 7:30 pagi hari bekerja seterusnya.</span>
+            </div>
+          </li>
+          <li class="pillar-card">
+            <div class="pillar-icon-box" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+                <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+                <path d="M7 21h10"></path>
+                <path d="M12 3v18"></path>
+                <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path>
+              </svg>
+            </div>
+            <div class="pillar-body">
+              <strong data-i18n="pillar2Title">Penyelarasan Beban & Amaran Realistik</strong>
+              <span data-i18n="pillar2Desc">Sistem memberi amaran pintar jika tarikh akhir menekan atau bertindih dengan beban sedia ada.</span>
+            </div>
+          </li>
+          <li class="pillar-card">
+            <div class="pillar-icon-box" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+            <div class="pillar-body">
+              <strong data-i18n="pillar3Title">Rekod Bukti Kerja Tanpa Kertas</strong>
+              <span data-i18n="pillar3Desc">Semakan dan penyerahan tugas direkodkan secara berpusat untuk penilaian tahunan tanpa laporan bertindih.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-meta">
+      <span class="footer-meta-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span data-i18n="metaSecurity">Patuh Akta Perlindungan Data Peribadi 2010</span>
+      </span>
+      <span data-i18n="metaAffiliation">Sistem Pengurusan Guru Berpusat</span>
+    </div>
+  </aside>
+
+  <!-- LEFT PANEL: BASIC SPLIT (VARIANT B) -->
+  <aside class="panel" aria-hidden="true">
+    <div class="brand-standard"><img class="logo-standard-img" src="./assets/sapientia_logo.jpg" alt="Logo Sapientia" width="36" height="36"> Sapientia</div>
+    <div>
+      <h2 data-i18n="panelTitle"></h2>
+      <p data-i18n="panelText"></p>
+      <ul>
+        <li data-i18n="panelPoint1"></li>
+        <li data-i18n="panelPoint2"></li>
+        <li data-i18n="panelPoint3"></li>
+      </ul>
+    </div>
+    <small data-i18n="disclaimer"></small>
+  </aside>
+
+  <!-- RIGHT COLUMN: LOGIN PANE -->
+  <section class="pane" id="pane">
+    <div class="card" id="loginCard">
+
+      <!-- Antique Brass Corners (Formal Classroom Mode) -->
+      <div class="classroom-formal-only">
+        <div class="corner-ornament top-left" aria-hidden="true"></div>
+        <div class="corner-ornament top-right" aria-hidden="true"></div>
+        <div class="corner-ornament bottom-left" aria-hidden="true"></div>
+        <div class="corner-ornament bottom-right" aria-hidden="true"></div>
+      </div>
+
+      <!-- Standard Logo (for Clean, Split Standard, Warm) -->
+      <div class="standard-only">
+        <div class="brand-standard"><img class="logo-standard-img" src="./assets/sapientia_logo.jpg" alt="Logo Sapientia" width="36" height="36"><span>Sapientia</span></div>
+      </div>
+
+      <!-- Formal Card Form Header (Magic Classroom Split) -->
+      <div class="classroom-formal-only">
+        <div class="card-form-header">
+          <div class="card-brand-seal" title="Mohor Rasmi Sapientia">
+            <img src="./assets/sapientia_logo.jpg" alt="Logo Rasmi Sapientia" width="48" height="48">
+          </div>
+          <div class="card-header-titles">
+            <h2 data-i18n="title">Log Masuk Pengajar</h2>
+            <p data-i18n="subtitle">Sila gunakan akaun DELIMa KPM atau emel rasmi sekolah yang didaftarkan.</p>
+          </div>
+        </div>
+
+        <!-- SSO Button (DELIMa KPM / Google Workspace) -->
+        <div class="sso-group">
+          <button type="button" class="btn-sso" id="btnDelima">
+            <svg class="sso-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span data-i18n="ssoDelima">Log Masuk dengan DELIMa KPM</span>
+          </button>
+          <div class="divider-line"><span data-i18n="orDivider">atau emel pengajar rasmi</span></div>
+        </div>
+      </div>
+
+      <!-- Clean Standard Mode Titles (for Clean, Split, Warm) -->
+      <div class="standard-only">
+        <h1 data-i18n="title"></h1>
+        <p class="sub" data-i18n="subtitle"></p>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="alert" class="alert" role="alert" aria-live="assertive"></div>
+
+      <!-- Login Form -->
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="email" data-i18n="email">Emel Rasmi Sekolah / ID DELIMa</label>
+          <div class="control">
+            <input id="email" name="email" type="email" autocomplete="username" inputmode="email"
+                   aria-describedby="email-hint" placeholder="cikgu.aminah@moe.edu.my" required>
+          </div>
+          <div id="email-hint" class="hint"></div>
+        </div>
+
+        <div class="field">
+          <label for="password" data-i18n="password">Kata Laluan Keselamatan</label>
+          <div class="control">
+            <input id="password" name="password" type="password" autocomplete="current-password"
+                   aria-describedby="password-hint" placeholder="••••••••" required>
+            <button type="button" id="toggle" class="toggle" aria-controls="password">
+              <span id="toggle-text">Tunjuk</span>
+            </button>
+          </div>
+          <div id="password-hint" class="hint"></div>
+        </div>
+
+        <div class="row">
+          <label class="check">
+            <input type="checkbox" name="remember" id="remember">
+            <span data-i18n="remember">Ingat sesi mengajar pada peranti ini</span>
+          </label>
+          <a href="#" id="forgot" data-i18n="forgot">Lupa kata laluan?</a>
+        </div>
+
+        <!-- Submit Button with Vector Arrow -->
+        <button type="submit" id="submit" class="submit">
+          <span id="submit-label">Log Masuk Selamat</span>
+          <svg class="submit-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </form>
+
+      <p class="note" data-i18n="note"></p>
+      <p class="demo" data-i18n-html="demo"></p>
+
+      <div class="compliance-badge classroom-formal-only">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span data-i18n="securityBadge">Disulitkan 256-bit • Patuh Akta Perlindungan Data Peribadi</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMAL ACCESS SUCCESS MODAL -->
+  <div class="banner" id="banner" role="status">
+    <div class="school-badge-success" title="Mohor Pengesahan Sapientia">
+      <img src="./assets/sapientia_logo.jpg" alt="Mohor Rasmi Sapientia" width="76" height="76">
+    </div>
+    <h2 data-i18n="successTitle">Pengesahan Rasmi Berjaya!</h2>
+    <p data-i18n="success"></p>
+    <button type="button" id="replay" class="submit">
+      <span data-i18n="replay"></span>
+    </button>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+/* ==========================================================================
+   FORMAL EDUCATIONAL LOCALIZATION STRINGS (CLEAN & PROFESSIONAL)
+   ========================================================================== */
+const TEXT = {
+  ms: {
+    portalSubtitle: 'Sistem Penyelarasan Beban Tugas Guru',
+    panelTitle: 'Tugas yang menghormati masa guru.',
+    leadDesc: 'Platform penyelarasan instruksional sekolah yang melindungi waktu rehat tenaga pengajar tanpa mengorbankan ketepatan pentadbiran.',
+    pillar1Title: 'Penahanan Tugas Luar Waktu (Held Delivery)',
+    pillar1Desc: 'Arahan dihantar selepas waktu bertugas disimpan automatik sehingga 7:30 pagi hari bekerja seterusnya.',
+    pillar2Title: 'Penyelarasan Beban & Amaran Realistik',
+    pillar2Desc: 'Sistem memberi amaran pintar jika tarikh akhir menekan atau bertindih dengan beban sedia ada.',
+    pillar3Title: 'Rekod Bukti Kerja Tanpa Kertas',
+    pillar3Desc: 'Semakan dan penyerahan tugas direkodkan secara berpusat untuk penilaian tahunan tanpa laporan bertindih.',
+    metaSecurity: 'Patuh Akta Perlindungan Data Peribadi 2010',
+    metaAffiliation: 'Sistem Pengurusan Guru Berpusat',
+    ssoDelima: 'Log Masuk dengan DELIMa KPM',
+    orDivider: 'atau emel pengajar rasmi',
+    title: 'Log Masuk Pengajar',
+    subtitle: 'Sila gunakan akaun DELIMa KPM atau emel rasmi sekolah yang didaftarkan.',
+    email: 'Emel Rasmi Sekolah / ID DELIMa',
+    password: 'Kata Laluan Keselamatan',
+    remember: 'Ingat sesi mengajar pada peranti ini',
+    forgot: 'Lupa kata laluan?',
+    submit: 'Log Masuk Selamat',
+    submitting: 'Mengesahkan kelayakan…',
+    show: 'Tunjuk',
+    hide: 'Sembunyi',
+    replay: 'Log Keluar / Tutup Sesi',
+    emailRequired: 'Sila masukkan alamat emel rasmi anda.',
+    emailInvalid: 'Format emel rasmi tidak sah.',
+    passwordRequired: 'Sila masukkan kata laluan anda.',
+    badCredentials: 'Emel atau kata laluan tidak sepadan dalam arkib sekolah.',
+    successTitle: 'Pengesahan Rasmi Berjaya!',
+    success: 'Selamat kembali ke Sapientia. Membuka Papan Tugas Guru dan Jadual Waktu Mengajar...',
+    forgotInfo: 'Sila hubungi Guru Penolong Kanan atau Pentadbir Sekolah untuk penetapan semula kata laluan rasmi.',
+    note: 'Akaun dicipta oleh pentadbir sekolah. Tiada pendaftaran terbuka bagi melindungi privasi sekolah.',
+    demo: 'Ujian Demo: kata laluan <code>demo1234</code> berjaya; yang lain ditolak.',
+    securityBadge: 'Disulitkan 256-bit • Patuh Akta Perlindungan Data Peribadi',
+    panelText: 'Arahan selepas waktu bekerja dipegang sehingga pagi hari bekerja yang seterusnya.',
+    panelPoint1: 'Setiap tugas ada pemilik, tarikh akhir dan status',
+    panelPoint2: 'Amaran jika tarikh akhir tidak realistik',
+    panelPoint3: 'Bukti kerja tanpa laporan tambahan',
+    disclaimer: 'Projek portfolio bebas Sapientia. Fiksyen & demonstrasi sahaja.'
+  },
+  en: {
+    portalSubtitle: 'Teacher Workload Coordination System',
+    panelTitle: 'Tasks that respect teachers’ time.',
+    leadDesc: 'An instructional school coordination platform designed to protect educators’ rest periods without compromising administrative precision.',
+    pillar1Title: 'Held Delivery Protocol',
+    pillar1Desc: 'Instructions sent after school hours are automatically held until 7:30 AM next working morning.',
+    pillar2Title: 'Workload Balance & Realistic Deadlines',
+    pillar2Desc: 'Automated warnings when deadlines are unrealistic or clash with existing heavy workloads.',
+    pillar3Title: 'Paperless Work Evidence',
+    pillar3Desc: 'Task completions and reviews are recorded in a centralized ledger without duplicate paperwork.',
+    metaSecurity: 'Personal Data Protection Compliant',
+    metaAffiliation: 'Centralized Faculty Management System',
+    ssoDelima: 'Sign In with DELIMa KPM (Google)',
+    orDivider: 'or official faculty email',
+    title: 'Faculty Sign In',
+    subtitle: 'Please sign in with your DELIMa KPM ID or registered school email.',
+    email: 'Official School Email / DELIMa ID',
+    password: 'Security Password',
+    remember: 'Remember teaching session on this device',
+    forgot: 'Forgot password?',
+    submit: 'Secure Sign In',
+    submitting: 'Authenticating…',
+    show: 'Show',
+    hide: 'Hide',
+    replay: 'Sign Out / Close Session',
+    emailRequired: 'Please enter your official school email.',
+    emailInvalid: 'That email format is not valid.',
+    passwordRequired: 'Please enter your password.',
+    badCredentials: 'Incorrect email or password in school records.',
+    successTitle: 'Official Access Granted!',
+    success: 'Welcome back to Sapientia. Accessing your Teacher Task Board and Teaching Schedule...',
+    forgotInfo: 'Please contact your school administrator or Senior Assistant to reset your credentials.',
+    note: 'Accounts are provisioned by your school administration to protect school data privacy.',
+    demo: 'Prototype Demo: password <code>demo1234</code> succeeds; anything else fails.',
+    securityBadge: '256-bit Encrypted • Personal Data Protection Compliant',
+    panelText: 'Instructions sent after working hours are held until the next working morning.',
+    panelPoint1: 'Every task has an owner, deadline and status',
+    panelPoint2: 'A warning when a deadline is unrealistic',
+    panelPoint3: 'Evidence of work with no extra reporting',
+    disclaimer: 'Sapientia independent portfolio prototype. Fictional demo.'
+  }
+};
+
+/* ==========================================================================
+   APPLICATION STATE
+   ========================================================================== */
+const state = {
+  lang: 'ms',
+  variant: 'spell',
+  showPassword: false,
+  loading: false,
+  soundEnabled: true
+};
+
+const $ = (id) => document.getElementById(id);
+const form = $('form');
+const alertBox = $('alert');
+
+function t(key) {
+  return TEXT[state.lang][key] || '';
+}
+
+/* ==========================================================================
+   WEB AUDIO API SYNTHESIZER (SUBTLE EXECUTIVE CHIMES)
+   ========================================================================== */
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!state.soundEnabled) return null;
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) audioCtx = new AudioContextClass();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playSuccessChime() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const chord = [392.00, 523.25, 659.25, 783.99]; // G4, C5, E5, G5
+  chord.forEach((freq, idx) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+    gain.gain.setValueAtTime(0.06, now + idx * 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.06 + 0.6);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + idx * 0.06);
+    osc.stop(now + idx * 0.06 + 0.65);
+  });
+}
+
+function playSoftClick() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(600, now);
+  osc.frequency.exponentialRampToValueAtTime(250, now + 0.035);
+  gain.gain.setValueAtTime(0.03, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.04);
+}
+
+/* ==========================================================================
+   SUBTLE AMBIENT MOTES CANVAS
+   ========================================================================== */
+const canvas = $('wandCanvas');
+let ctx = canvas ? canvas.getContext('2d') : null;
+let particles = [];
+
+function resizeCanvas() {
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class AmbientMote {
+  constructor(x, y, isInteractive = false) {
+    this.x = x;
+    this.y = y;
+    this.radius = isInteractive ? Math.random() * 2 + 1 : Math.random() * 1.5 + 0.5;
+    this.life = 1;
+    this.decay = isInteractive ? 0.025 : 0.005;
+    this.vx = (Math.random() - 0.5) * (isInteractive ? 1.2 : 0.4);
+    this.vy = isInteractive ? (Math.random() - 0.5) * 1.2 : -(Math.random() * 0.5 + 0.2);
+    this.alpha = isInteractive ? 0.8 : Math.random() * 0.4 + 0.15;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.decay;
+  }
+  draw(context) {
+    if (this.life <= 0) return;
+    context.save();
+    context.globalAlpha = this.life * this.alpha;
+    const isLight = document.documentElement.dataset.theme === 'light' || (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: light)').matches);
+    context.fillStyle = isLight ? '#c89d38' : '#fce5a3';
+    context.shadowBlur = isLight ? 4 : 6;
+    context.shadowColor = isLight ? '#b88628' : '#e5b955';
+    context.beginPath();
+    context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+}
+
+function animateParticles() {
+  if (ctx && canvas && state.variant === 'spell') {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (particles.length < 24 && Math.random() < 0.15) {
+      particles.push(new AmbientMote(Math.random() * window.innerWidth, window.innerHeight + 10, false));
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      particles[i].update();
+      particles[i].draw(ctx);
+      if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+  }
+  requestAnimationFrame(animateParticles);
+}
+requestAnimationFrame(animateParticles);
+
+window.addEventListener('mousemove', (e) => {
+  if (state.variant !== 'spell') return;
+  if (Math.random() < 0.35) {
+    particles.push(new AmbientMote(e.clientX, e.clientY, true));
+  }
+});
+
+/* ==========================================================================
+   RENDER & UI UPDATES
+   ========================================================================== */
+function render() {
+  document.documentElement.lang = state.lang;
+  document.body.dataset.variant = state.variant;
+
+  // Update text
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+
+  // Inputs placeholder
+  $('email').placeholder = state.lang === 'ms' ? 'cikgu.aminah@moe.edu.my' : 'teacher.aminah@school.edu.my';
+
+  // Password toggle text
+  $('toggle-text').textContent = state.showPassword ? t('hide') : t('show');
+
+  // Submit button text
+  $('submit-label').textContent = state.loading ? t('submitting') : t('submit');
+
+  // Toolbar active states
+  document.querySelectorAll('[data-lang-btn]').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.langBtn === state.lang));
+  });
+  document.querySelectorAll('[data-variant-btn]').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.variantBtn === state.variant));
+  });
+}
+
+function showAlert(kind, message) {
+  alertBox.className = `alert show ${kind}`;
+  alertBox.textContent = message;
+}
+
+function clearAlert() {
+  alertBox.className = 'alert';
+  alertBox.textContent = '';
+}
+
+function setFieldError(inputId, hintId, message) {
+  const input = $(inputId);
+  input.setAttribute('aria-invalid', message ? 'true' : 'false');
+  $(hintId).textContent = message || '';
+}
+
+function validate() {
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  let emailMsg = '';
+  if (!email) emailMsg = t('emailRequired');
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) emailMsg = t('emailInvalid');
+  const passwordMsg = password ? '' : t('passwordRequired');
+
+  setFieldError('email', 'email-hint', emailMsg);
+  setFieldError('password', 'password-hint', passwordMsg);
+
+  if (emailMsg) $('email').focus();
+  else if (passwordMsg) $('password').focus();
+  return !emailMsg && !passwordMsg;
+}
+
+function openDashboard() {
+  $('stage').classList.add('opening');
+  $('pane').inert = true;
+  playSuccessChime();
+  setTimeout(() => $('replay').focus(), 700);
+}
+
+function resetDashboard() {
+  $('stage').classList.remove('opening');
+  $('pane').inert = false;
+  playSoftClick();
+}
+
+function fakeSignIn(password) {
+  return new Promise((resolve) => setTimeout(() => resolve(password === 'demo1234'), 850));
+}
+
+/* ==========================================================================
+   EVENT LISTENERS
+   ========================================================================== */
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (state.loading) return;
+  clearAlert();
+  if (!validate()) return;
+
+  state.loading = true;
+  $('submit').disabled = true;
+  $('submit-label').insertAdjacentHTML('beforebegin', '<span class="spinner" aria-hidden="true"></span>');
+  playSoftClick();
+  render();
+
+  const ok = await fakeSignIn($('password').value);
+
+  state.loading = false;
+  $('submit').disabled = false;
+  document.querySelector('#submit .spinner')?.remove();
+  render();
+
+  if (ok) {
+    if (state.variant === 'spell') {
+      openDashboard();
+    } else {
+      showAlert('ok', t('success'));
+    }
+  } else {
+    showAlert('error', t('badCredentials'));
+    $('password').value = '';
+    $('password').focus();
+  }
+});
+
+// Single Sign-On Demo Trigger
+$('btnDelima').addEventListener('click', () => {
+  $('email').value = 'cikgu.aminah@moe.edu.my';
+  $('password').value = 'demo1234';
+  playSoftClick();
+  showAlert('ok', state.lang === 'ms' ? 'Akaun DELIMa dikesan. Sila klik "Log Masuk Selamat".' : 'DELIMa account detected. Click "Secure Sign In" to proceed.');
+});
+
+$('toggle').addEventListener('click', () => {
+  state.showPassword = !state.showPassword;
+  $('password').type = state.showPassword ? 'text' : 'password';
+  playSoftClick();
+  render();
+});
+
+$('forgot').addEventListener('click', (event) => {
+  event.preventDefault();
+  showAlert('ok', t('forgotInfo'));
+  playSoftClick();
+});
+
+['email', 'password'].forEach((id) => {
+  $(id).addEventListener('input', () => setFieldError(id, `${id}-hint`, ''));
+  $(id).addEventListener('focus', () => playSoftClick());
+});
+
+// Sound Toggle
+$('soundToggle').addEventListener('click', () => {
+  state.soundEnabled = !state.soundEnabled;
+  const svg = $('soundIconSvg');
+  if (state.soundEnabled) {
+    svg.innerHTML = `
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+    `;
+    $('soundLabel').textContent = state.lang === 'ms' ? 'Audio: Aktif' : 'Audio: On';
+    playSoftClick();
+  } else {
+    svg.innerHTML = `
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <line x1="23" y1="9" x2="17" y2="15"></line>
+      <line x1="17" y1="9" x2="23" y2="15"></line>
+    `;
+    $('soundLabel').textContent = state.lang === 'ms' ? 'Audio: Nyahaktif' : 'Audio: Muted';
+  }
+});
+
+// Style Variant Buttons (D. Bilik Darjah Split, B. Split Basic, A. Clean, C. Warm)
+document.querySelectorAll('[data-variant-btn]').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.variant = button.dataset.variantBtn;
+    resetDashboard();
+    clearAlert();
+    playSoftClick();
+    render();
+  });
+});
+
+// Theme Buttons (Dark, Light, Auto)
+document.querySelectorAll('[data-theme-btn]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const choice = button.dataset.themeBtn;
+    if (choice === 'auto') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.dataset.theme = choice;
+    }
+    document.querySelectorAll('[data-theme-btn]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b === button));
+    });
+    playSoftClick();
+  });
+});
+
+// Language Buttons
+document.querySelectorAll('[data-lang-btn]').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.lang = button.dataset.langBtn;
+    clearAlert();
+    setFieldError('email', 'email-hint', '');
+    setFieldError('password', 'password-hint', '');
+    $('soundLabel').textContent = state.soundEnabled ? (state.lang === 'ms' ? 'Audio: Aktif' : 'Audio: On') : (state.lang === 'ms' ? 'Audio: Nyahaktif' : 'Audio: Muted');
+    playSoftClick();
+    render();
+  });
+});
+
+$('replay').addEventListener('click', () => {
+  resetDashboard();
+  $('password').value = '';
+  $('email').focus();
+});
+
+// Initialize on Load
+render();
+</script>
+</body>
+</html>

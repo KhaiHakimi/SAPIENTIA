@@ -1,0 +1,22 @@
+# dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+coverage/
+
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# logs and editor / OS files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# old backup page, and the images only it used (franchise-named; not needed by the current prototypes)
+prototypes/login/index.before-rebrand.html
+prototypes/login/assets/hogwarts_*.jpg

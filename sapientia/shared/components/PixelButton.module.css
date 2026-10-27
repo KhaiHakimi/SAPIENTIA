@@ -1,0 +1,10 @@
+/* Base rules are wrapped in :where() (zero specificity), so a class passed in by a feature always wins, whatever the CSS load order. */
+:where(.btn) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; margin: 3px; cursor: pointer; border: 0;
+  font: 600 .85rem/1 var(--heading); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); background: var(--accent);
+  box-shadow: 0 -3px 0 0 #0c0f15, 0 3px 0 0 #0c0f15, -3px 0 0 0 #0c0f15, 3px 0 0 0 #0c0f15, inset 0 -4px 0 0 rgba(0, 0, 0, .22);
+  transition: transform .08s steps(2, end); }
+:where(.btn):hover { filter: brightness(1.08); }
+:where(.btn):active { transform: translateY(2px); }
+:where(.btn):disabled { opacity: .6; cursor: default; filter: none; transform: none; }
+.ghost { color: var(--text); background: var(--panel-2); box-shadow: 0 -3px 0 0 var(--bd), 0 3px 0 0 var(--bd), -3px 0 0 0 var(--bd), 3px 0 0 0 var(--bd); }
+.small { min-height: 38px; padding: 0 14px; font-size: .75rem; }

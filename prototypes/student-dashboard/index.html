@@ -130,6 +130,8 @@ body {
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .app { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 22px 22px 28px; }
 .sprite { display: block; image-rendering: pixelated; flex: none; }
+/* Painted pictures (pahlawan, monsters) are scaled down smoothly and kept whole inside their box. */
+.art { display: block; flex: none; object-fit: contain; object-position: 50% 100%; }
 
 /* Drifting effects that belong to the worn look: stars over the royal hall, fireflies in the forest, rising embers at the forge.
    Pixel squares on a fixed layer behind the content; switched off for reduced motion (the script also skips creating them). */
@@ -285,8 +287,8 @@ main section { scroll-margin-top: 24px; }
 /* ===== Monster lair: one monster per subject ===== */
 .lair { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px; }
 .mon { display: grid; justify-items: center; align-content: start; gap: 8px; padding: 16px 12px 14px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
-.mon-art { display: grid; place-items: center; width: 100%; height: 80px; }
-.mon.beaten .sprite { filter: grayscale(.6) opacity(.75); }
+.mon-art { display: grid; place-items: center; width: 100%; height: 112px; }
+.mon.beaten .sprite, .mon.beaten .art { filter: grayscale(.6) opacity(.75); }
 .mon b { font: 700 .95rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
 .mon-sub { font-size: .85rem; color: var(--muted); }
 .mon-meta { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
@@ -296,8 +298,8 @@ main section { scroll-margin-top: 24px; }
 .mon-rec { font-size: .75rem; color: var(--muted); }
 .mon .btn { margin: 4px 0 0; min-height: 38px; font-size: .75rem; }
 
-/* ===== Battle screen: a painted dungeon with framed name plates (monster top-right, your knight bottom-left) ===== */
-/* The arena is one pixel-art backdrop (brick wall, torches, a banded door, a flagstone floor in perspective); the monster and the knight
+/* ===== Battle screen: a painted dungeon with framed name plates (monster top-right, your pahlawan bottom-left) ===== */
+/* The arena is one pixel-art backdrop (brick wall, torches, a banded door, a flagstone floor in perspective); the monster and the pahlawan
    stand on the floor with soft shadows. Name plates sit in the corners, and the text and answer boxes use the same bronze-framed stone.
    The screen has its own fixed palette, so it looks the same in the dark and light themes. */
 dialog.battle { --gb-panel: #2a2118; --gb-panel-2: #3a2e20; --gb-line: #c9962c; --gb-edge: #1a140d; --gb-inner: #5a4528;
@@ -314,6 +316,10 @@ dialog.battle { --gb-panel: #2a2118; --gb-panel-2: #3a2e20; --gb-line: #c9962c; 
 .gb-stage.foe { right: 16%; top: 31%; width: 23%; }
 .gb-stage.me { left: 14%; bottom: 26%; width: 23%; z-index: 3; }
 .gb-stage svg { position: relative; display: block; width: 100%; height: auto; }
+/* The pahlawan and monster pictures differ in shape; a square box with the figure standing on its bottom edge keeps them on the floor. */
+/* Each figure box is square; its frame strip stands on the box bottom (feet line) and may be wider than the box. */
+#foeFig, #meFig { position: relative; aspect-ratio: 1; }
+.sheet { position: absolute; left: 50%; transform: translateX(-50%); background-repeat: no-repeat; image-rendering: pixelated; }
 .gb-shadow { position: absolute; left: 6%; bottom: -3%; width: 88%; height: 13%; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(0, 0, 0, .55), rgba(0, 0, 0, 0) 70%); }
 .gb-info { position: absolute; z-index: 3; width: 36%; padding: 6px 12px 8px; background: linear-gradient(var(--gb-panel-2), var(--gb-panel)); border: 3px solid var(--gb-line);
   box-shadow: 0 0 0 3px var(--gb-edge), inset 0 0 0 2px var(--gb-inner); }
@@ -344,19 +350,41 @@ dialog.battle { --gb-panel: #2a2118; --gb-panel-2: #3a2e20; --gb-line: #c9962c; 
 .gb-opt:focus-visible { outline: 0; background: rgba(242, 182, 50, .12); }
 .gb-record { margin: 8px 2px 0; font-size: .78rem; color: var(--gb-mid); }
 
-.gb-slash { position: absolute; inset: 14% 8%; pointer-events: none; opacity: 0; }
-.gb-slash::before, .gb-slash::after { content: ""; position: absolute; left: 0; right: 0; top: 46%; height: 9px; background: #fff; box-shadow: 0 0 0 3px #1a140d; }
-.gb-slash::before { transform: rotate(32deg); }
-.gb-slash::after { transform: rotate(-32deg); }
+/* The keris slash: one curved white streak with a gold glow that sweeps across the monster. */
+.gb-slash { position: absolute; inset: 4% 2%; z-index: 2; pointer-events: none; opacity: 0; }
+.gb-slash::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 9px solid transparent; border-top-color: #fff;
+  filter: drop-shadow(0 0 4px #ffd36a) drop-shadow(0 0 1px #1a140d); }
 .is-slash { animation: gbSlash .4s steps(4, end); }
 .is-lunge-me { animation: gbLungeMe .5s steps(6, end); }
 .is-lunge-foe { animation: gbLungeFoe .5s steps(6, end); }
-.is-blink { animation: gbBlink .6s steps(1, end); }
+.is-hit-foe { animation: gbHitFoe .62s steps(1, end); }
+.is-hit-me { animation: gbHitMe .62s steps(1, end); }
+.gb-stage[data-mon="hantu"] .is-hit-foe { animation-name: gbHitGhost; }
+.is-cheer { animation: gbCheer .8s steps(8, end); }
+.is-shake { animation: gbShake .36s steps(6, end); }
+.gb-arena[data-mon="bunian"].is-shake { animation-name: gbShakeBig; animation-duration: .5s; }
+/* Each monster attacks in its own way; the default is the plain lunge. */
+.gb-stage[data-mon="bunian"].is-lunge-foe { animation-name: gbAtkBunian; }
+.gb-stage[data-mon="naga"].is-lunge-foe { animation-name: gbAtkNaga; }
+.gb-stage[data-mon="harimau"].is-lunge-foe { animation-name: gbAtkHarimau; }
+.gb-stage[data-mon="hantu"].is-lunge-foe { animation-name: gbAtkHantu; animation-timing-function: ease-in-out; }
+.gb-stage[data-mon="hantu"] .sheet { filter: drop-shadow(0 0 5px rgba(90, 200, 255, .5)); }
 .is-faint { animation: gbFaint .7s steps(7, end) forwards; }
 .is-slide-foe { animation: gbSlideFoe .8s steps(8, end); }
 .is-slide-me { animation: gbSlideMe .8s steps(8, end); }
 @keyframes gbBlink { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0; } }
-@keyframes gbSlash { 0% { opacity: 1; clip-path: inset(0 100% 0 0); } 99% { opacity: 1; clip-path: inset(0 0 0 0); } 100% { opacity: 0; } }
+@keyframes gbSlash { 0% { opacity: 1; transform: rotate(-75deg) scale(.8); } 80% { opacity: 1; transform: rotate(30deg) scale(1); } 100% { opacity: 0; transform: rotate(40deg); } }
+/* A hit flashes the figure white (a silhouette) and knocks it back, as in old handheld RPGs. */
+@keyframes gbHitFoe { 0%, 50% { filter: brightness(0) invert(1); transform: translateX(7%); } 25%, 75% { filter: none; transform: translateX(4%); } 100% { filter: none; transform: none; } }
+@keyframes gbHitMe { 0%, 50% { filter: brightness(0) invert(1); transform: translateX(-7%); } 25%, 75% { filter: none; transform: translateX(-4%); } 100% { filter: none; transform: none; } }
+@keyframes gbHitGhost { 0%, 50% { opacity: .15; transform: translateX(6%); } 25%, 75% { opacity: .8; transform: translateX(3%); } 100% { opacity: 1; transform: none; } }
+@keyframes gbCheer { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(-14%); } }
+@keyframes gbShake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, 0); } }
+@keyframes gbShakeBig { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(0, 9px); } 30% { transform: translate(-7px, -3px); } 50% { transform: translate(6px, 4px); } 70% { transform: translate(-4px, -2px); } 85% { transform: translate(2px, 1px); } }
+@keyframes gbAtkBunian { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(5%, -8%); } 45%, 65% { transform: translate(-26%, 14%); } }
+@keyframes gbAtkNaga { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(8%, -2%) rotate(5deg); } 45%, 60% { transform: translate(-30%, 10%) rotate(-8deg); } }
+@keyframes gbAtkHarimau { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(4%, 4%); } 35% { transform: translate(-16%, -16%); } 55%, 65% { transform: translate(-34%, 14%); } }
+@keyframes gbAtkHantu { 0%, 100% { transform: translate(0, 0); opacity: 1; } 45%, 60% { transform: translate(-28%, 10%); opacity: .55; } }
 @keyframes gbLungeMe { 0%, 100% { transform: translate(0, 0); } 35%, 60% { transform: translate(24%, -12%); } }
 @keyframes gbLungeFoe { 0%, 100% { transform: translate(0, 0); } 35%, 60% { transform: translate(-24%, 12%); } }
 @keyframes gbFaint { from { transform: translateY(0); opacity: 1; } to { transform: translateY(80%); opacity: 0; } }
@@ -370,12 +398,13 @@ dialog.battle { --gb-panel: #2a2118; --gb-panel-2: #3a2e20; --gb-line: #c9962c; 
   .gb-info { width: 46%; padding: 4px 8px 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gb-more, .is-slash, .is-lunge-me, .is-lunge-foe, .is-blink, .is-slide-foe, .is-slide-me { animation: none; }
+  .gb-more, .is-slash, .is-lunge-me, .is-lunge-foe, .is-hit-foe, .is-hit-me, .is-cheer, .is-shake, .is-slide-foe, .is-slide-me,
+  .gb-stage[data-mon].is-lunge-foe, .gb-stage[data-mon] .is-hit-foe, .gb-arena[data-mon].is-shake { animation: none; }
   .is-faint { animation: none; opacity: 0; }
   .gb-hp-fill { transition: none; }
 }
 
-/* ===== My Knight: pick how the battle character looks ===== */
+/* ===== My Pahlawan: name the battle character ===== */
 dialog.knight-dlg { width: min(660px, calc(100% - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; text-align: left; }
 .kn-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
 dialog.knight-dlg h3 { margin: 0; }
@@ -385,18 +414,8 @@ dialog.knight-dlg h3 { margin: 0; }
 .kn-body { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 22px; align-items: start; }
 .kn-preview { display: grid; place-items: center; padding: 18px 10px 26px; background: #f8f8f0; border: 3px solid var(--bd);
   background-image: radial-gradient(ellipse 60% 14% at 50% 88%, #c8d8a0 0 70%, transparent 71%); }
-.kn-preview svg { display: block; width: 100%; max-width: 150px; height: auto; }
+.kn-preview .art { width: 100%; max-width: 170px; height: auto; aspect-ratio: 1; }
 .kn-opts { display: grid; gap: 14px; }
-.kn-opts fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
-.kn-opts legend { padding: 0; margin-bottom: 6px; font: 600 .8rem var(--heading); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.kn-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.kn-pick { position: relative; display: inline-flex; cursor: pointer; }
-.kn-pick input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-.kn-pick > span { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 12px; font: 600 .9rem var(--font);
-  color: var(--text); background: var(--panel-2); border: 3px solid var(--bd); }
-.kn-pick.kn-colour > span { width: 36px; padding: 0; }
-.kn-pick input:checked + span { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
-.kn-pick input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
 .kn-name { display: grid; gap: 6px; }
 .kn-name label { font: 600 .8rem var(--heading); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .kn-name input { width: 100%; max-width: 280px; height: 40px; padding: 0 12px; font: 600 1rem var(--font); color: var(--text); background: var(--panel-2); border: 3px solid var(--bd); }
@@ -538,7 +557,7 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
 .wd-slots b { font-weight: 600; font-size: .9rem; color: var(--ink); }
 .wd-slots .sub { font-size: .78rem; color: var(--ink-muted); }
 .wd-slots .now { border: 2px solid var(--seal); background: #fff8e6; }
-.wd-slots .tt-ico .sprite { width: 24px; }
+.wd-slots .tt-ico .sprite, .wd-slots .tt-ico .art { width: 24px; height: 24px; }
 .wd-slots .past { opacity: .5; }
 .scroll .pill.relief { color: var(--seal); border-color: var(--seal); }
 
@@ -593,10 +612,13 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
 .tt li { grid-template-columns: 56px 34px minmax(0, 1fr) auto; }
 .tt-ico { display: grid; place-items: center; }
 .tt-ico .sprite { width: 30px; height: auto; }
+.tt-ico .art { width: 30px; height: 30px; }
+/* Dark-outlined pictures vanish on dark panels at icon size; a faint rim keeps them readable. */
+.tt-ico .art, .next-row .art, .nav-ico .art { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .45)); }
 .pills { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .tt-progress { grid-column: 1 / -1; height: 6px; margin-top: 2px; background: var(--track); }
 .tt-progress > i { display: block; height: 100%; background: var(--accent); }
-@media (max-width: 560px) { .tt li { grid-template-columns: 48px 28px minmax(0, 1fr) auto; } .tt-ico .sprite { width: 26px; } }
+@media (max-width: 560px) { .tt li { grid-template-columns: 48px 28px minmax(0, 1fr) auto; } .tt-ico .sprite { width: 26px; } .tt-ico .art { width: 26px; height: 26px; } }
 
 /* Suggested practice: the weakest subject's monster, one tap from a fight. */
 .next-foe { margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--bd); }
@@ -654,7 +676,7 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
         <a href="#lair"><span class="nav-ico" data-ico="skull" aria-hidden="true"></span><span data-i18n="lair">Sarang Raksasa</span></a>
         <button id="weekBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-ico="scroll" aria-hidden="true"></span><span data-i18n="weekBtn">Jadual Seminggu</span></button>
         <button id="shopBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-ico="coin" aria-hidden="true"></span><span data-i18n="shop">Kedai</span></button>
-        <button id="knightBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-ico="knight" aria-hidden="true"></span><span data-i18n="knightNav">Kesatria Saya</span></button>
+        <button id="knightBtn" type="button" aria-haspopup="dialog"><span class="nav-ico" data-art="pendekar" aria-hidden="true"></span><span data-i18n="knightNav">Pahlawan Saya</span></button>
         <a href="#relics"><span class="nav-ico" data-ico="crown" aria-hidden="true"></span><span data-i18n="relics">Peninggalan</span></a>
         <a href="#mastery"><span class="nav-ico" data-ico="owl" aria-hidden="true"></span><span data-i18n="mastery">Penguasaan Subjek</span></a>
         <a href="#party"><span class="nav-ico" data-ico="squire" aria-hidden="true"></span><span data-i18n="party">Pasukan Kelas</span></a>
@@ -791,7 +813,7 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
 <dialog class="battle" id="battleDialog" aria-labelledby="btTitle">
   <h3 class="sr-only" id="btTitle"></h3>
   <button class="bt-x" id="btX" type="button" aria-label="Tutup">X</button>
-  <div class="gb-arena">
+  <div class="gb-arena" id="btArena">
     <div class="gb-info foe">
       <div class="gb-name-row"><span id="foeName"></span><span id="foeLv"></span></div>
       <div class="gb-hp-row">
@@ -830,10 +852,6 @@ dialog.scroll.wide { width: min(800px, calc(100% - 28px)); }
   <div class="kn-body">
     <div class="kn-preview" id="knPreview" aria-hidden="true"></div>
     <div class="kn-opts">
-      <fieldset><legend id="knLegArmour"></legend><div class="kn-row" id="knArmour"></div></fieldset>
-      <fieldset><legend id="knLegCape"></legend><div class="kn-row" id="knCape"></div></fieldset>
-      <fieldset><legend id="knLegHelm"></legend><div class="kn-row" id="knHelm"></div></fieldset>
-      <fieldset><legend id="knLegWeapon"></legend><div class="kn-row" id="knWeapon"></div></fieldset>
       <div class="kn-name"><label for="knName" id="knLegName"></label><input id="knName" type="text" maxlength="12" autocomplete="off"></div>
     </div>
   </div>
@@ -881,22 +899,6 @@ const SPRITES = {
   check: [
     '............', '..........nn', '.........nNn', '........nNn.', 'nn.....nNn..', 'nNn...nNn...',
     '.nNn.nNn....', '..nNnNn.....', '...nNn......', '....n.......', '............', '............',
-  ],
-  golem: [
-    '................', '....kkkkkkkk....', '...kSSSSSSSSk...', '..kSSSSSSSSSSk..', '..kSbbSSSSbbSk..', '..kSSSSkkSSSSk..', '..kSssSSSSssSk..',
-    '.kkSSSSSSSSSSkk.', 'kSSkSSsSSsSSkSSk', 'kSSkSSSSSSSSkSSk', 'kssk.kSSSSk.kssk', '.kk..kSSSSk..kk.', '.....kssssk.....', '....kkkkkkkk....',
-  ],
-  slime: [
-    '................', '................', '.....kkkkkk.....', '...kknnnnnnkk...', '..knnNNnnnnnnk..', '.knnNNnnnnnnnnk.', '.knkkknnnnkkknk.',
-    '.knkpknnnnkpknk.', '.knnnnnnnnnnnnk.', '.knnnkkkkkknnnk.', '..knnnnnnnnnnk..', '...kknnnnnnkk...', '.....kkkkkk.....',
-  ],
-  tiger: [
-    '..kk........kk..', '.kffk......kffk.', '.kffkkkkkkkkffk.', '..kffffffffffk..', '.kffkffffffkffk.', 'kffffFkffkFffffk', 'kfkffkkffkkffkfk',
-    'kffffppkkppffffk', '.kfffppkkkkpffk.', '..kffppppppffk..', '...kkffffffkk...', '.....kkkkkk.....',
-  ],
-  dragon: [
-    '..k..........k..', '.kFk........kFk.', '.kkbkkkkkkkkbkk.', '..kbbbbbbbbbbk..', '.kbbbbbbbbbbbbk.', 'kbbkFFkbbkFFkbbk', 'kbbkFkkbbkkFkbbk',
-    'kbbbbbbbbbbbbbbk', '.kbbbkppppkbbbk.', '.kbbkpkkkkpkbbk.', '..kbbbbbbbbbbk..', '..kkbbppppbbkk..', '..kkkkkbbbbkkkk.',
   ],
   skull: [
     '...kkkkkk...', '..kSSSSSSk..', '.kSSSSSSSSk.', '.kSSSSSSSSk.', '.kSkkSSkkSk.', '.kSkRSSRkSk.',
@@ -982,6 +984,20 @@ function sprite(name, scale = 3) {
   return drawRows(SPRITES[name], PALETTE, scale);
 }
 
+// The pahlawan and the monsters are painted pictures in art/, not letter grids. Decorative too: names are always in text.
+function artImg(src, size) {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = '';
+  img.className = 'art';
+  img.decoding = 'async';
+  if (size) {
+    img.width = size;
+    img.height = size;
+  }
+  return img;
+}
+
 const TEXT = {
   ms: {
     scrollFrom: 'Daripada', scrollDue: 'Tarikh akhir', scrollReward: 'Ganjaran', scrollMessage: 'Mesej guru', scrollHandIn: 'Apa yang perlu dihantar',
@@ -1021,7 +1037,7 @@ const TEXT = {
     lair: 'Sarang Raksasa', lairIntro: 'Setiap mata pelajaran ada raksasanya sendiri. Jawapan betul menyerang raksasa; jawapan salah mencederakan anda. Berbeza daripada Penjaga Minggu Ini, yang hanya tewas apabila semua bilik misi siap.',
     lairFight: 'Lawan', lairAgain: 'Lawan lagi', lairBeaten: 'Ditewaskan', lairQuestions: (n) => n + ' soalan', lairHit: (n) => 'Serangan ' + n, lairLevels: ['', 'Mudah', 'Sederhana', 'Sukar'],
     lairRecord: (a, w) => 'Cubaan ' + a + ' • Menang ' + w,
-    btClose: 'Tutup', btAnswerWas: 'Jawapan betul:', gbKnight: 'Kesatria', gbMore: 'Teruskan', gbMenuLabel: 'Pilih jawapan', gbQuit: 'Keluar',
+    btClose: 'Tutup', btAnswerWas: 'Jawapan betul:', gbKnight: 'Pahlawan', gbMore: 'Teruskan', gbMenuLabel: 'Pilih jawapan', gbQuit: 'Keluar',
     gbDialogTitle: (name) => 'Pertarungan kuiz: ' + name, gbAppeared: (foe) => foe + ' liar muncul!', gbGo: (me) => 'Pergi, ' + me + '!',
     gbRightMove: (me) => me + ' menyerang dengan jawapan betul!', gbHit: (foe, n) => foe + ' kehilangan ' + n + ' HP.',
     gbWrongMove: (foe) => 'Jawapan salah! ' + foe + ' menyerang balas!', gbHurt: (me, n) => me + ' kehilangan ' + n + ' HP.',
@@ -1029,8 +1045,8 @@ const TEXT = {
     gbReward: (me, xp, coins) => me + ' memperoleh ' + xp + ' XP dan ' + coins + ' syiling!', gbWeak: (list) => 'Topik untuk diulang: ' + list + '.',
     gbKnightFainted: (me) => me + ' tidak dapat bertarung lagi!', gbRetryHint: 'Cuba lagi. Soalan dan jawapan akan disusun dalam urutan baharu.',
     gbAgain: 'Lawan lagi', gbRetry: 'Cuba lagi',
-    knightNav: 'Kesatria Saya', knightTitle: 'Kesatria Saya', knightIntro: 'Pilih rupa kesatria anda. Ia muncul dalam setiap pertarungan kuiz.',
-    knightArmour: 'Perisai badan', knightCape: 'Jubah dan jambul', knightHelm: 'Topi keledar', knightWeapon: 'Senjata', knightNameLabel: 'Nama kesatria',
+    knightNav: 'Pahlawan Saya', knightTitle: 'Pahlawan Saya', knightIntro: 'Beri nama pahlawan anda. Dia muncul dalam setiap pertarungan kuiz.',
+    knightNameLabel: 'Nama pahlawan',
     knightReset: 'Set semula', knightDone: 'Siap',
     
     now: 'Sekarang', relief: 'Guru ganti', day: 'Khamis',
@@ -1081,7 +1097,7 @@ const TEXT = {
     lair: 'Monster Lair', lairIntro: "Every subject has its own monster. Right answers strike the monster; wrong answers hurt you. Different from This Week's Guardian, which only falls once every quest room is cleared.",
     lairFight: 'Fight', lairAgain: 'Fight again', lairBeaten: 'Defeated', lairQuestions: (n) => n + (n === 1 ? ' question' : ' questions'), lairHit: (n) => 'Hits for ' + n, lairLevels: ['', 'Easy', 'Medium', 'Hard'],
     lairRecord: (a, w) => 'Attempts ' + a + ' • Wins ' + w,
-    btClose: 'Close', btAnswerWas: 'Right answer:', gbKnight: 'Knight', gbMore: 'Continue', gbMenuLabel: 'Choose an answer', gbQuit: 'Leave',
+    btClose: 'Close', btAnswerWas: 'Right answer:', gbKnight: 'Warrior', gbMore: 'Continue', gbMenuLabel: 'Choose an answer', gbQuit: 'Leave',
     gbDialogTitle: (name) => 'Quiz battle: ' + name, gbAppeared: (foe) => 'A wild ' + foe + ' appeared!', gbGo: (me) => 'Go, ' + me + '!',
     gbRightMove: (me) => me + ' attacks with the right answer!', gbHit: (foe, n) => foe + ' loses ' + n + ' HP.',
     gbWrongMove: (foe) => 'Wrong answer! ' + foe + ' strikes back!', gbHurt: (me, n) => me + ' loses ' + n + ' HP.',
@@ -1089,8 +1105,8 @@ const TEXT = {
     gbReward: (me, xp, coins) => me + ' gained ' + xp + ' XP and ' + coins + ' coins!', gbWeak: (list) => 'Topics to revisit: ' + list + '.',
     gbKnightFainted: (me) => me + " can't fight any more!", gbRetryHint: 'Try again. The questions and answers will come in a new order.',
     gbAgain: 'Fight again', gbRetry: 'Try again',
-    knightNav: 'My Knight', knightTitle: 'My Knight', knightIntro: 'Choose how your knight looks. It appears in every quiz battle.',
-    knightArmour: 'Armour', knightCape: 'Cape and plume', knightHelm: 'Helmet', knightWeapon: 'Weapon', knightNameLabel: 'Knight name',
+    knightNav: 'My Warrior', knightTitle: 'My Warrior', knightIntro: 'Name your pahlawan. They appear in every quiz battle.',
+    knightNameLabel: 'Warrior name',
     knightReset: 'Reset', knightDone: 'Done',
     
     now: 'Now', relief: 'Relief teacher', day: 'Thursday',
@@ -1340,7 +1356,7 @@ function slotIcon(subject) {
   const box = document.createElement('span');
   box.className = 'tt-ico';
   box.setAttribute('aria-hidden', 'true');
-  box.append(sprite(monster ? monster.sprite : subject.ms === 'Pendidikan Jasmani' ? 'trophy' : 'scroll', 2));
+  box.append(monster ? artImg(monster.img, 32) : sprite(subject.ms === 'Pendidikan Jasmani' ? 'trophy' : 'scroll', 2));
   return box;
 }
 
@@ -1468,7 +1484,7 @@ function nextFoeBlock() {
   fight.textContent = t().lairFight;
   fight.setAttribute('aria-label', t().lairFight + ': ' + pick(monster.name));
   fight.addEventListener('click', () => openBattle(monster.id));
-  row.append(sprite(monster.sprite, 3), info, fight);
+  row.append(artImg(monster.img, 48), info, fight);
   wrap.append(row);
   return wrap;
 }
@@ -1666,6 +1682,7 @@ $('weekDialog').addEventListener('click', (event) => { if (event.target === even
 $('wdSeal').append(sprite('seal', 4));
 // The coin sprite is 8x8, the rest are 12 wide, so it is drawn one step larger to fill the same 24px slot.
 document.querySelectorAll('[data-ico]').forEach((el) => el.append(sprite(el.dataset.ico, el.dataset.ico === 'coin' ? 3 : 2)));
+document.querySelectorAll('[data-art]').forEach((el) => el.append(artImg('art/' + el.dataset.art + '.png', 26)));
 
 /* ===== Coin shop =====
    Everything here is cosmetic. Items are plain data: a look is applied by setting data-skin / data-frame on <html> (the CSS does the
@@ -1918,11 +1935,12 @@ const QUIZ_SUBJECT = {
   english: {ms: 'Bahasa Inggeris', en: 'English'}, malay: {ms: 'Bahasa Melayu', en: 'Malay'},
 };
 
+// Pictures cut from the Pixel Warrior and Monster Lineup art; the orang bunian and the naga are mirrored to face the pahlawan.
 const MONSTERS = [
-  {id: 'golem', subj: 'maths', sprite: 'golem', name: {ms: 'Golem Angka', en: 'Number Golem'}, hit: 20, level: 1},
-  {id: 'slime', subj: 'science', sprite: 'slime', name: {ms: 'Lendir Makmal', en: 'Lab Slime'}, hit: 25, level: 2},
-  {id: 'tiger', subj: 'malay', sprite: 'tiger', name: {ms: 'Harimau Bahasa', en: 'Language Tiger'}, hit: 25, level: 2},
-  {id: 'dragon', subj: 'english', sprite: 'dragon', name: {ms: 'Naga Tatabahasa', en: 'Grammar Dragon'}, hit: 34, level: 3},
+  {id: 'bunian', subj: 'maths', img: 'art/bunian.png', name: {ms: 'Orang Bunian', en: 'Forest Ogre'}, hit: 20, level: 1},
+  {id: 'naga', subj: 'science', img: 'art/naga.png', name: {ms: 'Naga Laut', en: 'Sea Serpent'}, hit: 25, level: 2},
+  {id: 'harimau', subj: 'malay', img: 'art/harimau.png', name: {ms: 'Harimau Jin', en: 'Spirit Tiger'}, hit: 25, level: 2},
+  {id: 'hantu', subj: 'english', img: 'art/hantu.png', name: {ms: 'Hantu Lelaki', en: 'Ghost Warrior'}, hit: 34, level: 3},
 ];
 
 const QUIZ = [
@@ -2001,7 +2019,7 @@ function renderLair() {
     card.className = 'mon' + (record.wins > 0 ? ' beaten' : '');
     const art = document.createElement('div');
     art.className = 'mon-art';
-    art.append(sprite(monster.sprite, 5));
+    art.append(artImg(monster.img, 112));
     const name = document.createElement('b');
     name.textContent = pick(monster.name);
     const sub = document.createElement('span');
@@ -2031,73 +2049,12 @@ function renderLair() {
   $('lairGrid').replaceChildren(...cards);
 }
 
-/* ===== My Knight: the customisable battle character =====
-   The knight is drawn from the back (as in old handheld RPGs) from a base sprite plus three swappable parts: helmet, weapon, and two
-   colours. Armour shades are derived from one colour, so any choice stays readable. The choice is kept in localStorage. */
+/* ===== My Pahlawan: the battle character =====
+   The pahlawan is one fixed picture; the student chooses only its name, kept in localStorage. The code keeps its older "knight" names
+   (storage key, element ids) so a name saved before still loads. */
 const KNIGHT_KEY = 'sapientia.knight';
-
-const KNIGHT_PARTS = {
-  armour: [
-    {id: 'steel', hex: '#9aa7bd', name: {ms: 'Keluli', en: 'Steel'}}, {id: 'gold', hex: '#e0a82a', name: {ms: 'Emas', en: 'Gold'}},
-    {id: 'crimson', hex: '#b8322e', name: {ms: 'Merah tua', en: 'Crimson'}}, {id: 'forest', hex: '#3a8a55', name: {ms: 'Hijau hutan', en: 'Forest'}},
-    {id: 'azure', hex: '#3f78d6', name: {ms: 'Biru', en: 'Azure'}}, {id: 'obsidian', hex: '#3a3f52', name: {ms: 'Obsidian', en: 'Obsidian'}},
-  ],
-  cape: [
-    {id: 'red', hex: '#d8453b', name: {ms: 'Merah', en: 'Red'}}, {id: 'blue', hex: '#3f78d6', name: {ms: 'Biru', en: 'Blue'}},
-    {id: 'green', hex: '#3fae6a', name: {ms: 'Hijau', en: 'Green'}}, {id: 'purple', hex: '#8a5bd6', name: {ms: 'Ungu', en: 'Purple'}},
-    {id: 'orange', hex: '#ee7f1e', name: {ms: 'Jingga', en: 'Orange'}}, {id: 'white', hex: '#e9edf5', name: {ms: 'Putih', en: 'White'}},
-  ],
-  helm: [
-    {id: 'plume', name: {ms: 'Jambul', en: 'Plume'}}, {id: 'horns', name: {ms: 'Tanduk', en: 'Horns'}}, {id: 'crest', name: {ms: 'Pucuk', en: 'Crest'}},
-  ],
-  weapon: [
-    {id: 'sword', name: {ms: 'Pedang', en: 'Sword'}}, {id: 'axe', name: {ms: 'Kapak', en: 'Axe'}}, {id: 'spear', name: {ms: 'Lembing', en: 'Spear'}},
-  ],
-};
-
-// 16 columns of body, then three columns (15-17) for the weapon arm and blade.
-const KNIGHT_HELM_ROWS = {
-  plume: ['.......PP.......', '......PPPP......', '.....kPPPPk.....', '....kAAAAAAk....', '....kAhAAAAk....', '....kAAAAAAk....'],
-  horns: ['.b............b.', '.bb..........bb.', '..bbkkkkkkkkbb..', '....kAAAAAAk....', '....kAhAAAAk....', '....kAAAAAAk....'],
-  crest: ['.......PP.......', '.......PP.......', '......kPPk......', '....kAAPPAAk....', '....kAhPPAAk....', '....kAAPPAAk....'],
-};
-const KNIGHT_BODY_ROWS = [
-  '....kkAAAAkk....', '..kkAAAAAAAAkk..', '.kAAAkCCCCkAAAk.', '.kAakCCCCCCkaAk.', '..kakCCccCCkak..', '...kkCCccCCkk...',
-  '....kCCccCCk....', '....kCCCCCCk....', '....kCCCCCCk....', '....kAakkaAk....', '....kBBkkBBk....', '...kkkkkkkkkk...',
-];
-const KNIGHT_WEAPON_ROWS = {
-  sword: ['.W.', '.Ww', '.Ww', '.Ww', '.Ww', '.Ww', '.Ww', '.Ww', '.Ww', 'kGG', 'AB.', 'kB.', '.G.', '...', '...', '...', '...', '...'],
-  axe: ['...', '.Ww', '.Ww', '.Ww', '.Ww', '.Ww', '.B.', '.B.', '.B.', 'kB.', 'AB.', 'kB.', '.B.', '.B.', '...', '...', '...', '...'],
-  spear: ['.W.', '.Ww', '.W.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'kB.', 'AB.', 'kB.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.'],
-};
-
-const KNIGHT_DEFAULT = {armour: 'steel', cape: 'red', helm: 'plume', weapon: 'sword', name: ''};
-const knightLook = {...KNIGHT_DEFAULT};
-
-// Mix a colour toward black (amount < 0) or white (amount > 0).
-function shade(hex, amount) {
-  const target = amount < 0 ? 0 : 255;
-  const mix = (offset) => {
-    const value = parseInt(hex.slice(offset, offset + 2), 16);
-    return Math.round(value + (target - value) * Math.abs(amount)).toString(16).padStart(2, '0');
-  };
-  return '#' + mix(1) + mix(3) + mix(5);
-}
-
-const knightPart = (group, id) => KNIGHT_PARTS[group].find((part) => part.id === id) || KNIGHT_PARTS[group][0];
-
-function knightSvg(look, scale) {
-  const armour = knightPart('armour', look.armour).hex;
-  const cape = knightPart('cape', look.cape).hex;
-  const palette = {
-    k: '#0f1218', A: armour, a: shade(armour, -0.3), h: shade(armour, 0.3), P: cape, C: cape, c: shade(cape, -0.28),
-    b: '#efe6cf', B: '#7a4a22', W: '#dfe6f1', w: '#8793a6', G: '#f2b632',
-  };
-  const helm = KNIGHT_HELM_ROWS[knightPart('helm', look.helm).id];
-  const arm = KNIGHT_WEAPON_ROWS[knightPart('weapon', look.weapon).id];
-  const rows = [...helm, ...KNIGHT_BODY_ROWS].map((row, i) => row.slice(0, 15) + arm[i]);
-  return drawRows(rows, palette, scale);
-}
+const PAHLAWAN_IMG = 'art/pendekar.png';
+const knightLook = {name: ''};
 
 // Names are shown in the battle and typed by the student, so keep them short, plain text.
 const cleanKnightName = (value) => String(value || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 12);
@@ -2106,63 +2063,21 @@ const knightName = () => knightLook.name || t().gbKnight;
 function loadKnight() {
   let saved = null;
   try { saved = JSON.parse(readPref(KNIGHT_KEY)); } catch (e) { saved = null; }
-  Object.assign(knightLook, KNIGHT_DEFAULT);
-  if (!saved || typeof saved !== 'object') return;
-  for (const group of Object.keys(KNIGHT_PARTS)) {
-    if (KNIGHT_PARTS[group].some((part) => part.id === saved[group])) knightLook[group] = saved[group];
-  }
-  knightLook.name = cleanKnightName(saved.name);
+  knightLook.name = saved && typeof saved === 'object' ? cleanKnightName(saved.name) : '';
 }
 
 const saveKnight = () => writePref(KNIGHT_KEY, JSON.stringify(knightLook));
 
-function buildKnightGroup(boxId, group, isColour) {
-  const box = $(boxId);
-  const picks = KNIGHT_PARTS[group].map((part) => {
-    const label = document.createElement('label');
-    label.className = 'kn-pick' + (isColour ? ' kn-colour' : '');
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = 'kn-' + group;
-    input.value = part.id;
-    input.checked = knightLook[group] === part.id;
-    input.addEventListener('change', () => {
-      knightLook[group] = part.id;
-      saveKnight();
-      $('knPreview').replaceChildren(knightSvg(knightLook, 8));
-    });
-    const face = document.createElement('span');
-    if (isColour) {
-      face.style.background = part.hex;
-      face.setAttribute('role', 'img');
-      face.setAttribute('aria-label', pick(part.name));
-    } else {
-      face.textContent = pick(part.name);
-    }
-    label.append(input, face);
-    return label;
-  });
-  box.replaceChildren(...picks);
-}
-
 function renderKnightForm() {
   $('knTitle').textContent = t().knightTitle;
   $('knIntro').textContent = t().knightIntro;
-  $('knLegArmour').textContent = t().knightArmour;
-  $('knLegCape').textContent = t().knightCape;
-  $('knLegHelm').textContent = t().knightHelm;
-  $('knLegWeapon').textContent = t().knightWeapon;
   $('knLegName').textContent = t().knightNameLabel;
   $('knReset').textContent = t().knightReset;
   $('knDone').textContent = t().knightDone;
   $('knX').setAttribute('aria-label', t().btClose);
   $('knName').placeholder = t().gbKnight;
   $('knName').value = knightLook.name;
-  buildKnightGroup('knArmour', 'armour', true);
-  buildKnightGroup('knCape', 'cape', true);
-  buildKnightGroup('knHelm', 'helm', false);
-  buildKnightGroup('knWeapon', 'weapon', false);
-  $('knPreview').replaceChildren(knightSvg(knightLook, 8));
+  $('knPreview').replaceChildren(artImg(PAHLAWAN_IMG));
 }
 
 function openKnight() {
@@ -2179,15 +2094,15 @@ $('knName').addEventListener('input', (event) => {
   saveKnight();
 });
 $('knReset').addEventListener('click', () => {
-  Object.assign(knightLook, KNIGHT_DEFAULT);
+  knightLook.name = '';
   saveKnight();
   renderKnightForm();
 });
 
 /* ===== Battle screen =====
    The fight is a short script of awaited steps: type a line, wait, animate, move the HP bar. Every step checks a token, so closing
-   the dialog (which bumps the token) stops a fight that is half way through. A right answer makes the knight hit the monster; a wrong
-   answer makes the monster hit the knight. */
+   the dialog (which bumps the token) stops a fight that is half way through. A right answer makes the pahlawan hit the monster; a wrong
+   answer makes the monster hit the pahlawan. */
 const CANCELLED = new Error('battle closed');
 const stillOpen = (token) => token === battle.token;
 
@@ -2260,6 +2175,71 @@ function setMenu(labels, token) {
   });
 }
 
+/* Battle sprites: frame strips cut from the Malay Fantasy Sprite Atlas (art/sheet-*.png). Each strip is one row of equal cells,
+   idle, attack, hit and die frames in that order ([first cell, count]), with every frame's feet on the same line (foot = its
+   height fraction). The monsters are mirrored to face the pendekar. The still pictures stay for the lair, icons and preview. */
+const SHEETS = {
+  pendekar: {src: 'art/sheet-pendekar.png', w: 136, h: 101, foot: 0.9901, actions: {idle: [0, 4], attack: [4, 4], hit: [8, 2], die: [10, 3]}},
+  bunian: {src: 'art/sheet-bunian.png', w: 190, h: 122, foot: 0.9918, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 2], die: [9, 3]}},
+  naga: {src: 'art/sheet-naga.png', w: 144, h: 124, foot: 0.9758, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 1], die: [8, 2]}},
+  harimau: {src: 'art/sheet-harimau.png', w: 202, h: 115, foot: 0.9913, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 1], die: [8, 2]}},
+  hantu: {src: 'art/sheet-hantu.png', w: 194, h: 124, foot: 0.9839, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 2], die: [9, 2]}},
+};
+const SHEET_SPAN = 100; // atlas pixels across one figure box
+const FRAME_MS = {idle: 260, attack: 120, hit: 200, die: 240};
+
+function sheetEl(who) {
+  const sheet = SHEETS[who];
+  const cells = Object.values(sheet.actions).reduce((sum, [, n]) => sum + n, 0);
+  const el = document.createElement('div');
+  el.className = 'sheet';
+  el.dataset.who = who;
+  el.style.backgroundImage = `url(${sheet.src})`;
+  el.style.backgroundSize = cells * 100 + '% 100%';
+  el.style.width = (sheet.w / SHEET_SPAN) * 100 + '%';
+  el.style.aspectRatio = sheet.w + ' / ' + sheet.h;
+  el.style.bottom = (-(1 - sheet.foot) * sheet.h / SHEET_SPAN) * 100 + '%'; // the box is square, so % of height = % of width
+  showFrame(el, 'idle', 0);
+  return el;
+}
+
+function showFrame(el, action, k) {
+  const sheet = SHEETS[el.dataset.who];
+  const cells = Object.values(sheet.actions).reduce((sum, [, n]) => sum + n, 0);
+  const cell = sheet.actions[action][0] + k;
+  el.style.backgroundPosition = (cells > 1 ? (cell / (cells - 1)) * 100 : 0) + '% 0';
+  el.dataset.k = k;
+}
+
+const sheetOf = (side) => $(side + 'Fig').firstElementChild;
+
+// One shared timer steps both idle loops; a figure that is acting (data-busy) is left alone.
+function tickIdle() {
+  for (const el of document.querySelectorAll('#battleDialog .sheet')) {
+    if (el.dataset.busy) continue;
+    const count = SHEETS[el.dataset.who].actions.idle[1];
+    showFrame(el, 'idle', (Number(el.dataset.k) + 1) % count);
+  }
+}
+
+// Play one action's frames, then go back to idle; hold keeps the last frame (a fallen figure stays down).
+async function act(el, action, token, hold = false) {
+  const count = SHEETS[el.dataset.who].actions[action][1];
+  el.dataset.busy = '1';
+  if (prefersReducedMotion()) {
+    showFrame(el, action, hold ? count - 1 : 0);
+    await sleep(FRAME_MS[action] * count, token);
+  } else {
+    for (let k = 0; k < count; k++) {
+      showFrame(el, action, k);
+      await sleep(FRAME_MS[action], token);
+    }
+  }
+  if (hold) return;
+  delete el.dataset.busy;
+  showFrame(el, 'idle', 0);
+}
+
 async function play(el, className, ms, token) {
   el.classList.remove(className);
   void el.offsetWidth; // restart the animation if the same class is played twice in a row
@@ -2305,6 +2285,12 @@ function resetArena() {
   for (const id of ['foeStage', 'meStage', 'foeFig', 'meFig']) {
     $(id).className = id.endsWith('Stage') ? $(id).className.split(' ').filter((c) => !c.startsWith('is-')).join(' ') : '';
   }
+  for (const side of ['foe', 'me']) {
+    const el = sheetOf(side);
+    if (!el) continue;
+    delete el.dataset.busy;
+    showFrame(el, 'idle', 0);
+  }
   setHp('foe', battle.foeHp, battle.foeMax, true);
   setHp('me', battle.heroHp, BATTLE_HERO_HP, true);
 }
@@ -2321,8 +2307,12 @@ function renderBattleFrame() {
   $('btX').setAttribute('aria-label', t().btClose);
   $('btMenu').setAttribute('aria-label', t().gbMenuLabel);
   $('btRecord').textContent = t().lairRecord(record.attempts, record.wins);
-  $('foeFig').replaceChildren(sprite(monster.sprite, 8));
-  $('meFig').replaceChildren(knightSvg(knightLook, 8));
+  $('foeFig').replaceChildren(sheetEl(monster.id));
+  $('meFig').replaceChildren(sheetEl('pendekar'));
+  // CSS picks each character's idle loop, attack and hit reaction from data-mon.
+  $('foeStage').dataset.mon = monster.id;
+  $('btArena').dataset.mon = monster.id;
+  $('meStage').dataset.mon = 'pendekar';
 }
 
 async function askQuestion(token) {
@@ -2346,9 +2336,9 @@ async function resolveAnswer(index, token) {
     battle.right += 1;
     battle.foeHp -= BATTLE_FOE_DAMAGE;
     await say(t().gbRightMove(me), token);
-    await play($('meStage'), 'is-lunge-me', 520, token);
+    await Promise.all([play($('meStage'), 'is-lunge-me', 520, token), act(sheetOf('me'), 'attack', token)]);
     setHp('foe', battle.foeHp, battle.foeMax);
-    await Promise.all([play($('btSlash'), 'is-slash', 420, token), play($('foeFig'), 'is-blink', 620, token)]);
+    await Promise.all([play($('btSlash'), 'is-slash', 420, token), play($('foeFig'), 'is-hit-foe', 620, token), act(sheetOf('foe'), 'hit', token)]);
     await sleep(500, token);
     await say(t().gbHit(foe, BATTLE_FOE_DAMAGE) + ' ' + why, token);
   } else {
@@ -2359,9 +2349,9 @@ async function resolveAnswer(index, token) {
     battle.queue.push(battle.current); // it comes back until it is answered correctly
     const right = optionText(battle.choices.find((c) => c.correct).option);
     await say(t().gbWrongMove(foe), token);
-    await play($('foeStage'), 'is-lunge-foe', 520, token);
+    await Promise.all([play($('foeStage'), 'is-lunge-foe', 520, token), act(sheetOf('foe'), 'attack', token)]);
     setHp('me', battle.heroHp, BATTLE_HERO_HP);
-    await play($('meFig'), 'is-blink', 620, token);
+    await Promise.all([play($('btArena'), 'is-shake', 500, token), play($('meFig'), 'is-hit-me', 620, token), act(sheetOf('me'), 'hit', token)]);
     await sleep(500, token);
     await say(t().gbHurt(me, monster.hit) + ' ' + t().btAnswerWas + ' ' + right + '. ' + why, token);
   }
@@ -2381,8 +2371,9 @@ async function finishRun(won, token) {
   renderLair();
 
   if (won) {
+    await act(sheetOf('foe'), 'die', token, true);
     $('foeFig').classList.add('is-faint');
-    await sleep(700, token);
+    await play($('meFig'), 'is-cheer', 800, token);
     await say(t().gbFoeFainted(foe) + ' ' + t().gbWinStats(battle.right, battle.wrong), token);
     await waitMore(token);
     // Each monster pays out once per visit, on the first win over it; later wins are practice.
@@ -2397,6 +2388,7 @@ async function finishRun(won, token) {
       await waitMore(token);
     }
   } else {
+    await act(sheetOf('me'), 'die', token, true);
     $('meFig').classList.add('is-faint');
     await sleep(700, token);
     await say(t().gbKnightFainted(me), token);
@@ -2463,6 +2455,10 @@ function openBattle(monsterId) {
   newRun();
   renderBattleFrame();
   resetArena();
+  if (!prefersReducedMotion()) {
+    const idle = setInterval(tickIdle, FRAME_MS.idle);
+    battle.cleanups.push(() => clearInterval(idle));
+  }
   const dialog = $('battleDialog');
   if (typeof dialog.showModal === 'function') dialog.showModal();
   $('btBox').focus(); // not the close button, so a stray Enter or Space while a line is typing never closes the fight

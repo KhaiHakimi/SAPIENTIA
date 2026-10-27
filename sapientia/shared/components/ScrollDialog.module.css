@@ -1,0 +1,45 @@
+.scroll { --parch: #efe3c2; --parch-2: #e2d0a2; --ink: #2a1d0f; --ink-muted: #6b573a; --seal: #8a2b1f;
+  width: min(600px, calc(100% - 28px)); max-height: calc(100vh - 28px); padding: 0; overflow: visible; background: none; box-shadow: none;
+  text-align: left; color: var(--ink); }
+.scroll[open] { display: flex; flex-direction: column; animation: unroll .5s steps(10, end); }
+.wide { width: min(800px, calc(100% - 28px)); }
+@keyframes unroll { from { clip-path: inset(46% -24px 46% -24px); } to { clip-path: inset(0 -24px 0 -24px); } }
+
+.rod { position: relative; flex: none; height: 22px; margin: 0 -12px; background: linear-gradient(#c58d4a 0 30%, #a9743a 30% 60%, #5a3a1c 60%);
+  box-shadow: 0 -3px 0 0 #0f1218, 0 3px 0 0 #0f1218, -3px 0 0 0 #0f1218, 3px 0 0 0 #0f1218; }
+.rod::before, .rod::after { content: ""; position: absolute; top: -5px; width: 12px; height: 32px; background: linear-gradient(#ffd166 0 30%, #d89a1e 30% 70%, #9a6410 70%);
+  box-shadow: 0 -3px 0 0 #0f1218, 0 3px 0 0 #0f1218, -3px 0 0 0 #0f1218, 3px 0 0 0 #0f1218; }
+.rod::before { left: -6px; }
+.rod::after { right: -6px; }
+
+.paper { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 26px 32px 22px; background-color: var(--parch);
+  background-image: linear-gradient(90deg, rgba(110, 72, 18, .2), transparent 7%, transparent 93%, rgba(110, 72, 18, .2)),
+    linear-gradient(rgba(110, 72, 18, .1), transparent 5%, transparent 95%, rgba(110, 72, 18, .12));
+  box-shadow: inset 0 0 0 3px var(--parch-2); }
+.paper p { margin: 0 0 18px; color: var(--ink); font-size: 1rem; line-height: 1.65; }
+.close { position: absolute; top: 12px; right: 14px; width: 34px; height: 34px; padding: 0; cursor: pointer; font: 700 1rem/1 var(--heading);
+  color: var(--ink); background: var(--parch-2); border: 2px solid #b8955a; }
+.close:hover { background: #d6bf86; }
+.paper .eyebrow { margin: 0 44px 6px 0; font: 600 .72rem var(--heading); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-muted); }
+.title { margin: 0 44px 16px 0; font: 700 1.55rem/1.2 var(--heading); letter-spacing: .02em; color: var(--ink); text-transform: none; }
+
+/* Content pieces used inside scrolls. */
+.intro { margin-bottom: 18px; }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; margin: 0 0 18px; padding: 14px 0; border-block: 2px solid #c4a96a; }
+.meta dt { margin: 0 0 2px; font: 600 .66rem var(--heading); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); }
+.meta dd { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 600; font-size: .95rem; color: var(--ink); }
+.subhead { margin: 0 0 8px; font: 700 .8rem var(--heading); letter-spacing: .14em; text-transform: uppercase; color: var(--seal); }
+.list { margin: 0 0 20px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.list li { position: relative; padding-left: 22px; color: var(--ink); font-size: .95rem; line-height: 1.45; }
+.list li::before { content: ""; position: absolute; left: 2px; top: .45em; width: 8px; height: 8px; background: #b8791a; box-shadow: 2px 2px 0 0 rgba(42, 29, 15, .25); }
+
+/* Sticky, so on a short screen the buttons stay in reach while the message scrolls under them. */
+.actions { position: sticky; bottom: -22px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 -32px -22px; padding: 14px 32px 20px;
+  background: var(--parch); border-top: 2px solid #c4a96a; }
+.seal { margin-right: auto; }
+
+@media (max-width: 560px) {
+  .paper { padding: 22px 20px 18px; }
+  .title { font-size: 1.3rem; }
+  .actions { bottom: -18px; margin: 0 -20px -18px; padding: 12px 20px 16px; }
+}

@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sapientia web app
 
-## Getting Started
+Next.js 16 (App Router), React 19, TypeScript, CSS Modules. The student board from `../prototypes/student-dashboard` is ported here. All data is fictional sample data until the API exists.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000 (redirects to /student)
+npm test           # unit tests (Vitest)
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Where things are
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Code is grouped **by feature**. Every feature folder uses the same sub-folders, so you always know where to look:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Sub-folder | Holds |
+|---|---|
+| `components/` | React components (`.tsx`) |
+| `hooks/` | React hooks (`use*.ts`) |
+| `services/` | Rules and storage, no React; unit tests sit next to them as `*.test.ts` |
+| `interfaces/` | TypeScript types (`*.interface.ts`) |
+| `constants/` | Fixed numbers (`*.constants.ts`) |
+| `data/` | Sample data |
+| `i18n/` | Bahasa Melayu and English messages, with a `*-messages.interface.ts` |
+| `styles/` | CSS Modules (`*.module.css`) |
 
-## Learn More
+```
+app/
+  layout.tsx, globals.css        root layout, design tokens, colour skins, card frames
+  (student)/student/page.tsx     /student, the student board
+features/
+  student-dashboard/             sidebar, cards, quest/week/level-up dialogs, progress state
+  battle/                        Monster Lair, quiz battle (rules, script, controller, screen)
+  characters/                    one folder per character, plus the shared sprite components
+    pendekar/  orang-bunian/  naga-laut/  harimau-jin/  hantu-lelaki/
+    index.ts                     registry: PLAYER_CHARACTER, MONSTERS
+  shop/                          coin shop, skins, frames, avatars
+  pahlawan/                      naming the battle character
+shared/                          used by every feature: storage, i18n, theme, pixel sprites, buttons, cards, dialogs, toast
+public/
+  characters/<name>/portrait.png, sprite-sheet.png
+  scenes/*.svg                   backgrounds for the skins and the battle arena
+  brand/sapientia-logo.jpg
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Adding a monster
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Put `portrait.png` and `sprite-sheet.png` in `public/characters/<name>/`. The sheet is one row of equal cells: idle, attack, hit and die frames, feet on the same line, facing left.
+2. Create `features/characters/<name>/<name>.character.ts` (copy another monster) and, if it moves differently, `<name>.module.css`.
+3. List it in `features/characters/index.ts` and add its questions to `features/battle/data/quiz-bank.ts`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Progress (quest ticks, battle rewards) resets on reload; the shop, language, theme, photo, pahlawan name and battle records are kept in this browser's localStorage.
+- The demo clock is fixed at Thursday 10:15 (`features/student-dashboard/constants/demo-clock.constants.ts`).
+- Every animation is switched off when the device asks for reduced motion.

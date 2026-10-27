@@ -1,0 +1,35 @@
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+
+/* A lesson row: time, subject icon, subject and room, pills; the current lesson gets a progress line underneath. */
+.slot { display: grid; align-items: center; }
+.slot time { font: 600 .95rem var(--heading); }
+.slot b { font-weight: 600; }
+.sub { font-size: .85rem; }
+.icon { display: grid; place-items: center; }
+.past { opacity: .5; }
+.pills { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.pill { padding: 2px 9px; font: 600 .68rem var(--font); letter-spacing: .06em; text-transform: uppercase; background: var(--accent); color: var(--accent-ink); }
+.relief { background: transparent; color: var(--accent-text); border: 1px solid var(--accent-text); }
+.progress { grid-column: 1 / -1; height: 6px; margin-top: 2px; background: var(--track); }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+
+/* On the dashboard card. */
+.card { grid-template-columns: 56px 34px minmax(0, 1fr) auto; gap: 12px; padding: 10px 12px; background: var(--panel-2); border: 2px solid var(--bd); }
+.card time { color: var(--accent-text); }
+.card .sub { color: var(--muted); }
+.card .portrait, .card .sprite { width: 30px; height: 30px; }
+.card.now { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+
+/* Inside the parchment weekly timetable. */
+.scroll { grid-template-columns: 46px 28px minmax(0, 1fr) auto; gap: 10px; padding: 6px 8px; background: rgba(255, 255, 255, .45); border: 1px solid #d3bb82; }
+.scroll time { font-size: .8rem; color: var(--seal); }
+.scroll b { font-size: .9rem; color: var(--ink); }
+.scroll .sub { font-size: .78rem; color: var(--ink-muted); }
+.scroll .portrait, .scroll .sprite { width: 24px; height: 24px; }
+.scroll.now { border: 2px solid var(--seal); background: #fff8e6; }
+.scroll .relief { color: var(--seal); border-color: var(--seal); }
+
+@media (max-width: 560px) {
+  .card { grid-template-columns: 48px 28px minmax(0, 1fr) auto; }
+  .card .portrait, .card .sprite { width: 26px; height: 26px; }
+}

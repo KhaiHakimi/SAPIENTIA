@@ -1,0 +1,6 @@
+.days { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.day { margin: 0; padding: 12px 14px 14px; background: rgba(255, 255, 255, .3); border: 2px solid #c4a96a; }
+.today { border-color: var(--seal); background: rgba(138, 43, 31, .07); }
+.day h4 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--ink); }
+.tag { padding: 1px 8px; font: 600 .66rem var(--font); letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--seal); }
+.day .slots { gap: 6px; }

@@ -7,14 +7,8 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
+  // No Tailwind loader: styling is CSS Modules plus app/globals.css. A "*.css" loader rule would also catch *.module.css and
+  // turn every module into global CSS, so the component styles would never apply.
 };
 
 export default nextConfig;

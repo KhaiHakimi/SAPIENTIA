@@ -1,0 +1,8 @@
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 10px; }
+.relic { display: grid; justify-items: center; align-content: start; gap: 6px; padding: 14px 8px 12px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
+.relic b { font: 600 .74rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
+.relic small { font-size: .78rem; color: var(--muted); line-height: 1.25; }
+.locked .sprite { filter: grayscale(1) brightness(1.15) contrast(.9); opacity: .55; }
+.earned { border-color: var(--accent); }
+.fresh .sprite { animation: pop .5s steps(5, end); }
+@keyframes pop { 0% { transform: scale(.5); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }

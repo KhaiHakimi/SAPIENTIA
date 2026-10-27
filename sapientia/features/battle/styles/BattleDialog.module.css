@@ -1,0 +1,32 @@
+/* The battle screen has its own fixed palette, so it looks the same in the dark and light themes. */
+.battle { --gb-panel: #2a2118; --gb-panel-2: #3a2e20; --gb-line: #c9962c; --gb-edge: #1a140d; --gb-inner: #5a4528;
+  --gb-ink: #f3e6c4; --gb-mid: #c9a86a; --gb-hp: #ff6b8a; --gb-ok: #3fcf6a; --gb-warn: #f0c020; --gb-low: #e03a3a;
+  position: relative; width: min(820px, calc(100% - 20px)); max-height: calc(100vh - 20px); padding: 10px; overflow-y: auto; text-align: left;
+  color: var(--gb-ink); background: #0f0c09; }
+.close { position: absolute; top: 20px; left: 20px; z-index: 5; width: 34px; height: 34px; padding: 0; cursor: pointer; font: 700 1rem/1 var(--heading);
+  color: var(--gb-ink); background: var(--gb-panel); border: 3px solid var(--gb-line); box-shadow: 0 0 0 3px var(--gb-edge); }
+.close:hover { background: var(--gb-panel-2); }
+
+.textBox, .menu { margin-top: 8px; background: linear-gradient(var(--gb-panel-2), var(--gb-panel)); border: 3px solid var(--gb-line);
+  box-shadow: 0 0 0 3px var(--gb-edge), inset 0 0 0 2px var(--gb-inner); }
+.textBox { position: relative; min-height: 6.4rem; padding: 14px 46px 14px 18px; font: 600 1.1rem/1.5 var(--font); color: var(--gb-ink); }
+.textBox:focus { outline: 0; }
+.tag { display: block; margin-bottom: 2px; font: 700 .72rem var(--heading); letter-spacing: .14em; text-transform: uppercase; color: var(--gb-mid); }
+.tag:empty { display: none; }
+.more { position: absolute; right: 12px; bottom: 8px; width: 30px; height: 30px; padding: 0; cursor: pointer; font: 700 1.2rem/1 var(--heading); color: #f2b632;
+  background: none; border: 0; animation: blink .9s steps(1, end) infinite; }
+
+.menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 14px; padding: 12px 16px; }
+.option { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 4px 8px; cursor: pointer; text-align: left; font: 600 1.02rem/1.25 var(--font);
+  color: var(--gb-ink); background: none; border: 0; }
+.option:hover { background: rgba(255, 255, 255, .06); }
+.option:focus-visible { outline: 0; background: rgba(242, 182, 50, .12); }
+.cursor { flex: none; width: 1ch; visibility: hidden; font-size: .9rem; color: #f2b632; }
+.option:hover .cursor, .option:focus-visible .cursor { visibility: visible; }
+.record { margin: 8px 2px 0; font-size: .78rem; color: var(--gb-mid); }
+
+@keyframes blink { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0; } }
+@media (max-width: 560px) {
+  .menu { grid-template-columns: 1fr; }
+  .textBox { font-size: 1rem; }
+}

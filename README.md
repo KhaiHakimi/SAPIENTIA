@@ -65,14 +65,15 @@ A single HTML file that shows what the student side could feel like. It is built
 - **Weekly guardian:** a boss whose health falls as the week's quests are finished.
 
 **Monster Lair (quiz battles)**
-- Each subject has its own monster, with its own difficulty: Number Golem (Maths), Lab Slime (Science), Language Tiger (Malay) and Grammar Dragon (English).
-- The battle screen is laid out like a classic handheld RPG: the monster at the top right, the student's knight at the bottom left, name and HP plates, typed text and an answer menu.
-- A right answer damages the monster. A wrong answer damages the knight, and that question comes back until it is answered correctly.
-- If the knight's health runs out, the student retries with the questions and answers in a **new order**. The screen lists the topics to revisit.
+- Each subject has its own monster, with its own difficulty: Orang Bunian (Maths), Naga Laut (Science), Harimau Jin (Malay) and Hantu Lelaki (English). The student fights as a pahlawan; the pictures are in `prototypes/student-dashboard/art/`.
+- The battle screen is laid out like a classic handheld RPG: the monster at the top right, the student's pahlawan at the bottom left, name and HP plates, typed text and an answer menu.
+- A right answer damages the monster. A wrong answer damages the pahlawan, and that question comes back until it is answered correctly.
+- If the pahlawan's health runs out, the student retries with the questions and answers in a **new order**. The screen lists the topics to revisit.
+- The characters are animated frame by frame from a sprite atlas (`art/sheet-*.png`): idle, attack, hit and die frames for the pendekar and each monster (the keris swing, the naga's water strike, the harimau's leap, the hantu's sword wave). On top of the frames: the attacker lunges across the arena, a hit flashes the figure white, the orang bunian's blow shakes the arena, and the pendekar hops when a monster falls. With reduced motion the figures hold still frames and the movement is switched off. The lair, icons and the Pahlawan Saya preview use the larger still pictures.
 - Keyboard play works (keys 1 to 4 and the arrow keys), and animations switch off for people who ask for reduced motion.
 
 **Personalisation**
-- **My Knight:** choose armour colour, cape and plume colour, helmet (plume, horns, crest), weapon (sword, axe, spear) and a name.
+- **My Warrior (Pahlawan Saya):** give the pahlawan a name. Its look is fixed.
 - **Profile photo:** upload a picture, which is cropped, shrunk and stored in the browser.
 - **Shop:** coins buy cosmetic skins, card frames and avatars. Items are cosmetic only and never affect marks. Skins are Stone Keep, Royal Hall, Forest Ruins, Ember Forge and Sakura Garden, each with its own pixel-art background.
 - **Languages and themes:** Bahasa Melayu and English, light and dark.
@@ -119,7 +120,7 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 - `prototypes/landing/index.html`
 - `prototypes/student-dashboard/index.html`
 
-An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, knight, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
+An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, pahlawan name, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
 
 **Application skeleton.**
 

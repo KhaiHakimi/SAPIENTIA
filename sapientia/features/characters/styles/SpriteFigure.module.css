@@ -1,0 +1,2 @@
+/* Stands on the bottom of its square figure box (the feet line) and may be wider than the box. */
+.sheet { position: absolute; left: 50%; transform: translateX(-50%); background-repeat: no-repeat; image-rendering: pixelated; }

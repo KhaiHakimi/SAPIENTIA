@@ -1,0 +1,16 @@
+.intro { margin: 12px 0 0; font-size: .85rem; color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px; }
+.monster { display: grid; justify-items: center; align-content: start; gap: 8px; padding: 16px 12px 14px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
+.art { display: grid; place-items: center; width: 100%; height: 112px; }
+.portrait { width: 112px; height: 112px; }
+.beaten .portrait { filter: grayscale(.6) opacity(.75); }
+.name { font: 700 .95rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
+.subject { font-size: .85rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.chip { padding: 2px 8px; font-size: .74rem; color: var(--text); border: 2px solid var(--bd); }
+.level1 { border-color: var(--ok); }
+.level2 { border-color: var(--accent); }
+.level3 { border-color: var(--danger); }
+.done { color: var(--ok); border-color: var(--ok); }
+.record { font-size: .75rem; color: var(--muted); }
+.fight { margin: 4px 0 0; }

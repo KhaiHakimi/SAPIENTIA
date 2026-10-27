@@ -1,0 +1,16 @@
+/* --skin-effects-opacity comes from globals.css: dimmer on light scenes, except the pale Sakura Garden. */
+.layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: var(--skin-effects-opacity, 1); }
+.layer span { position: absolute; width: var(--s); height: var(--s); }
+
+.royal { background: #dbe7ff; animation: twinkle var(--dur) steps(4, end) var(--delay) infinite; }
+.forest { background: #d9ff85; box-shadow: 0 0 0 2px rgba(217, 255, 133, .22); animation: drift var(--dur) steps(30, end) var(--delay) infinite alternate; }
+.ember { bottom: -10px; background: #ff9a3d; animation: rise var(--dur) linear var(--delay) infinite; }
+.ember:nth-child(3n) { background: #ffd24a; }
+.sakura { top: -12px; background: #ffc2d8; box-shadow: 0 0 0 1px rgba(255, 143, 184, .55); animation: fall var(--dur) linear var(--delay) infinite; }
+.sakura:nth-child(3n) { background: #ffffff; }
+
+@keyframes twinkle { 0%, 100% { opacity: .1; } 50% { opacity: 1; } }
+@keyframes drift { 0% { transform: translate(0, 0); opacity: .2; } 50% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)); opacity: .2; } }
+@keyframes fall { 0% { transform: translate(0, 0); opacity: 0; } 8% { opacity: 1; } 100% { transform: translate(var(--dx), 108vh); opacity: .9; } }
+@keyframes rise { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(var(--dx), -105vh); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .layer { display: none; } }

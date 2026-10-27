@@ -1,0 +1,34 @@
+.map { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.room { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 2px solid var(--bd); cursor: pointer; }
+.room:first-child { padding-top: 2px; }
+.room:last-child { border-bottom: 0; }
+.tile { display: grid; place-items: center; width: 64px; height: 64px; background: var(--panel-2); border: 2px solid var(--bd); }
+.room:hover .tile { border-color: var(--accent); }
+.cleared .tile { border-color: var(--ok); }
+.roomName { font: 600 .7rem var(--heading); letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
+.roomTitle { text-wrap: balance; margin: 2px 0 6px; font-weight: 600; font-size: 1.02rem; line-height: 1.3; }
+.cleared .roomTitle { color: var(--muted); text-decoration: line-through; }
+.open { display: inline; padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: inherit; }
+.open:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.meta { font-size: .88rem; color: var(--muted); }
+.tag { display: inline-block; margin-right: 8px; padding: 1px 8px; font: 600 .72rem var(--font); letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); background: var(--panel-2); border: 1px solid var(--bd); }
+.urgent { color: var(--danger); border-color: var(--danger); }
+.ok { color: var(--ok); border-color: var(--ok); }
+.loot { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: .88rem; font-weight: 600; color: var(--accent-text); }
+.hint { margin-left: auto; font: 600 .68rem var(--heading); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.room:hover .hint { color: var(--accent-text); }
+
+/* This Week's Guardian */
+.guardian { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: center; margin-top: 4px; padding-top: 16px; border-top: 2px solid var(--bd); }
+.guardian .tile { border-color: var(--danger); }
+.down .tile { border-color: var(--ok); }
+.down .skull { filter: grayscale(1) opacity(.45); }
+.guardian b { display: block; margin-bottom: 8px; font: 600 .9rem var(--heading); letter-spacing: .1em; text-transform: uppercase; }
+.guardian p { margin: 8px 0 0; font-size: .88rem; color: var(--muted); }
+
+@media (max-width: 560px) {
+  .room { grid-template-columns: 56px 1fr; gap: 12px; }
+  .tile { width: 56px; height: 56px; }
+  .mark { grid-column: 2; justify-self: start; }
+}

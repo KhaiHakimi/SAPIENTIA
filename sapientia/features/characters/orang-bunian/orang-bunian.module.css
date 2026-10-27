@@ -1,0 +1,8 @@
+/* Rears up, then smashes forward. */
+.attack { animation: bunianAttack .5s steps(6, end); }
+@keyframes bunianAttack { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(5%, -8%); } 45%, 65% { transform: translate(-26%, 14%); } }
+
+/* The club blow shakes the arena harder than other monsters. */
+.impact { animation: bunianImpact .5s steps(6, end); }
+@keyframes bunianImpact { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(0, 9px); } 30% { transform: translate(-7px, -3px); }
+  50% { transform: translate(6px, 4px); } 70% { transform: translate(-4px, -2px); } 85% { transform: translate(2px, 1px); } }

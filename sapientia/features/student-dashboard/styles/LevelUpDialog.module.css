@@ -1,0 +1,2 @@
+.icon { display: grid; place-items: center; width: 88px; height: 88px; margin: 0 auto 14px; background: var(--panel-2); border: 2px solid var(--bd); animation: pop .5s steps(5, end); }
+@keyframes pop { 0% { transform: scale(.5); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }

@@ -1,0 +1,6 @@
+.toast { position: fixed; left: 50%; bottom: 24px; z-index: 40; transform: translate(-50%, 200%); max-width: calc(100% - 32px); text-align: center;
+  padding: 12px 22px; font: 600 .9rem var(--heading); letter-spacing: .06em; color: var(--accent-ink); background: var(--accent);
+  box-shadow: 0 -3px 0 0 #0c0f15, 0 3px 0 0 #0c0f15, -3px 0 0 0 #0c0f15, 3px 0 0 0 #0c0f15;
+  transition: transform .25s steps(5, end); }
+.toast:empty { visibility: hidden; }
+.show { transform: translate(-50%, 0); }

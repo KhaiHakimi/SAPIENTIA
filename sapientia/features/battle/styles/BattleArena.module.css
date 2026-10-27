@@ -1,0 +1,44 @@
+/* A painted dungeon (brick wall, torches, a banded door, a flagstone floor in perspective). The monster stands top-right and the
+   pahlawan bottom-left, each on a soft shadow, with framed name plates in the corners. Fixed palette: same in dark and light themes. */
+.arena { position: relative; aspect-ratio: 16 / 9; min-height: 260px; overflow: hidden; border: 4px solid var(--gb-edge);
+  background: #12152a url("/scenes/battle-arena.svg") center / 100% 100% no-repeat; image-rendering: pixelated; }
+.arena::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 48%, transparent 58%, rgba(0, 0, 0, .5) 100%); }
+
+.stage { position: absolute; z-index: 1; }
+.foe { right: 16%; top: 31%; width: 23%; }
+.me { left: 14%; bottom: 26%; width: 23%; z-index: 3; }
+/* Each figure box is square; its sprite stands on the box bottom (the feet line) and may be wider than the box. */
+.figure { position: relative; aspect-ratio: 1; }
+.shadow { position: absolute; left: 6%; bottom: -3%; width: 88%; height: 13%; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(0, 0, 0, .55), rgba(0, 0, 0, 0) 70%); }
+
+/* The keris slash: one curved white streak with a gold glow that sweeps across the monster. */
+.slashTrail { position: absolute; inset: 4% 2%; z-index: 2; pointer-events: none; opacity: 0; }
+.slashTrail::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 9px solid transparent; border-top-color: #fff;
+  filter: drop-shadow(0 0 4px #ffd36a) drop-shadow(0 0 1px #1a140d); }
+
+/* Default moves; a character can bring its own (see features/characters/<name>/<name>.module.css). */
+.slash { animation: slash .4s steps(4, end); }
+.lungeMe { animation: lungeMe .5s steps(6, end); }
+.lungeFoe { animation: lungeFoe .5s steps(6, end); }
+.hitFoe { animation: hitFoe .62s steps(1, end); }
+.hitMe { animation: hitMe .62s steps(1, end); }
+.cheer { animation: cheer .8s steps(8, end); }
+.shake { animation: shake .36s steps(6, end); }
+.faint { animation: faint .7s steps(7, end) forwards; }
+.slideFoe { animation: slideFoe .8s steps(8, end); }
+.slideMe { animation: slideMe .8s steps(8, end); }
+
+@keyframes slash { 0% { opacity: 1; transform: rotate(-75deg) scale(.8); } 80% { opacity: 1; transform: rotate(30deg) scale(1); } 100% { opacity: 0; transform: rotate(40deg); } }
+/* A hit flashes the figure white (a silhouette) and knocks it back, as in old handheld RPGs. */
+@keyframes hitFoe { 0%, 50% { filter: brightness(0) invert(1); transform: translateX(7%); } 25%, 75% { filter: none; transform: translateX(4%); } 100% { filter: none; transform: none; } }
+@keyframes hitMe { 0%, 50% { filter: brightness(0) invert(1); transform: translateX(-7%); } 25%, 75% { filter: none; transform: translateX(-4%); } 100% { filter: none; transform: none; } }
+@keyframes cheer { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(-14%); } }
+@keyframes shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, 0); } }
+@keyframes lungeMe { 0%, 100% { transform: translate(0, 0); } 35%, 60% { transform: translate(24%, -12%); } }
+@keyframes lungeFoe { 0%, 100% { transform: translate(0, 0); } 35%, 60% { transform: translate(-24%, 12%); } }
+@keyframes faint { from { transform: translateY(0); opacity: 1; } to { transform: translateY(80%); opacity: 0; } }
+@keyframes slideFoe { from { transform: translateX(170%); } to { transform: translateX(0); } }
+@keyframes slideMe { from { transform: translateX(-170%); } to { transform: translateX(0); } }
+
+/* Without animation a fallen figure must still disappear. */
+@media (prefers-reduced-motion: reduce) { .faint { opacity: 0; } }

@@ -1,0 +1,3 @@
+/* Crouches, leaps up and lands on the pendekar. */
+.attack { animation: harimauAttack .5s steps(6, end); }
+@keyframes harimauAttack { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(4%, 4%); } 35% { transform: translate(-16%, -16%); } 55%, 65% { transform: translate(-34%, 14%); } }

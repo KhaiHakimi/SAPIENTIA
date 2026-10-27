@@ -1,0 +1,5 @@
+.coin { position: fixed; top: -16px; z-index: 50; width: 8px; height: 8px; pointer-events: none; background: #f2b632; box-shadow: inset -2px -2px 0 #9a6410;
+  animation: coinFall 1.6s steps(24, end) forwards; }
+.ember { background: #e2483d; box-shadow: inset -2px -2px 0 #8c2118; }
+@keyframes coinFall { to { transform: translate(var(--dx), 105vh); } }
+@media (prefers-reduced-motion: reduce) { .coin { display: none; } }

@@ -1,0 +1,27 @@
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.big { display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 128px; padding: 8px 14px; text-align: center;
+  color: var(--accent-text); background: var(--panel-2); border: 2px solid var(--accent); }
+.big b { font: 400 2.8rem/1 var(--heading); color: var(--accent-text); }
+.big small { font-size: .8rem; line-height: 1.2; color: var(--muted); }
+
+.week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; text-align: center; }
+.day { display: grid; justify-items: center; gap: 6px; padding: 10px 0 8px; background: var(--panel-2); border: 2px solid var(--bd);
+  font: 600 .78rem var(--heading); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+.lit { color: var(--text); }
+.today { border-color: var(--accent); color: var(--accent-text); }
+.today:not(.lit) { animation: todayPulse 1.2s steps(2, end) infinite; }
+.off { filter: grayscale(1) brightness(1.1); opacity: .5; }
+
+/* Lit torches flicker, each a little out of step with the others. */
+.flame { transform-origin: 50% 100%; animation: flicker 1.4s steps(2, end) infinite; }
+.day:nth-child(2) .flame { animation-delay: -.35s; }
+.day:nth-child(3) .flame { animation-delay: -.7s; }
+.day:nth-child(4) .flame { animation-delay: -1.05s; }
+.day:nth-child(5) .flame { animation-delay: -.2s; }
+
+.note { margin: 12px 0 0; font-size: .85rem; color: var(--muted); }
+.muted { color: var(--muted); }
+
+@keyframes flicker { 0%, 100% { transform: scaleY(1); filter: brightness(1); } 50% { transform: scaleY(1.09); filter: brightness(1.18); } }
+@keyframes todayPulse { 0%, 100% { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); } 50% { border-color: var(--bd); box-shadow: none; } }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); } }

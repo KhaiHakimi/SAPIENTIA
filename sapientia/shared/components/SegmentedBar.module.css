@@ -1,0 +1,9 @@
+.bar { position: relative; height: 16px; background: var(--track); overflow: hidden; }
+.bar::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 8px, var(--panel) 8px 10px); }
+.thin { height: 12px; }
+.fill { display: block; height: 100%; width: 0; transition: width .6s steps(12, end); }
+.xp { background: var(--fill-xp); }
+.boss { background: var(--fill-boss); }
+.ok { background: var(--fill-ok); }
+.skill { background: var(--fill-skill); }

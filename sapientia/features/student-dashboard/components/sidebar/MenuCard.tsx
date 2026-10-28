@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useSignOut } from '@/features/auth/hooks/useSession';
 import { PLAYER_CHARACTER } from '@/features/characters';
 import { CharacterPortrait } from '@/features/characters/components/CharacterPortrait';
 import { BATTLE_MESSAGES } from '@/features/battle/i18n/battle.messages';
@@ -44,13 +45,14 @@ function Row({ href, onClick, icon, children }: { href?: string; onClick?: () =>
   );
 }
 
-/** Section links and the buttons that open the weekly timetable, shop and Pahlawan Saya, then language and theme. */
+/** Section links and the buttons that open the weekly timetable, shop and Pahlawan Saya, then language, theme and sign out. */
 export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardProps) {
   const text = useMessages(DASHBOARD_MESSAGES);
   const battleText = useMessages(BATTLE_MESSAGES);
   const shopText = useMessages(SHOP_MESSAGES);
   const pahlawanText = useMessages(PAHLAWAN_MESSAGES);
   const { toggleLang } = useLanguage();
+  const signOut = useSignOut();
 
   return (
     <PixelCard title={text.menu} icon="key">
@@ -80,6 +82,9 @@ export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardPro
         </button>
         <button className={`${styles.toolButton} px`} type="button" onClick={toggleTheme}>
           {text.theme}
+        </button>
+        <button className={`${styles.toolButton} ${styles.signOut} px`} type="button" onClick={signOut}>
+          {text.signOut}
         </button>
       </div>
     </PixelCard>

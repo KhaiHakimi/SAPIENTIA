@@ -7,9 +7,10 @@ import { shopStore } from '@/features/shop/services/shop.store';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
 import { SAMPLE_QUESTS } from '../data/sample-quests';
 import { SAMPLE_RELICS } from '../data/sample-relics';
-import { SAMPLE_BASELINE, SAMPLE_MASTERY, SAMPLE_STUDENT } from '../data/sample-student';
+import { SAMPLE_MASTERY } from '../data/sample-student';
 import type { BattleWinResult, QuestToggleResult, StudentProgress } from '../interfaces/progress.interface';
 import type { QuestDoneMap } from '../interfaces/quest.interface';
+import type { ProgressBaseline, Student } from '../interfaces/student.interface';
 import {
   currentStreak,
   guardianHpPercent,
@@ -28,13 +29,19 @@ export const StudentProgressContext = createContext<StudentProgress | null>(null
 
 const quests = SAMPLE_QUESTS;
 const relics = SAMPLE_RELICS;
-const baseline = SAMPLE_BASELINE;
+
+interface StudentProgressProviderProps {
+  student: Student;
+  baseline: ProgressBaseline;
+  children: ReactNode;
+}
 
 /**
  * Holds this visit's progress. Quest ticks and battle wins are demo state and reset on reload, as in the prototype; the real
  * values will come from the API. Shop purchases are remembered (see features/shop), so they are taken off the coin total here.
+ * The student and their starting numbers come from the signed-in mock account (features/auth).
  */
-export function StudentProgressProvider({ children }: { children: ReactNode }) {
+export function StudentProgressProvider({ student, baseline, children }: StudentProgressProviderProps) {
   const [done, setDone] = useState<QuestDoneMap>({});
   const [battleWins, setBattleWins] = useState<readonly string[]>([]);
   const spent = spentCoins(usePersistentStore(shopStore));
@@ -66,7 +73,7 @@ export function StudentProgressProvider({ children }: { children: ReactNode }) {
   };
 
   const value: StudentProgress = {
-    student: SAMPLE_STUDENT,
+    student,
     baseline,
     quests,
     done,

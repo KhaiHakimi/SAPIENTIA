@@ -6,7 +6,7 @@ Next.js 16 (App Router), React 19, TypeScript, CSS Modules. The student board fr
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000 (redirects to /student)
+npm run dev        # http://localhost:3000 (redirects to /login)
 npm test           # unit tests (Vitest)
 npm run lint
 npm run build
@@ -30,7 +30,8 @@ Code is grouped **by feature**. Every feature folder uses the same sub-folders, 
 ```
 app/
   layout.tsx, globals.css        root layout, design tokens, colour skins, card frames
-  (student)/student/page.tsx     /student, the student board
+  login/page.tsx                 /login, sign-in with mock accounts (features/auth/data/demo-accounts.ts)
+  (student)/student/page.tsx     /student, the student board (needs a signed-in mock student)
 features/
   student-dashboard/             sidebar, cards, quest/week/level-up dialogs, progress state
   battle/                        Monster Lair, quiz battle (rules, script, controller, screen)

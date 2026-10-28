@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-/** Sign-in is not built yet (plan Sprint 2), so the home page goes straight to the student board. */
+/** The home page is the sign-in; a student who is already signed in is passed on to /student from there. */
 export default function Home() {
-  redirect('/student');
+  redirect('/login');
 }

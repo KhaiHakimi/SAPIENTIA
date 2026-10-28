@@ -21,6 +21,7 @@ export interface DashboardMessages {
   sectionsLabel: string;
   switchLanguage: string;
   theme: string;
+  signOut: string;
   ranks: readonly string[];
 
   // Page

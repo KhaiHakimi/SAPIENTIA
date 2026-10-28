@@ -30,9 +30,10 @@
   font: 600 .9rem/1.2 var(--font); color: var(--muted); text-decoration: none; background: none; border: 2px solid transparent; }
 .nav a:hover, .nav button:hover { color: var(--text); background: var(--panel-2); border-color: var(--bd); }
 .navIcon { display: grid; place-items: center; flex: none; width: 26px; height: 28px; }
-.tools { display: flex; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--bd); }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--bd); }
 .toolButton { flex: 1; font: 600 .8rem/1 var(--font); letter-spacing: .04em; padding: 0 14px; min-height: 40px; cursor: pointer; color: var(--text); background: var(--panel-2); border: 0; }
 .toolButton:hover { background: var(--bd); }
+.signOut { flex-basis: 100%; }
 
 @media (max-width: 1000px) {
   .nav { display: flex; flex-wrap: wrap; gap: 8px; }

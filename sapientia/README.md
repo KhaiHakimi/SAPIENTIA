@@ -1,6 +1,6 @@
 # Sapientia web app
 
-Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16. The student board from `../prototypes/student-dashboard` is ported here. All data is fictional sample data until the API exists.
+Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks and held delivery run against the database (plan Sprints 2 to 4). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
 
 ## Run
 
@@ -8,24 +8,40 @@ Needs Node 26 (`.nvmrc`) and Docker Desktop.
 
 ```bash
 npm install
-cp .env.example .env     # then set a long random password in both places it appears
-npm run db:up            # PostgreSQL 16 in Docker, on 127.0.0.1:55432
-npm run db:migrate       # applies migrations/ in order
-npm run dev              # http://localhost:3000 (redirects to /login); http://localhost:3000/health checks the database
+cp .env.example .env     # set a long random password (both places), a SEED_PASSWORD, and the test database URL
+npm run db:up            # PostgreSQL 16 in Docker on 127.0.0.1:55432 (creates sapientia and sapientia_test)
+npm run db:migrate       # SQL migrations in migrations/, then pg-boss's schema and queues
+npm run db:seed          # two fictional schools and their staff, all with SEED_PASSWORD
+npm run dev              # http://localhost:3000 (redirects to /login)
+npm run worker           # in a second terminal: delivers held tasks (see below)
 ```
+
+Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@guru.sapientia.test` (administrator), `pk.pentadbiran@guru.sapientia.test` (task sender), and `cikgu.aminah@`, `cikgu.ravi@`, `cikgu.meiling@guru.sapientia.test` (teachers). The demo students on the login page sign in without the database.
 
 | Command | Does |
 |---|---|
 | `npm test` | Unit tests (Vitest), no database needed |
-| `npm run test:integration` | Tests in `*.integration.test.ts` against the migrated database |
+| `npm run db:migrate:test` | Migrates the test database (`TEST_DATABASE_URL`) |
+| `npm run test:integration` | `*.integration.test.ts` against the test database: it is emptied between tests, so never point it at real data |
 | `npm run lint` | ESLint: Next.js rules plus the Google style rules |
 | `npm run typecheck` | Generates route types, then `tsc --noEmit` |
 | `npm run build` | Production build |
+| `npm run worker` | Background worker: held-task delivery jobs and a sweep every minute |
 | `npm run db:migrate:down` | Rolls back the last migration |
-| `npm run db:migrate:create -- <name>` | New SQL migration in `migrations/`. Never edit one that has been applied; add another |
+| `npm run db:migrate:create -- <name>` | New SQL migration in `migrations/`. Never edit one that has been released; add another |
 | `npm run db:down` | Stops the database (data is kept in the `db-data` volume) |
 
-CI (`../.github/workflows/ci.yml`) runs all of the above on every pull request and on pushes to `main` and `dev`, plus `npm audit --audit-level=high`.
+CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations (up, down, up), integration tests and the build on every pull request, plus `npm audit --audit-level=high`.
+
+## How it fits together
+
+- **API**: route handlers under `app/api/`, each wrapped in `withApi` (`shared/server/api-handler.ts`): it refuses cross-site writes (Origin check), turns the error classes in `shared/server/app-errors.ts` into JSON, and hides anything unexpected behind a 500 with a request id. Bodies are validated with Zod schemas that refuse unknown fields.
+- **Sign-in**: an HttpOnly, SameSite=Lax session cookie; the database keeps only a SHA-256 of the token. Sessions end after 60 minutes idle or 12 hours in total. Wrong email, wrong password and inactive accounts all get the same answer. Failed attempts are counted per account and per address.
+- **Refusals**: `requireUser(request, clock, roles)` answers 401 when signed out and 404 for the wrong role. Repositories take `schoolId` first, so no query can reach another school. Someone who may not see a task gets 404, exactly as if it did not exist.
+- **Held delivery**: creating a task works out its delivery time from the school's working hours, weekend and calendar (`features/delivery/services/working-time.service.ts`, pure and fully unit-tested). Inside working hours it is delivered at once. Outside them it is held, and a pg-boss job for its delivery time is saved in the same transaction. The worker delivers it with a conditional update, so a repeated job is harmless, and a one-minute sweep catches any task whose job went missing. An urgent override delivers at once and needs a reason.
+- **Audit log**: `audit_logs` records ids and states only, never names or text. A database trigger blocks UPDATE and DELETE.
+- **Time**: services take a `Clock`; route handlers pass `appClock()`, which integration tests can set to "10 pm on a Friday" with `setTestClock`. Times are stored in UTC and read in the school's time zone (Luxon).
+- **Theme scopes** (plan D8): `(magic)` routes (sign-in, accept invite, student board) and `(calm)` routes (all staff screens, `shared/calm/Calm.module.css`).
 
 ## Where things are
 
@@ -35,36 +51,42 @@ Code is grouped **by feature**. Every feature folder uses the same sub-folders, 
 |---|---|
 | `components/` | React components (`.tsx`) |
 | `hooks/` | React hooks (`use*.ts`) |
-| `services/` | Rules and storage, no React; unit tests sit next to them as `*.test.ts` |
+| `services/` | Rules and browser calls, no React; unit tests sit next to them as `*.test.ts` |
+| `server/` | Server-only code: repositories (SQL) and services that use the database; integration tests as `*.integration.test.ts` |
+| `schemas/` | Zod request schemas, shared by the API and the forms |
 | `interfaces/` | TypeScript types (`*.interface.ts`) |
-| `constants/` | Fixed numbers (`*.constants.ts`) |
+| `constants/` | Fixed values (`*.constants.ts`) |
 | `data/` | Sample data |
 | `i18n/` | Bahasa Melayu and English messages, with a `*-messages.interface.ts` |
 | `styles/` | CSS Modules (`*.module.css`) |
 
 ```
 app/
-  layout.tsx, globals.css        root layout, design tokens, colour skins, card frames
-  (magic)/layout.tsx             sets data-theme-scope="magic" (plan D8); teacher screens will get a (calm) group
-  (magic)/login/page.tsx         /login, sign-in with mock accounts (features/auth/data/demo-accounts.ts)
-  (magic)/student/page.tsx       /student, the student board (needs a signed-in mock student)
+  layout.tsx, globals.css        root layout, design tokens (magic and calm scopes), colour skins, card frames
+  (magic)/                       login, accept-invite, student (magic-academy theme)
+  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], users, settings, calendar
+  api/                           JSON API (auth, me, users, staff, tasks, school/settings, calendar/events, delivery/preview)
   health/route.ts                GET /health: 200 when the database answers, 503 when not
 features/
-  student-dashboard/             sidebar, cards, quest/week/level-up dialogs, progress state
-  battle/                        Monster Lair, quiz battle (rules, script, controller, screen)
-  characters/                    one folder per character, plus the shared sprite components
-    pendekar/  orang-bunian/  naga-laut/  harimau-jin/  hantu-lelaki/
-    index.ts                     registry: PLAYER_CHARACTER, MONSTERS
-  shop/                          coin shop, skins, frames, avatars
-  pahlawan/                      naming the battle character
+  auth/                          sign-in page, sessions, passwords, invites, throttling
+  users/                         administrators' user list and invites; the staff directory
+  staff/                         the staff shell (menu by role, language, theme, sign-out)
+  tasks/                         tasks, board, comments, idempotent create, sent and held lists
+  delivery/                      working-time rules, school settings and calendar, delivery queue and service
+  audit/                         the append-only audit log
   health/                        the /health check
-shared/                          used by every feature: storage, i18n, theme, pixel sprites, buttons, cards, dialogs, toast
-  server/                        server-only code (database pool); never import it from a 'use client' file
+  student-dashboard/  battle/  characters/  shop/  pahlawan/   the student board (sample data)
+shared/
+  api/                           browser API client, error texts, TanStack Query provider
+  calm/                          calm-scope building blocks (cards, forms, tables, badges)
+  server/                        database pool, transactions, API wrapper, errors, logger, clock, pagination, idempotency
+  ...                            storage, i18n, theme, pixel sprites, buttons, cards, dialogs, toast
 migrations/                      SQL migrations (node-pg-migrate)
-public/
-  characters/<name>/portrait.png, sprite-sheet.png
-  scenes/*.svg                   backgrounds for the skins and the battle arena
-  brand/sapientia-logo.jpg
+seeds/dev-seed.ts                fictional schools and staff
+worker/index.ts                  the background worker
+scripts/install-queues.ts        pg-boss schema and queues (run by db:migrate)
+docker/initdb/                   creates the test database on a fresh volume
+public/                          character art, scenes, logo
 ```
 
 ### Adding a monster
@@ -73,8 +95,10 @@ public/
 2. Create `features/characters/<name>/<name>.character.ts` (copy another monster) and, if it moves differently, `<name>.module.css`.
 3. List it in `features/characters/index.ts` and add its questions to `features/battle/data/quiz-bank.ts`.
 
-## Notes
+## Notes and known limits
 
-- Progress (quest ticks, battle rewards) resets on reload; the shop, language, theme, photo, pahlawan name and battle records are kept in this browser's localStorage.
-- The demo clock is fixed at Thursday 10:15 (`features/student-dashboard/constants/demo-clock.constants.ts`).
-- Every animation is switched off when the device asks for reduced motion.
+- Invite links are shown to the administrator to pass on; email and push notifications arrive in Sprint 5.
+- Holidays are entered by the administrator on the Calendar page; none are built in. Tasks already held keep the delivery time worked out when they were sent.
+- The default working day is 07:30 to 17:00 until a school saves its own hours.
+- Per-address sign-in limits trust `X-Forwarded-For`, which is only safe behind a proxy that overwrites it.
+- Student board: progress resets on reload; the shop, language, theme, photo, pahlawan name and battle records are kept in this browser's localStorage. Its demo clock is fixed at Thursday 10:15. Every animation is switched off when the device asks for reduced motion.

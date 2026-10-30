@@ -1,27 +1,36 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { ApiError } from '@/shared/api/api-client';
 import { SIGN_IN_DELAY_MS } from '../constants/login.constants';
 import type { DemoAccount, LoginFieldErrors } from '../interfaces/account.interface';
+import type { SessionUser } from '../interfaces/session-user.interface';
 import type { LoginMessages } from '../i18n/login-messages.interface';
 import { accountName, checkLoginFields, findAccount } from '../services/auth.service';
 import { sessionStore } from '../services/session.store';
+import { signInStaff } from '../services/staff-auth.client';
 import styles from '../styles/Login.module.css';
 import { DemoAccounts } from './DemoAccounts';
 
 /** Alerts keep what happened, not the words, so switching language re-translates an alert already on screen. */
-type LoginAlert = { kind: 'error'; reason: 'badCredentials' } | { kind: 'ok'; reason: 'forgot' } | { kind: 'ok'; reason: 'filled'; who: string };
+type LoginAlert =
+  | { kind: 'error'; reason: 'badCredentials' | 'rateLimited' | 'networkError' }
+  | { kind: 'ok'; reason: 'forgot' }
+  | { kind: 'ok'; reason: 'filled'; who: string };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function alertText(alert: LoginAlert, text: LoginMessages): string {
-  if (alert.reason === 'badCredentials') return text.badCredentials;
+  if (alert.kind === 'error') return text[alert.reason];
   if (alert.reason === 'forgot') return text.forgotInfo;
   return text.filled(alert.who);
 }
 
-/** Email and password form. A match is saved to the session store; LoginPage reacts to that and routes by role. */
-export function LoginForm({ text }: { text: LoginMessages }) {
+/**
+ * Email and password form. A demo student is checked in the browser and saved to the session store; anyone else signs in
+ * through the API, which sets the session cookie. LoginPage reacts to either and opens the right board.
+ */
+export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onStaffSignedIn: (user: SessionUser) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -50,18 +59,28 @@ export function LoginForm({ text }: { text: LoginMessages }) {
     if (found.password) return passwordInput.current?.focus();
 
     setLoading(true);
-    await wait(SIGN_IN_DELAY_MS);
-    if (!mounted.current) return;
-    setLoading(false);
-
-    const account = findAccount(email, password);
-    if (!account) {
-      setAlert({ kind: 'error', reason: 'badCredentials' });
-      setPassword('');
-      passwordInput.current?.focus();
+    const student = findAccount(email, password);
+    if (student) {
+      await wait(SIGN_IN_DELAY_MS);
+      if (!mounted.current) return;
+      setLoading(false);
+      sessionStore.set(student.id);
       return;
     }
-    sessionStore.set(account.id);
+
+    try {
+      const user = await signInStaff({ email: email.trim(), password });
+      if (mounted.current) onStaffSignedIn(user);
+    } catch (error) {
+      if (!mounted.current) return;
+      const reason = !(error instanceof ApiError) || error.code === 'network' ? 'networkError'
+        : error.code === 'rate_limited' ? 'rateLimited' : 'badCredentials';
+      setAlert({ kind: 'error', reason });
+      setPassword('');
+      passwordInput.current?.focus();
+    } finally {
+      if (mounted.current) setLoading(false);
+    }
   };
 
   const fillDemoAccount = (account: DemoAccount) => {

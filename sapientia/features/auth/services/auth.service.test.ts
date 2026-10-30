@@ -22,10 +22,6 @@ describe('demo sign-in', () => {
     expect(findAccount('nobody@pelajar.sapientia.test', 'pelajar123')).toBeNull();
   });
 
-  it('finds the teacher account too', () => {
-    expect(findAccount('cikgu.aminah@guru.sapientia.test', 'demo1234')?.role).toBe('teacher');
-  });
-
   it('looks accounts up by id for the saved session', () => {
     expect(accountById('student-kavitha')?.role).toBe('student');
     expect(accountById('edited-in-devtools')).toBeNull();

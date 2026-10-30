@@ -2,12 +2,13 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { toggleTheme } from '@/shared/theme/theme.store';
 import { cinzel, inter } from '../constants/login-fonts';
 import { OPEN_BOARD_DELAY_MS } from '../constants/login.constants';
-import { useSession, useSignOut } from '../hooks/useSession';
+import { useSession } from '../hooks/useSession';
+import type { SessionUser } from '../interfaces/session-user.interface';
 import { LOGIN_MESSAGES } from '../i18n/login.messages';
 import { accountName } from '../services/auth.service';
 import styles from '../styles/Login.module.css';
@@ -24,22 +25,24 @@ function Seal({ size, className }: { size: number; className: string }) {
 }
 
 /**
- * The prototype's "Bilik Darjah" split login (prototypes/login, variant D). Once signed in, a student sees the access seal and
- * is taken to /student; a teacher sees the seal with a note that their board is not built yet, and can sign out.
+ * The prototype's "Bilik Darjah" split login (prototypes/login, variant D). Once signed in, everyone sees the access seal; a
+ * demo student is then taken to /student and staff to their task board at /staff.
  */
 export function LoginPage() {
   const text = useMessages(LOGIN_MESSAGES);
   const { toggleLang } = useLanguage();
   const { account } = useSession();
-  const signOut = useSignOut();
+  const [staff, setStaff] = useState<SessionUser | null>(null);
   const router = useRouter();
+  const destination = staff ? '/staff' : account ? '/student' : null;
+  const signedIn = Boolean(destination);
 
   useEffect(() => {
-    if (account?.role !== 'student') return;
-    router.prefetch('/student');
-    const timer = setTimeout(() => router.replace('/student'), OPEN_BOARD_DELAY_MS);
+    if (!destination) return;
+    router.prefetch(destination);
+    const timer = setTimeout(() => router.replace(destination), OPEN_BOARD_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [account, router]);
+  }, [destination, router]);
 
   return (
     <div className={`${styles.page} ${cinzel.variable} ${inter.variable}`}>
@@ -53,10 +56,10 @@ export function LoginPage() {
         </button>
       </div>
 
-      <div className={`${styles.stage} ${account ? styles.opening : ''}`}>
+      <div className={`${styles.stage} ${signedIn ? styles.opening : ''}`}>
         <LoginShowcase text={text} />
 
-        <main className={styles.pane} inert={Boolean(account)}>
+        <main className={styles.pane} inert={signedIn}>
           <div className={styles.card}>
             <span className={`${styles.corner} ${styles.topLeft}`} aria-hidden="true" />
             <span className={`${styles.corner} ${styles.topRight}`} aria-hidden="true" />
@@ -71,28 +74,17 @@ export function LoginPage() {
               </div>
             </div>
 
-            <LoginForm text={text} />
+            <LoginForm text={text} onStaffSignedIn={setStaff} />
 
             <p className={styles.demoBadge}>{text.demoBadge}</p>
           </div>
         </main>
 
-        {account && (
+        {signedIn && (
           <div className={styles.banner} role="status">
             <Seal size={76} className={styles.bannerSeal} />
             <h2>{text.successTitle}</h2>
-            {account.role === 'student' ? (
-              <p>{text.studentOpening(accountName(account))}</p>
-            ) : (
-              <>
-                <p>
-                  {text.teacherWelcome(accountName(account))} {text.teacherNoBoard}
-                </p>
-                <button type="button" className={styles.submit} onClick={signOut} autoFocus>
-                  {text.signOut}
-                </button>
-              </>
-            )}
+            <p>{staff ? text.staffOpening(staff.name) : account ? text.studentOpening(accountName(account)) : null}</p>
           </div>
         )}
       </div>

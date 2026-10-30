@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=24"
+    "node": ">=24.7"
   },
   "scripts": {
     "dev": "next dev",
@@ -18,18 +18,26 @@
     "db:down": "docker compose down",
     "db:migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up --check-order",
     "db:migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js down",
-    "db:migrate:create": "node-pg-migrate create --migration-file-language sql"
+    "db:migrate:create": "node-pg-migrate create --migration-file-language sql",
+    "db:seed": "node --env-file-if-exists=.env --conditions=react-server --import tsx seeds/dev-seed.ts",
+    "db:migrate:test": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up --check-order -d TEST_DATABASE_URL"
   },
   "dependencies": {
+    "@tanstack/react-query": "5.104.3",
+    "luxon": "3.7.2",
     "next": "16.4.2",
     "pg": "8.23.1",
+    "pg-boss": "12.38.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "5.10.0",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/luxon": "3.7.6",
+    "@types/node": "24.19.2",
     "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -37,6 +45,7 @@
     "eslint-config-next": "16.4.2",
     "node-pg-migrate": "8.0.4",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "^5",
     "vitest": "4.1.11"
   }

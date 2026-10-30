@@ -19,7 +19,7 @@ export function findAccount(email: string, password: string, accounts: readonly 
 }
 
 export function accountName(account: DemoAccount): string {
-  return account.role === 'student' ? account.student.name : account.name;
+  return account.student.name;
 }
 
 export function accountById(id: string | null, accounts: readonly DemoAccount[] = DEMO_ACCOUNTS): DemoAccount | null {

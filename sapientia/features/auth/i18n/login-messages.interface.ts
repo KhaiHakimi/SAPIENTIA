@@ -28,6 +28,8 @@ export interface LoginMessages {
   submitting: string;
   fieldErrors: Record<LoginFieldError, string>;
   badCredentials: string;
+  rateLimited: string;
+  networkError: string;
   note: string;
   demoBadge: string;
 
@@ -36,7 +38,7 @@ export interface LoginMessages {
   demoIntro: string;
   passwordShort: string;
   studentRole: string;
-  teacherRole: string;
+  staffDemoNote: string;
   use: string;
   useAccount: (who: string) => string;
   filled: (who: string) => string;
@@ -44,9 +46,7 @@ export interface LoginMessages {
   // After sign-in
   successTitle: string;
   studentOpening: (name: string) => string;
-  teacherWelcome: (name: string) => string;
-  teacherNoBoard: string;
-  signOut: string;
+  staffOpening: (name: string) => string;
 
   // Corner tools
   switchLanguage: string;

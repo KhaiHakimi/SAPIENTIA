@@ -2,7 +2,8 @@ import { SAMPLE_BASELINE, SAMPLE_STUDENT } from '@/features/student-dashboard/da
 import type { DemoAccount } from '../interfaces/account.interface';
 
 /**
- * Mock accounts for the prototype. The people are fictional and the .test domain is reserved, so no address can reach anyone.
+ * Mock student accounts, checked in the browser until student accounts exist (plan Phase 4). Staff accounts are real and
+ * come from `npm run db:seed`. The people are fictional and the .test domain is reserved, so no address can reach anyone.
  * Each student starts at a different point so the board visibly changes between accounts.
  */
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
@@ -29,12 +30,5 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
     password: 'pelajar123',
     student: { name: 'Kavitha', className: '5 Cemerlang' },
     baseline: { xp: 760, coins: 240, streak: 6, classHandedIn: 22, classTotal: 24 },
-  },
-  {
-    id: 'teacher-aminah',
-    role: 'teacher',
-    email: 'cikgu.aminah@guru.sapientia.test',
-    password: 'demo1234',
-    name: 'Cikgu Aminah',
   },
 ];

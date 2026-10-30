@@ -1,7 +1,6 @@
 import type { ProgressBaseline, Student } from '@/features/student-dashboard/interfaces/student.interface';
 
-export type AccountRole = 'student' | 'teacher';
-
+/** Demo students only: staff sign in through the API (features/auth/server). Student accounts arrive in Phase 4. */
 interface AccountBase {
   id: string;
   email: string;
@@ -16,12 +15,7 @@ export interface StudentAccount extends AccountBase {
   baseline: ProgressBaseline;
 }
 
-export interface TeacherAccount extends AccountBase {
-  role: 'teacher';
-  name: string;
-}
-
-export type DemoAccount = StudentAccount | TeacherAccount;
+export type DemoAccount = StudentAccount;
 
 export type LoginFieldError = 'emailRequired' | 'emailInvalid' | 'passwordRequired';
 

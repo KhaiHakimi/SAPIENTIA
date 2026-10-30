@@ -9,7 +9,7 @@ interface DemoAccountsProps {
   onUse: (account: DemoAccount) => void;
 }
 
-/** Lists the mock accounts so testers do not need to remember them; "Use" fills the form but does not sign in. */
+/** Lists the mock student accounts so testers do not need to remember them; "Use" fills the form but does not sign in. */
 export function DemoAccounts({ text, onUse }: DemoAccountsProps) {
   return (
     <details className={styles.demo} open>
@@ -23,7 +23,7 @@ export function DemoAccounts({ text, onUse }: DemoAccountsProps) {
               <span className={styles.demoWho}>
                 <strong>{name}</strong>
                 <span className={styles.demoRole}>
-                  {account.role === 'student' ? `${text.studentRole} • ${account.student.className}` : text.teacherRole}
+                  {text.studentRole} • {account.student.className}
                 </span>
                 <code>{account.email}</code>
                 <span className={styles.demoPassword}>
@@ -37,6 +37,7 @@ export function DemoAccounts({ text, onUse }: DemoAccountsProps) {
           );
         })}
       </ul>
+      <p className={styles.demoIntro}>{text.staffDemoNote}</p>
     </details>
   );
 }

@@ -7,10 +7,10 @@ export const pendekar: Character = {
   portrait: '/characters/pendekar/portrait.png',
   spriteSheet: {
     src: '/characters/pendekar/sprite-sheet.png',
-    cellWidth: 136,
-    cellHeight: 101,
-    footLine: 0.9901,
-    frames: { idle: { first: 0, count: 4 }, attack: { first: 4, count: 4 }, hit: { first: 8, count: 2 }, die: { first: 10, count: 3 } },
+    cellWidth: 260,
+    cellHeight: 238,
+    footLine: 0.9748,
+    frames: { idle: { first: 0, count: 3 }, attack: { first: 3, count: 6 }, hit: { first: 9, count: 2 }, die: { first: 11, count: 4 } },
   },
   moves: {},
 };

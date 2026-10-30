@@ -91,8 +91,8 @@ public/                          character art, scenes, logo
 
 ### Adding a monster
 
-1. Put `portrait.png` and `sprite-sheet.png` in `public/characters/<name>/`. The sheet is one row of equal cells: idle, attack, hit and die frames, feet on the same line, facing left.
-2. Create `features/characters/<name>/<name>.character.ts` (copy another monster) and, if it moves differently, `<name>.module.css`.
+1. Put its atlas in `../Character` (magenta background; rows idle, attack, hit, die, as the existing ones), add it to `CHARACTERS` in `scripts/cut-sprite-sheets.mjs` with the rows to mirror so it faces left, and run `node scripts/cut-sprite-sheets.mjs --preview`. It writes `public/characters/<name>/sprite-sheet.png` and `portrait.png`, previews in `../Character/preview`, and prints the cell size, foot line and frame ranges.
+2. Create `features/characters/<name>/<name>.character.ts` (copy another monster, then paste in the printed sheet values) and, if it moves differently, `<name>.module.css`.
 3. List it in `features/characters/index.ts` and add its questions to `features/battle/data/quiz-bank.ts`.
 
 ## Notes and known limits

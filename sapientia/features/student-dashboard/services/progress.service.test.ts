@@ -16,7 +16,10 @@ import {
 } from './progress.service';
 
 const allDone = Object.fromEntries(SAMPLE_QUESTS.map((quest) => [quest.id, true]));
-const base: TotalsInput = { baseXp: 430, baseCoins: 120, quests: SAMPLE_QUESTS, done: {}, battleWins: 0, battleBonusXp: 20, battleBonusCoins: 10, spentCoins: 0 };
+const base: TotalsInput = {
+  baseXp: 430, baseCoins: 120, quests: SAMPLE_QUESTS, done: {},
+  battleWins: 0, battleBonusXp: 20, battleBonusCoins: 10, spentCoins: 0,
+};
 const relic = (id: string) => SAMPLE_RELICS.find((candidate) => candidate.id === id)!;
 
 describe('levels', () => {

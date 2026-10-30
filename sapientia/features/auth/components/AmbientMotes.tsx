@@ -53,7 +53,9 @@ export function AmbientMotes() {
     const draw = () => {
       const light = document.documentElement.dataset.theme === 'light';
       context.clearRect(0, 0, canvas.width, canvas.height);
-      if (motes.length < MAX_DRIFTING && Math.random() < 0.15) motes.push(makeMote(Math.random() * canvas.width, canvas.height + 10, false));
+      if (motes.length < MAX_DRIFTING && Math.random() < 0.15) {
+        motes.push(makeMote(Math.random() * canvas.width, canvas.height + 10, false));
+      }
       context.fillStyle = light ? '#c89d38' : '#fce5a3';
       context.shadowColor = light ? '#b88628' : '#e5b955';
       context.shadowBlur = light ? 4 : 6;

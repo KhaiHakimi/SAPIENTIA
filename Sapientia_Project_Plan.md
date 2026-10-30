@@ -1,6 +1,7 @@
-# Meja Guru: Master Project Plan
+# Sapientia: Master Project Plan
 
-Version 1.0, 16 October 2026. Prepared for Khairul Hakimi Bin Ma'amor.
+Version 1.1, 30 October 2026 (1.0: 16 October 2026). Prepared for Khairul Hakimi Bin Ma'amor.
+The app was called Meja Guru until 19 October 2026. Version 1.1 changes the stack (D1 to D4) to the Next.js app already built.
 Source documents: *Meja Guru Project Proposal Report* and *Meja Guru Development Guide* (both 15 October 2026).
 
 Independent portfolio project. Fictional data only. Not affiliated with KPM or any school.
@@ -26,10 +27,10 @@ Independent portfolio project. Fictional data only. Not affiliated with KPM or a
 
 | # | Decision | Recommendation | Why |
 |---|----------|----------------|-----|
-| D1 | Stack | Follow the guide: Node.js LTS, Fastify, PostgreSQL 16+, pg-boss, React with Vite (PWA), Zod, Luxon, Vitest, Playwright | pg-boss needs a long-running worker. That fits Fastify plus a worker better than a Next.js app. Confirm the Node LTS version at nodejs.org on day one. |
-| D2 | Package manager | pnpm workspaces (the guide says npm workspaces) | pnpm is fast, strict about dependencies and handles workspaces well. Pin exact versions, commit the lockfile, and prefer releases at least two weeks old. |
-| D3 | Language | JavaScript with JSDoc, as in the guide | Matches the Google JavaScript Style Guide. Switch to TypeScript only if you are already faster in it. |
-| D4 | Repository | One GitHub monorepo `meja-guru` with `apps/api`, `apps/web`, `packages/shared`, `seeds` | As in the guide, Section 6. |
+| D1 | Stack | **Changed 30 October 2026.** Next.js 16 (App Router; route handlers are the API), PostgreSQL 16 through `pg`, node-pg-migrate, pg-boss, Zod, Luxon, Vitest, Playwright. Node 26 (`.nvmrc`). | The student home and sign-in were already built in Next.js, so porting them to Fastify plus Vite would cost more than it saves. pg-boss still needs a long-running process: add a small separate worker (`worker/`, same repository and database code) before Sprint 4. Route handlers are tested by calling them directly, not with Fastify `inject`. |
+| D2 | Package manager | **Changed.** npm, one package (no workspaces yet) | One app needs no workspaces; add them when the worker arrives if sharing code gets awkward. Pin exact versions, commit the lockfile, and prefer releases at least two weeks old. |
+| D3 | Language | **Changed.** TypeScript | The app is already TypeScript. ESLint carries the Google style rules (see `eslint.config.mjs` for the two deliberate departures). |
+| D4 | Repository | **Changed.** GitHub `KhaiHakimi/SAPIENTIA`: the app in `sapientia/` (by-feature folders under `features/`, shared code in `shared/`, server-only code in `shared/server/`, migrations in `migrations/`), the plan and prototypes beside it | Matches what exists. Seeds will go in `sapientia/seeds/`. |
 | D5 | Demo hosting | Decide in Sprint 5, after checking current free-tier terms | Free tiers change often. Docker keeps the move cheap. |
 | D6 | Project tracking | GitHub Projects: one board, one milestone per phase | Free, and it sits next to the code and pull requests. |
 | D7 | Legal reviewer for Act 876 | Identify before Phase 4 starts (see Section 8) | Phase 5 cannot start without it. |
@@ -113,18 +114,19 @@ Notes:
 ## 6. Phase 1: Foundation and task core (S1 to S5)
 
 ### Sprint 1 (2 to 13 November): skeleton
-- [ ] Create GitHub repo; README, `.gitignore` (including `.env`), `.env.example`
-- [ ] Monorepo with workspaces: `apps/api`, `apps/web`, `packages/shared`
-- [ ] `docker-compose.yml` for PostgreSQL 16 (password from `.env`)
-- [ ] `node-pg-migrate` set up; first migration (`schools`)
-- [ ] Fastify app: `app.js` (builds the app for tests) and `server.js` (starts it)
-- [ ] `GET /health` checks the database; one passing Vitest test
-- [ ] React plus Vite shell; React Router; TanStack Query; `i18n` folder (`ms.json`, `en.json`) from the first screen
-- [ ] Theme foundation (Section 14): design tokens as CSS variables, a `data-theme-scope` attribute (`magic` or `calm`) set per route group, and light and dark values for both scopes
-- [ ] Port the approved login prototype (`prototypes/login/index.html`, style D) to React; wire it to the auth endpoints in Sprint 2
-- [ ] ESLint with the Google style; Prettier only if it does not conflict
-- [ ] GitHub Actions: lint, test and dependency audit on every pull request
-- [ ] Branch protection on `main`
+Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the sprint.
+- [x] Create GitHub repo; README, `.gitignore` (including `.env`), `.env.example`
+- [x] ~~Monorepo with workspaces~~ One Next.js app in `sapientia/` (D2, D4)
+- [x] `docker-compose.yml` for PostgreSQL 16 (password from `.env`; port 55432 on 127.0.0.1)
+- [x] `node-pg-migrate` set up; first migration (`schools`, SQL), reversible
+- [x] ~~Fastify app~~ Database pool in `shared/server/database.service.ts`, used by route handlers
+- [x] `GET /health` checks the database (200 or 503, no error detail); unit tests plus an integration test against PostgreSQL
+- [x] Next.js shell (App Router replaces React Router); i18n as typed per-feature `*.messages.ts` files instead of `ms.json`/`en.json`. TanStack Query deferred to Sprint 2, when there is server data to fetch
+- [x] Theme foundation (Section 14): tokens as CSS variables, `data-theme-scope` set by the `(magic)` route group layout, light and dark values for both scopes. The `(calm)` group arrives with the first teacher screen
+- [x] Port the approved login prototype (style D) to `/login`; wire it to the auth endpoints in Sprint 2
+- [x] ESLint with the Google style rules (no Prettier)
+- [x] GitHub Actions: lint, type check, unit tests, migrations (up, down, up), integration tests, build and dependency audit on every pull request
+- [ ] Branch protection on `main` (needs the GitHub settings page or `gh`; see README)
 
 **Done when:** G1 passes.
 
@@ -158,7 +160,7 @@ Notes:
 - [ ] Migrations: `calendar_events`; school settings fields; partial index on pending delivery
 - [ ] `lib/workingTime.js`: `isWorkingDay`, `nextWorkingStart`, with the clock passed in as a parameter (never `Date.now()` in business logic)
 - [ ] Unit tests for every case in the guide: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override; a calendar with no working days (expect `ConfigurationError`)
-- [ ] pg-boss worker: job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
+- [ ] pg-boss worker (separate process, see D1): job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
 - [ ] Urgent override: reason mandatory (database CHECK plus validation); logged; counted for reports later
 - [ ] Held tasks invisible to assignees until delivered (service-level rule, with a test)
 - [ ] Sender sees the delivery time in plain language ("Akan dihantar: Isnin, 7:30 pagi")
@@ -172,7 +174,7 @@ Notes:
 - [ ] Web Push (VAPID keys from environment variables) and email (local mail catcher in development)
 - [ ] Notifications sent only by the worker after the conditional update succeeds
 - [ ] External calls have timeouts and retry with exponential backoff
-- [ ] PWA manifest, icons, install prompt (`vite-plugin-pwa`)
+- [ ] PWA manifest (`app/manifest.ts`), icons, service worker, install prompt
 - [ ] Bahasa Melayu by default, English available; check every string is in the i18n files
 - [ ] Accessibility pass to WCAG 2.2 AA: contrast, labels, keyboard use, status shown by text as well as colour
 - [ ] Playwright journeys: invite and sign in; create a task at night and see it held; teacher completes it
@@ -268,7 +270,7 @@ Before each phase: write user stories with acceptance criteria and a short threa
 - Optional hardening later: PostgreSQL row-level security for the school boundary, as a second layer
 
 ### Testing
-- Target mix: about 70% unit, 25% integration (Fastify `inject` plus a test database), 5% end-to-end
+- Target mix: about 70% unit, 25% integration (route handlers called directly, plus a test database; `npm run test:integration`), 5% end-to-end
 - Every endpoint gets at least one "wrong person is refused" test
 - Inject the clock everywhere. A test that uses the real clock is a bug.
 - Seeds use fictional names only. Check before every commit.

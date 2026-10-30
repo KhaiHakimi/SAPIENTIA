@@ -17,7 +17,8 @@ export const rankIndex = (level: number, rankCount: number): number => Math.min(
 const isDone = (quest: Quest, done: QuestDoneMap): boolean => done[quest.id] ?? quest.doneAtStart;
 
 /** Quests finished during this visit (the ones that pay out). */
-export const newlyDone = (quests: readonly Quest[], done: QuestDoneMap): Quest[] => quests.filter((quest) => isDone(quest, done) && !quest.doneAtStart);
+export const newlyDone = (quests: readonly Quest[], done: QuestDoneMap): Quest[] =>
+  quests.filter((quest) => isDone(quest, done) && !quest.doneAtStart);
 
 export const doneCount = (quests: readonly Quest[], done: QuestDoneMap): number => quests.filter((quest) => isDone(quest, done)).length;
 

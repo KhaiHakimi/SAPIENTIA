@@ -5,7 +5,7 @@ export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
   ms: {
     skipToContent: 'Langkau ke kandungan',
     mainNav: 'Menu utama',
-    nav: { board: 'Papan Tugas', users: 'Pengguna' },
+    nav: { board: 'Papan Tugas', sent: 'Tugas Dihantar', newTask: 'Tugas Baharu', users: 'Pengguna' },
     roles: { admin: 'Pentadbir', sender: 'Pengirim tugas', teacher: 'Guru' },
     switchLanguage: 'Tukar bahasa / Switch language',
     theme: 'Tema',
@@ -18,7 +18,7 @@ export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
   en: {
     skipToContent: 'Skip to content',
     mainNav: 'Main menu',
-    nav: { board: 'Task Board', users: 'Users' },
+    nav: { board: 'Task Board', sent: 'Sent Tasks', newTask: 'New Task', users: 'Users' },
     roles: { admin: 'Administrator', sender: 'Task sender', teacher: 'Teacher' },
     switchLanguage: 'Tukar bahasa / Switch language',
     theme: 'Theme',

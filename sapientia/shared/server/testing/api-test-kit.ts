@@ -11,6 +11,7 @@ export const TEST_PASSWORD = 'correct-horse-battery';
 
 /** Every application table, children first. pg-boss keeps its own schema and is cleared separately when needed. */
 const APP_TABLES = [
+  'idempotency_keys', 'audit_logs', 'task_comments', 'task_assignments', 'tasks',
   'auth_throttle', 'invites', 'sessions', 'users', 'schools',
 ];
 

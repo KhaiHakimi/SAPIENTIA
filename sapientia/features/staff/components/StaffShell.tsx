@@ -59,7 +59,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
   }
 
   const user = me.data;
-  const isCurrent = (href: string) => (href === '/staff' ? pathname === href : pathname.startsWith(href));
+  // The board is /staff itself; a task page (/staff/tasks/...) belongs to no menu item except New Task's exact path.
+  const isCurrent = (href: string) => (href === '/staff' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`));
   return (
     <StaffUserContext.Provider value={user}>
       <a className={styles.skip} href="#staff-main">{text.skipToContent}</a>

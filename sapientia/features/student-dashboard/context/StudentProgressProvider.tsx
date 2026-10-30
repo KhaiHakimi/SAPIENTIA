@@ -47,7 +47,10 @@ export function StudentProgressProvider({ student, baseline, children }: Student
   const spent = spentCoins(usePersistentStore(shopStore));
 
   const xpFor = (doneMap: QuestDoneMap, wins: number) =>
-    totalXp({ baseXp: baseline.xp, baseCoins: baseline.coins, quests, done: doneMap, battleWins: wins, battleBonusXp: BATTLE_BONUS_XP, battleBonusCoins: BATTLE_BONUS_COINS, spentCoins: spent });
+    totalXp({
+      baseXp: baseline.xp, baseCoins: baseline.coins, quests, done: doneMap, battleWins: wins,
+      battleBonusXp: BATTLE_BONUS_XP, battleBonusCoins: BATTLE_BONUS_COINS, spentCoins: spent,
+    });
 
   const xp = xpFor(done, battleWins.length);
   const level = levelOf(xp);
@@ -82,7 +85,10 @@ export function StudentProgressProvider({ student, baseline, children }: Student
     xp,
     level,
     xpInLevel: xpIntoLevel(xp),
-    coins: totalCoins({ baseXp: baseline.xp, baseCoins: baseline.coins, quests, done, battleWins: battleWins.length, battleBonusXp: BATTLE_BONUS_XP, battleBonusCoins: BATTLE_BONUS_COINS, spentCoins: spent }),
+    coins: totalCoins({
+      baseXp: baseline.xp, baseCoins: baseline.coins, quests, done, battleWins: battleWins.length,
+      battleBonusXp: BATTLE_BONUS_XP, battleBonusCoins: BATTLE_BONUS_COINS, spentCoins: spent,
+    }),
     streak: currentStreak(baseline.streak, todayLit),
     todayLit,
     guardianDefeated: isGuardianDefeated(quests, done),

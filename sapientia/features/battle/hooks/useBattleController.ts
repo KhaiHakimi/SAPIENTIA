@@ -48,7 +48,10 @@ export interface BattleController {
 
 const ARENA_PARTS: readonly ArenaPart[] = ['arena', 'foeStage', 'meStage', 'foeFigure', 'meFigure', 'slash'];
 
-const ANIMATION_CLASSES = [arena.lungeMe, arena.lungeFoe, arena.hitFoe, arena.hitMe, arena.cheer, arena.faint, arena.shake, arena.slideFoe, arena.slideMe, arena.slash];
+const ANIMATION_CLASSES = [
+  arena.lungeMe, arena.lungeFoe, arena.hitFoe, arena.hitMe, arena.cheer,
+  arena.faint, arena.shake, arena.slideFoe, arena.slideMe, arena.slash,
+];
 
 /**
  * Runs one quiz battle against `monster` while it is set. It implements BattleView on top of the dialog's DOM refs, starts the
@@ -64,7 +67,10 @@ export function useBattleController(
   const [liveText, setLiveText] = useState('');
   const [moreVisible, setMoreVisible] = useState(false);
   const [menuLabels, setMenuLabels] = useState<string[] | null>(null);
-  const [hp, setHp] = useState<Record<BattleSide, HpState>>({ foe: { hp: 0, max: 1, instant: true }, me: { hp: 0, max: 1, instant: true } });
+  const [hp, setHp] = useState<Record<BattleSide, HpState>>({
+    foe: { hp: 0, max: 1, instant: true },
+    me: { hp: 0, max: 1, instant: true },
+  });
   const [record, setRecord] = useState<BattleRecord>({ attempts: 0, wins: 0 });
 
   // The script runs for minutes; it reads the latest language, name and progress through this ref instead of a stale render.
@@ -173,7 +179,8 @@ export function useBattleController(
       },
       setRecord,
       resetArena() {
-        const characterMoves = [monster.moves.attack, monster.moves.hit, monster.moves.impact].filter((name): name is string => Boolean(name));
+        const characterMoves = [monster.moves.attack, monster.moves.hit, monster.moves.impact]
+          .filter((name): name is string => Boolean(name));
         for (const name of ARENA_PARTS) part(name)?.classList.remove(...ANIMATION_CLASSES, ...characterMoves);
         refs.arena.current?.sprite('foe')?.reset();
         refs.arena.current?.sprite('me')?.reset();

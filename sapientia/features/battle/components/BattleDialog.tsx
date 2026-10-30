@@ -33,7 +33,12 @@ export function BattleDialog({ monster, onClose, onLevelUp }: BattleDialogProps)
   const textRef = useRef<HTMLSpanElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const controller = useBattleController(monster, { arena: arenaRef, textBox: textBoxRef, text: textRef, more: moreRef }, onClose, onLevelUp);
+  const controller = useBattleController(
+    monster,
+    { arena: arenaRef, textBox: textBoxRef, text: textRef, more: moreRef },
+    onClose,
+    onLevelUp,
+  );
   const titleId = useId();
 
   // Enter or Space finishes a typing line; 1 to 4 pick an answer; the arrows move round the 2x2 menu.
@@ -68,7 +73,14 @@ export function BattleDialog({ monster, onClose, onLevelUp }: BattleDialogProps)
           <button className={styles.close} type="button" aria-label={text.close} onClick={onClose}>
             X
           </button>
-          <BattleArena ref={arenaRef} monster={monster} foeName={pick(monster.name)} heroName={displayName} heroLevel={level} hp={controller.hp} />
+          <BattleArena
+            ref={arenaRef}
+            monster={monster}
+            foeName={pick(monster.name)}
+            heroName={displayName}
+            heroLevel={level}
+            hp={controller.hp}
+          />
           <div className={styles.textBox} ref={textBoxRef} tabIndex={-1} onClick={controller.skipTyping}>
             <span className={styles.tag}>{controller.topic}</span>
             <span ref={textRef} aria-hidden="true" />

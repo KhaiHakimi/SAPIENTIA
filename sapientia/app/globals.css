@@ -98,6 +98,25 @@ html[data-theme="light"] { color-scheme: light; }
 :root[data-theme="light"][data-frame="iron"] { --frame: #6b778c; --frame-dim: rgba(107, 119, 140, .55); }
 :root[data-theme="light"][data-frame="banner"] { --frame: #b3261e; --frame-dim: rgba(179, 38, 30, .5); }
 
+/* ===== Theme scopes (plan D8, Section 14). The tokens above are the magic scope. Calm is for teacher, admin, guardian and
+   bullying screens: neutral colours, a plain system font, no scene, and the shop's skins and frames do not reach it. ===== */
+[data-theme-scope="calm"] {
+  --bg: #12151b; --brick: transparent; --panel: #1b1f27; --panel-2: #242a34; --bd: #3a4150;
+  --text: #e6e9ef; --muted: #a0a8b6;
+  --accent: #6fa3ef; --accent-text: #8ab4ff; --accent-ink: #0b1526;
+  --ok: #4cc38a; --danger: #ef6a5e; --track: #0e1116; --focus: #8ab4ff;
+  --frame: var(--bd); --frame-dim: transparent;
+  --heading: system-ui, "Segoe UI", Roboto, sans-serif; --font: system-ui, "Segoe UI", Roboto, sans-serif;
+  --veil: none; --scene: none; --sky: none; --tex: none;
+  --on-scene-text: var(--text); --on-scene-muted: var(--muted); --on-scene-shadow: none;
+}
+:root[data-theme="light"] [data-theme-scope="calm"] {
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f5; --bd: #c9d0db;
+  --text: #161b24; --muted: #545f70;
+  --accent: #1a5fd1; --accent-text: #1a5fd1; --accent-ink: #ffffff;
+  --ok: #17724a; --danger: #b3261e; --track: #dde2ea; --focus: #1a5fd1;
+}
+
 /* ===== Page backdrop: veil over scene over sky, fixed while the panels scroll. Panels are opaque, so text never sits on the art. ===== */
 body {
   margin: 0; min-height: 100vh; font: 400 1rem/1.5 var(--font); color: var(--text);

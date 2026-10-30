@@ -73,7 +73,11 @@ export function StudentDashboard() {
         <aside className={styles.side} aria-label="Sapientia">
           <Brand subtitle={text.subtitle} />
           <ProfileCard />
-          <MenuCard onOpenWeek={() => setWeekOpen(true)} onOpenShop={() => setShopOpen(true)} onOpenPahlawan={() => setPahlawanOpen(true)} />
+          <MenuCard
+            onOpenWeek={() => setWeekOpen(true)}
+            onOpenShop={() => setShopOpen(true)}
+            onOpenPahlawan={() => setPahlawanOpen(true)}
+          />
         </aside>
 
         <main>
@@ -100,7 +104,12 @@ export function StudentDashboard() {
 
       <QuestScrollDialog questId={openQuestId} onClose={() => setOpenQuestId(null)} onToggle={toggleQuest} />
       <WeekTimetableDialog open={weekOpen} onClose={() => setWeekOpen(false)} />
-      <ShopDialog open={shopOpen} onClose={() => setShopOpen(false)} balance={progress.coins} onAvatarChosen={() => profilePhotoStore.clear()} />
+      <ShopDialog
+        open={shopOpen}
+        onClose={() => setShopOpen(false)}
+        balance={progress.coins}
+        onAvatarChosen={() => profilePhotoStore.clear()}
+      />
       <PahlawanDialog open={pahlawanOpen} onClose={() => setPahlawanOpen(false)} />
       <BattleDialog monster={battleMonster} onClose={() => setBattleMonster(null)} onLevelUp={setLevelUp} />
       <LevelUpDialog level={levelUp} onClose={() => setLevelUp(null)} />

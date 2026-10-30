@@ -1,0 +1,73 @@
+# Lint, type check, unit tests, migrations and integration tests against a throwaway PostgreSQL, build, and a dependency audit.
+# Actions are pinned to commit SHAs (tag in the comment) so a moved tag cannot change what runs.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: sapientia
+
+jobs:
+  check:
+    name: Lint, test and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_DB: sapientia_test
+          POSTGRES_USER: sapientia
+          # Throwaway database that lives only for this job; not a secret.
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sapientia -d sapientia_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://sapientia:ci-only-password@localhost:5432/sapientia_test
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: sapientia/.nvmrc
+          cache: npm
+          cache-dependency-path: sapientia/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Migrations run from an empty database, roll back and run again
+        run: |
+          npm run db:migrate
+          npm run db:migrate:down
+          npm run db:migrate
+      - run: npm run test:integration
+      - run: npm run build
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: sapientia/.nvmrc
+      # Fails on high or critical advisories; moderate ones are reviewed by hand.
+      - run: npm audit --audit-level=high

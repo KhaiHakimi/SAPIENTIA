@@ -18,7 +18,9 @@ interface ModalDialogProps {
 }
 
 /** A native modal <dialog>: focus trapping, Esc and the backdrop come from the browser. */
-export function ModalDialog({ open, onClose, closeOnBackdrop = false, className, labelledBy, describedBy, onKeyDown, onClick, children }: ModalDialogProps) {
+export function ModalDialog({
+  open, onClose, closeOnBackdrop = false, className, labelledBy, describedBy, onKeyDown, onClick, children,
+}: ModalDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {

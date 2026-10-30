@@ -1,0 +1,6 @@
+/* Magic leaves the layout alone: display: contents adds no box, and the custom properties still inherit through it.
+   Calm paints its own plain page over the body's scene, so its screens never sit on the dungeon art. */
+.scope[data-theme-scope="magic"] { display: contents; }
+.scope[data-theme-scope="calm"] {
+  min-height: 100vh; background: var(--bg); color: var(--text); font: 400 1rem/1.5 var(--font);
+}

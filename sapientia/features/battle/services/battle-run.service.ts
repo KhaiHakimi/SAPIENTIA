@@ -26,7 +26,11 @@ export function shuffled<T>(list: readonly T[], random: RandomSource = Math.rand
 const orderKey = (questions: readonly QuizQuestion[]) => questions.map((question) => question.id).join();
 
 /** A fresh run; `previousOrder` is the last run's order against this monster, which a retry must not repeat. */
-export function startRun(questions: readonly QuizQuestion[], previousOrder: string | undefined, random: RandomSource = Math.random): { run: BattleRun; order: string } {
+export function startRun(
+  questions: readonly QuizQuestion[],
+  previousOrder: string | undefined,
+  random: RandomSource = Math.random,
+): { run: BattleRun; order: string } {
   let order = shuffled(questions, random);
   for (let tries = 1; questions.length > 1 && orderKey(order) === previousOrder && tries < 10; tries += 1) {
     order = shuffled(questions, random);
@@ -44,7 +48,12 @@ export function nextQuestion(run: BattleRun): { question: QuizQuestion; run: Bat
   return { question, run: { ...run, queue: rest } };
 }
 
-export function answerQuestion(run: BattleRun, question: QuizQuestion, correct: boolean, monsterHit: number): { run: BattleRun; outcome: AnswerOutcome } {
+export function answerQuestion(
+  run: BattleRun,
+  question: QuizQuestion,
+  correct: boolean,
+  monsterHit: number,
+): { run: BattleRun; outcome: AnswerOutcome } {
   const next: BattleRun = correct
     ? { ...run, foeHp: run.foeHp - FOE_DAMAGE, right: run.right + 1 }
     : {

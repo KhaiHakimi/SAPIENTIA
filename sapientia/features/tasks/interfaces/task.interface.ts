@@ -12,6 +12,7 @@ export interface AssignedTask {
   dueOn: string;
   createdBy: PersonRef;
   myStatus: AssignmentStatus;
+  urgent: boolean;
 }
 
 /** A row in the sender's list (GET /api/tasks?view=sent). */
@@ -22,6 +23,10 @@ export interface SentTask {
   createdAt: string;
   assigneeCount: number;
   doneCount: number;
+  /** When it reaches the assignees; deliveredAt is null while it is held. */
+  deliverAt: string;
+  deliveredAt: string | null;
+  urgent: boolean;
 }
 
 export interface TaskAssignee extends PersonRef {
@@ -55,6 +60,12 @@ export interface TaskDetail {
   dueOn: string;
   createdAt: string;
   createdBy: PersonRef;
+  deliverAt: string;
+  deliveredAt: string | null;
+  urgent: boolean;
+  urgentReason: string | null;
+  /** The school's zone, for showing deliverAt in school time. */
+  timeZone: string;
   isSender: boolean;
   myStatus: AssignmentStatus | null;
   assigneeCount: number;
@@ -69,4 +80,7 @@ export interface CreateTaskRequest {
   description?: string;
   dueOn: string;
   assigneeIds: string[];
+  /** Deliver now even outside working hours. Needs a reason, which is recorded. */
+  urgent?: boolean;
+  urgentReason?: string;
 }

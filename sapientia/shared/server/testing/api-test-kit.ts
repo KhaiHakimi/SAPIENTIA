@@ -11,12 +11,17 @@ export const TEST_PASSWORD = 'correct-horse-battery';
 
 /** Every application table, children first. pg-boss keeps its own schema and is cleared separately when needed. */
 const APP_TABLES = [
-  'idempotency_keys', 'audit_logs', 'task_comments', 'task_assignments', 'tasks',
+  'calendar_events', 'school_settings', 'idempotency_keys', 'audit_logs', 'task_comments', 'task_assignments', 'tasks',
   'auth_throttle', 'invites', 'sessions', 'users', 'schools',
 ];
 
 export async function resetDatabase(extraTables: readonly string[] = []): Promise<void> {
   await getPool().query(`TRUNCATE ${[...extraTables, ...APP_TABLES].join(', ')} RESTART IDENTITY CASCADE`);
+}
+
+/** Removes queued delivery jobs, so a test can count the ones it created. */
+export async function clearQueuedJobs(): Promise<void> {
+  await getPool().query(`DELETE FROM pgboss.job WHERE name = 'deliver-task'`);
 }
 
 let passwordHash: Promise<string> | undefined;

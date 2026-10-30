@@ -1,7 +1,8 @@
 import 'server-only';
-import { DateTime } from 'luxon';
-import { type AuditRow, listEntityAudit, writeAudit } from '@/features/audit/server/audit.repository';
+import { type AuditEntry, type AuditRow, listEntityAudit, writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
+import { planDelivery, type DeliveryPlan } from '@/features/delivery/server/delivery-plan.service';
+import { scheduleDelivery } from '@/features/delivery/server/delivery-queue.service';
 import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -18,14 +19,25 @@ import {
   listSent, updateOwnAssignment,
 } from './tasks.repository';
 
-async function schoolToday(db: Queryable, schoolId: string, clock: Clock): Promise<string> {
-  const { rows } = await db.query<{ time_zone: string }>('SELECT time_zone FROM schools WHERE id = $1', [schoolId]);
-  return DateTime.fromJSDate(clock.now(), { zone: rows[0].time_zone }).toISODate() ?? '';
+/** The due date cannot be before today, nor before the day the task actually reaches the assignees. */
+function checkDueDate(dueOn: string, plan: DeliveryPlan): void {
+  if (dueOn < plan.today) throw new ValidationError({ dueOn: 'past_date' });
+  if (dueOn < plan.deliveryDay) throw new ValidationError({ dueOn: 'due_before_delivery' });
+}
+
+function deliveryAudit(actorId: string, taskId: string, input: CreateTaskRequest, plan: DeliveryPlan): AuditEntry[] {
+  const entry = (action: AuditEntry['action'], metadata: AuditEntry['metadata']): AuditEntry =>
+    ({ actorId, action, entityType: 'task', entityId: taskId, metadata });
+  if (input.urgent) return [entry('task.urgent_override', {}), entry('task.delivered', { via: 'urgent' })];
+  if (plan.deliveredAt) return [entry('task.delivered', { via: 'immediate' })];
+  return [entry('task.held', { deliverAt: plan.deliverAt.toISOString() })];
 }
 
 /**
- * Creates a task for one or more staff in the sender's school. Every assignee must be an active account in that school;
- * the due date cannot be before today in the school's time zone. With an Idempotency-Key, a retry returns the first result.
+ * Creates a task for one or more staff in the sender's school (plan Sprints 3 and 4). Every assignee must be an active
+ * account in that school. Outside working hours the task is held: saved now, with a delivery job in the same transaction,
+ * and invisible to assignees until the next working morning. An urgent override delivers at once and records the reason.
+ * With an Idempotency-Key, a retry returns the first result.
  */
 export async function createTask(
   actor: SessionUser,
@@ -37,16 +49,21 @@ export async function createTask(
     const create = async (): Promise<StoredResponse<TaskDetail>> => {
       const staff = await listActiveStaff(client, actor.schoolId, input.assigneeIds);
       if (staff.length !== input.assigneeIds.length) throw new ValidationError({ assigneeIds: 'invalid_assignee' });
-      if (input.dueOn < (await schoolToday(client, actor.schoolId, clock))) throw new ValidationError({ dueOn: 'past_date' });
+      const plan = await planDelivery(client, actor.schoolId, Boolean(input.urgent), clock);
+      checkDueDate(input.dueOn, plan);
 
       const now = clock.now();
-      const taskId = await insertTask(client, actor.schoolId, { ...input, createdBy: actor.id, now });
+      const taskId = await insertTask(client, actor.schoolId, {
+        ...input, createdBy: actor.id, now, deliverAt: plan.deliverAt, deliveredAt: plan.deliveredAt, urgent: Boolean(input.urgent),
+      });
       await insertAssignments(client, actor.schoolId, taskId, input.assigneeIds, now);
+      if (!plan.deliveredAt) await scheduleDelivery(client, taskId, plan.deliverAt);
       await writeAudit(client, actor.schoolId, [
         { actorId: actor.id, action: 'task.created', entityType: 'task', entityId: taskId, metadata: { assigneeCount: input.assigneeIds.length } },
         ...input.assigneeIds.map((assigneeId) => ({
           actorId: actor.id, action: 'task.assigned' as const, entityType: 'task' as const, entityId: taskId, metadata: { assigneeId },
         })),
+        ...deliveryAudit(actor.id, taskId, input, plan),
       ]);
       return { status: 201, body: await loadDetail(client, actor, taskId) };
     };
@@ -69,12 +86,19 @@ export async function listAssignedTasks(
     dueOn: row.due_on,
     createdBy: { id: row.created_by, name: row.creator_name },
     myStatus: row.my_status,
+    urgent: row.urgent,
   }), (row) => encodeCursor(row.due_on, row.id));
 }
 
-export async function listSentTasks(actor: SessionUser, limit: number, cursor: string | undefined): Promise<Page<SentTask>> {
+/** Tasks the caller sent, newest first; heldOnly is the held list (plan Sprint 4: senders see what is waiting). */
+export async function listSentTasks(
+  actor: SessionUser,
+  limit: number,
+  cursor: string | undefined,
+  heldOnly = false,
+): Promise<Page<SentTask>> {
   const after = decodeCursor(cursor);
-  const rows = await listSent(getPool(), actor.schoolId, actor.id, limit, after && { createdAt: after.sortValue, id: after.id });
+  const rows = await listSent(getPool(), actor.schoolId, actor.id, limit, after && { createdAt: after.sortValue, id: after.id }, heldOnly);
   return toPage(rows, limit, (row) => ({
     id: row.id,
     title: row.title,
@@ -82,6 +106,9 @@ export async function listSentTasks(actor: SessionUser, limit: number, cursor: s
     createdAt: row.created_at.toISOString(),
     assigneeCount: row.assignee_count,
     doneCount: row.done_count,
+    deliverAt: row.deliver_at.toISOString(),
+    deliveredAt: row.delivered_at?.toISOString() ?? null,
+    urgent: row.urgent,
   }), (row) => encodeCursor(row.created_at.toISOString(), row.id));
 }
 
@@ -93,7 +120,8 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
   const task = await findVisibleTask(db, actor.schoolId, taskId, actor.id);
   if (!task) throw new NotFoundError();
   const isSender = task.created_by === actor.id;
-  const [counts, comments, assignees, activity] = await Promise.all([
+  const [timeZone, counts, comments, assignees, activity] = await Promise.all([
+    db.query<{ time_zone: string }>('SELECT time_zone FROM schools WHERE id = $1', [actor.schoolId]).then(({ rows }) => rows[0].time_zone),
     countAssignments(db, actor.schoolId, taskId),
     listComments(db, actor.schoolId, taskId, COMMENTS_SHOWN_MAX),
     isSender ? listAssignees(db, actor.schoolId, taskId) : null,
@@ -106,6 +134,11 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
     dueOn: task.due_on,
     createdAt: task.created_at.toISOString(),
     createdBy: { id: task.created_by, name: task.creator_name },
+    deliverAt: task.deliver_at.toISOString(),
+    deliveredAt: task.delivered_at?.toISOString() ?? null,
+    urgent: task.urgent,
+    urgentReason: task.urgent_reason,
+    timeZone,
     isSender,
     myStatus: task.my_status,
     assigneeCount: counts.total,

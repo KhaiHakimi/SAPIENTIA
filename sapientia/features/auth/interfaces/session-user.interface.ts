@@ -6,6 +6,8 @@ export interface SessionUser {
   id: string;
   schoolId: string;
   schoolName: string;
+  /** The school's IANA zone; staff screens show times in it. */
+  timeZone: string;
   email: string;
   name: string;
   role: StaffRole;

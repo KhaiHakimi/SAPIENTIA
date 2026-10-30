@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDate, formatDay } from '@/shared/i18n/format-date';
@@ -10,6 +9,7 @@ import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import type { TaskDetail } from '../interfaces/task.interface';
 import type { TasksMessages } from '../i18n/tasks-messages.interface';
 import { TASKS_MESSAGES } from '../i18n/tasks.messages';
+import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
 import { describeActivity } from '../services/activity-text';
 import { fetchTask, taskKey } from '../services/tasks.client';
 import styles from '../styles/Tasks.module.css';
@@ -45,7 +45,7 @@ function SenderPanels({ task, text }: { task: TaskDetail; text: TasksMessages })
           {(task.activity ?? []).map((entry) => (
             <li key={entry.id}>
               <time dateTime={entry.createdAt}>{formatDate(entry.createdAt, lang, { withTime: true })}</time>
-              {describeActivity(entry, assignees, text)}
+              {describeActivity(entry, assignees, text, { timeZone: task.timeZone, lang })}
             </li>
           ))}
         </ol>
@@ -55,8 +55,7 @@ function SenderPanels({ task, text }: { task: TaskDetail; text: TasksMessages })
 }
 
 /** One task: what, when, my status, comments; the sender also sees each assignee and the history. */
-export function TaskDetailPage() {
-  const { id } = useParams<{ id: string }>();
+export function TaskDetailPage({ id }: { id: string }) {
   const text = useMessages(TASKS_MESSAGES);
   const { lang } = useLanguage();
   const task = useQuery({ queryKey: taskKey(id), queryFn: () => fetchTask(id) });
@@ -77,12 +76,21 @@ export function TaskDetailPage() {
                 <span>{text.due(formatDay(task.data.dueOn, lang, { weekday: true }))}</span>
                 <span>{text.sentBy(task.data.createdBy.name, formatDate(task.data.createdAt, lang, { withTime: true }))}</span>
                 <span>{text.overall}: {text.progress(task.data.doneCount, task.data.assigneeCount)}</span>
+                {task.data.isSender && (
+                  <span className={`${calm.badge} ${task.data.deliveredAt ? calm.badgeOk : calm.badgeAccent}`}>
+                    {task.data.deliveredAt
+                      ? text.deliveredOn(describeDeliveryTime(task.data.deliveredAt, task.data.timeZone, lang))
+                      : text.heldUntil(describeDeliveryTime(task.data.deliverAt, task.data.timeZone, lang))}
+                  </span>
+                )}
+                {task.data.urgent && <span className={`${calm.badge} ${calm.badgeDanger}`}>{text.urgentBadge}</span>}
               </div>
             </div>
           </div>
           <div className={calm.grid2}>
             <div>
               <section className={calm.card}>
+                {task.data.urgentReason && <p className={`${calm.alert} ${calm.alertInfo}`}>{text.urgentBecause(task.data.urgentReason)}</p>}
                 <p className={task.data.description ? styles.description : calm.muted}>{task.data.description ?? text.noDescription}</p>
                 {task.data.myStatus && (
                   <StatusSelect taskId={task.data.id} status={task.data.myStatus} text={text} idPrefix="detail" />

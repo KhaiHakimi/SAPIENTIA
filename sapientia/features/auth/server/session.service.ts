@@ -19,6 +19,7 @@ interface SessionRow {
   id: string;
   school_id: string;
   school_name: string;
+  time_zone: string;
   email: string;
   name: string;
   role: SessionUser['role'];
@@ -42,7 +43,8 @@ export async function createSession(db: Queryable, schoolId: string, userId: str
  */
 export async function resolveSession(db: Queryable, token: string, clock: Clock): Promise<SessionUser | null> {
   const { rows } = await db.query<SessionRow>(
-    `SELECT s.id AS session_id, s.last_seen_at, s.expires_at, u.id, u.school_id, sc.name AS school_name, u.email, u.name, u.role
+    `SELECT s.id AS session_id, s.last_seen_at, s.expires_at, u.id, u.school_id, sc.name AS school_name, sc.time_zone,
+            u.email, u.name, u.role
        FROM sessions s
        JOIN users u ON u.id = s.user_id AND u.school_id = s.school_id
        JOIN schools sc ON sc.id = u.school_id
@@ -61,7 +63,10 @@ export async function resolveSession(db: Queryable, token: string, clock: Clock)
   if (now - row.last_seen_at.getTime() >= SESSION_TOUCH_MINUTES * MINUTE_MS) {
     await db.query('UPDATE sessions SET last_seen_at = $2 WHERE id = $1', [row.session_id, clock.now()]);
   }
-  return { id: row.id, schoolId: row.school_id, schoolName: row.school_name, email: row.email, name: row.name, role: row.role };
+  return {
+    id: row.id, schoolId: row.school_id, schoolName: row.school_name, timeZone: row.time_zone,
+    email: row.email, name: row.name, role: row.role,
+  };
 }
 
 export async function revokeSession(db: Queryable, token: string): Promise<void> {

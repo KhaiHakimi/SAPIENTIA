@@ -1,5 +1,6 @@
 -- Up Migration
 -- Sprint 3: tasks, who they are assigned to, comments, the audit log, and idempotency keys for creating tasks.
+-- Sprint 4 (folded in before release): held delivery columns on tasks.
 
 CREATE TABLE tasks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -9,15 +10,29 @@ CREATE TABLE tasks (
   description text,
   -- A calendar day in the school's time zone, not an instant: "due Friday" means the whole Friday.
   due_on date NOT NULL,
+  -- Held delivery (plan Sprint 4): assignees see the task only once delivered_at is set. deliver_at is when it is due to
+  -- appear: the creation time inside working hours, otherwise the next working morning.
+  deliver_at timestamptz NOT NULL,
+  delivered_at timestamptz,
+  -- The sender may override holding with a reason; the reason is mandatory and counted in reports later.
+  urgent boolean NOT NULL DEFAULT false,
+  urgent_reason text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tasks_title_length CHECK (char_length(btrim(title)) BETWEEN 1 AND 200),
   CONSTRAINT tasks_description_length CHECK (description IS NULL OR char_length(description) <= 5000),
+  CONSTRAINT tasks_urgent_has_reason CHECK (
+    (urgent AND urgent_reason IS NOT NULL AND char_length(btrim(urgent_reason)) BETWEEN 1 AND 500)
+    OR (NOT urgent AND urgent_reason IS NULL)
+  ),
+  CONSTRAINT tasks_urgent_delivered CHECK (NOT urgent OR delivered_at IS NOT NULL),
   CONSTRAINT tasks_school_id_id_unique UNIQUE (school_id, id),
   FOREIGN KEY (school_id, created_by) REFERENCES users (school_id, id)
 );
 
 CREATE INDEX tasks_sent ON tasks (school_id, created_by, created_at DESC, id DESC);
+-- The worker's sweep for held tasks that are due: small, because delivered rows drop out of it.
+CREATE INDEX tasks_pending_delivery ON tasks (deliver_at) WHERE delivered_at IS NULL;
 
 -- The four columns of the teacher board.
 CREATE TYPE assignment_status AS ENUM ('todo', 'in_progress', 'waiting', 'done');

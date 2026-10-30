@@ -41,6 +41,7 @@ function BoardColumn({ status, text }: { status: AssignmentStatus; text: TasksMe
           {cards.map((card) => (
             <li key={card.id} className={styles.card}>
               <Link href={`/staff/tasks/${card.id}`} className={styles.cardTitle}>{card.title}</Link>
+              {card.urgent && <span><span className={`${calm.badge} ${calm.badgeDanger}`}>{text.urgentBadge}</span></span>}
               <div className={calm.muted}>{text.due(formatDay(card.dueOn, lang))}</div>
               <div className={calm.muted}>{text.from(card.createdBy.name)}</div>
               <StatusSelect taskId={card.id} status={card.myStatus} text={text} idPrefix="board" />

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
 import { ASSIGNEES_MAX, ASSIGNMENT_STATUSES, COMMENT_MAX, TASK_DESCRIPTION_MAX, TASK_TITLE_MAX } from '../constants/task.constants';
 
 const statusSchema = z.enum(ASSIGNMENT_STATUSES, { error: 'invalid_status' });
@@ -11,10 +12,16 @@ export const createTaskSchema = z.strictObject({
   assigneeIds: z.array(z.uuid({ error: 'invalid_assignee' }), { error: 'required' })
     .min(1, { error: 'required' }).max(ASSIGNEES_MAX, { error: 'too_many' })
     .transform((ids) => [...new Set(ids)]),
-});
+  urgent: z.boolean({ error: 'invalid_boolean' }).optional().default(false),
+  urgentReason: z.string().trim().max(URGENT_REASON_MAX, { error: 'too_long' }).optional(),
+}).transform(({ urgentReason, ...task }) => ({
+  ...task,
+  // A reason only means something with the override; without it, it is dropped rather than stored.
+  urgentReason: task.urgent ? urgentReason || undefined : undefined,
+})).refine((task) => !task.urgent || task.urgentReason, { error: 'required', path: ['urgentReason'] });
 
 export const tasksQuerySchema = z.object({
-  view: z.enum(['assigned', 'sent'], { error: 'invalid_view' }),
+  view: z.enum(['assigned', 'sent', 'held'], { error: 'invalid_view' }),
   status: statusSchema.optional(),
 });
 

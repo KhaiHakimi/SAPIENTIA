@@ -16,11 +16,12 @@
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
-    "db:migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up --check-order",
+    "db:migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up --check-order && node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/install-queues.ts",
     "db:migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js down",
     "db:migrate:create": "node-pg-migrate create --migration-file-language sql",
     "db:seed": "node --env-file-if-exists=.env --conditions=react-server --import tsx seeds/dev-seed.ts",
-    "db:migrate:test": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up --check-order -d TEST_DATABASE_URL"
+    "db:migrate:test": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up --check-order -d TEST_DATABASE_URL && node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/install-queues.ts TEST_DATABASE_URL",
+    "worker": "node --env-file-if-exists=.env --conditions=react-server --import tsx worker/index.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.3",

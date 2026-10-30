@@ -16,7 +16,13 @@ export interface TasksMessages {
   sentTitle: string;
   sentIntro: string;
   sentEmpty: string;
-  columns: { title: string; due: string; progress: string; created: string };
+  columns: { title: string; due: string; progress: string; created: string; delivery: string };
+  heldTitle: string;
+  heldIntro: string;
+  heldEmpty: string;
+  heldUntil: (when: string) => string;
+  deliveredOn: (when: string) => string;
+  urgentBadge: string;
   progress: (done: number, total: number) => string;
   newTask: string;
   // Create
@@ -34,10 +40,17 @@ export interface TasksMessages {
   optional: string;
   send: string;
   sending: string;
+  willDeliver: (when: string) => string;
+  deliversNow: string;
+  heldExplained: string;
+  urgentLabel: string;
+  urgentHelp: string;
+  urgentReason: string;
   // Detail
   back: string;
   sentBy: (name: string, when: string) => string;
   noDescription: string;
+  urgentBecause: (reason: string) => string;
   myStatus: string;
   statusSaved: string;
   overall: string;
@@ -54,6 +67,9 @@ export interface TasksMessages {
     assigned: (actor: string, assignee: string) => string;
     statusChanged: (actor: string, from: string, to: string) => string;
     commented: (actor: string) => string;
+    held: (actor: string, when: string) => string;
+    urgent: (actor: string) => string;
+    delivered: string;
     other: (actor: string, action: string) => string;
   };
   someone: string;

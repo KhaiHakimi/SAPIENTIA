@@ -3,6 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
+import { fetchDeliveryPreview, PREVIEW_KEY } from '@/features/delivery/services/delivery.client';
+import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
 import { fetchStaffDirectory, STAFF_DIRECTORY_KEY } from '@/features/users/services/users.client';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
@@ -18,7 +21,13 @@ import styles from '../styles/Tasks.module.css';
 const fieldText = (reason: string | undefined, text: TasksMessages, lang: Lang) =>
   (reason && text.fieldErrors[reason]) || describeFieldError(reason, lang);
 
-/** Senders and administrators: title, assignees and due date first (plan Sprint 3); details are optional. */
+/** Asked again every minute, so a form left open across 5 pm shows the change from "now" to "tomorrow morning". */
+const PREVIEW_REFRESH_MS = 60_000;
+
+/**
+ * Senders and administrators: title, assignees and due date first (plan Sprint 3); details are optional. Outside working
+ * hours the form says when the task will arrive and offers the urgent override, which needs a reason (plan Sprint 4).
+ */
 export function CreateTaskPage() {
   const text = useMessages(TASKS_MESSAGES);
   const { lang } = useLanguage();
@@ -31,9 +40,16 @@ export function CreateTaskPage() {
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [filter, setFilter] = useState('');
   const [description, setDescription] = useState('');
+  const [urgent, setUrgent] = useState(false);
+  const [urgentReason, setUrgentReason] = useState('');
+  const preview = useQuery({ queryKey: PREVIEW_KEY, queryFn: fetchDeliveryPreview, refetchInterval: PREVIEW_REFRESH_MS });
+  const held = preview.data?.held ?? false;
 
   const create = useMutation({
-    mutationFn: () => createTask({ title, dueOn, assigneeIds, description: description || undefined }, idempotencyKey),
+    mutationFn: () => createTask({
+      title, dueOn, assigneeIds, description: description || undefined,
+      ...(held && urgent ? { urgent: true, urgentReason } : {}),
+    }, idempotencyKey),
     onSuccess: async (task) => {
       await queryClient.invalidateQueries({ queryKey: TASKS_KEY });
       router.push(`/staff/tasks/${task.id}`);
@@ -109,6 +125,34 @@ export function CreateTaskPage() {
           <div id="task-description-help" className={calm.help}>{text.descriptionHelp}</div>
           <div id="task-description-error" className={calm.fieldError}>{fieldText(fields.description, text, lang)}</div>
         </div>
+
+        {preview.data && (
+          <div className={`${calm.alert} ${held ? calm.alertInfo : ''}`} role="status">
+            <strong>
+              {held ? text.willDeliver(describeDeliveryTime(preview.data.deliverAt, preview.data.timeZone, lang)) : text.deliversNow}
+            </strong>
+            {held && <p className={calm.help}>{text.heldExplained}</p>}
+          </div>
+        )}
+
+        {held && (
+          <div className={calm.field}>
+            <label className={calm.checkbox}>
+              <input type="checkbox" checked={urgent} onChange={(event) => setUrgent(event.target.checked)} aria-describedby="task-urgent-help" />
+              <span>{text.urgentLabel}</span>
+            </label>
+            <div id="task-urgent-help" className={calm.help}>{text.urgentHelp}</div>
+            {urgent && (
+              <>
+                <label className={calm.label} htmlFor="task-urgent-reason">{text.urgentReason}</label>
+                <textarea id="task-urgent-reason" className={calm.textarea} value={urgentReason} maxLength={URGENT_REASON_MAX}
+                  onChange={(event) => setUrgentReason(event.target.value)} aria-invalid={Boolean(fields.urgentReason)}
+                  aria-describedby="task-urgent-error" />
+                <div id="task-urgent-error" className={calm.fieldError}>{fieldText(fields.urgentReason, text, lang)}</div>
+              </>
+            )}
+          </div>
+        )}
 
         <button type="submit" className={`${calm.button} ${calm.primary}`} disabled={create.isPending}>
           {create.isPending ? text.sending : text.send}

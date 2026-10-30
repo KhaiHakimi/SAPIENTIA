@@ -12,6 +12,10 @@ export interface TaskRow {
   created_at: Date;
   created_by: string;
   creator_name: string;
+  deliver_at: Date;
+  delivered_at: Date | null;
+  urgent: boolean;
+  urgent_reason: string | null;
 }
 
 export interface VisibleTaskRow extends TaskRow {
@@ -19,17 +23,24 @@ export interface VisibleTaskRow extends TaskRow {
 }
 
 // due_on is read as text: a pg Date would shift the calendar day by the server's time zone.
-const TASK_COLUMNS = `t.id, t.title, t.description, t.due_on::text AS due_on, t.created_at, t.created_by, c.name AS creator_name`;
+const TASK_COLUMNS = `t.id, t.title, t.description, t.due_on::text AS due_on, t.created_at, t.created_by, c.name AS creator_name,
+  t.deliver_at, t.delivered_at, t.urgent, t.urgent_reason`;
 
 export async function insertTask(
   db: Queryable,
   schoolId: string,
-  task: { createdBy: string; title: string; description?: string; dueOn: string; now: Date },
+  task: {
+    createdBy: string; title: string; description?: string; dueOn: string; now: Date;
+    deliverAt: Date; deliveredAt: Date | null; urgent: boolean; urgentReason?: string;
+  },
 ): Promise<string> {
   const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO tasks (school_id, created_by, title, description, due_on, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING id`,
-    [schoolId, task.createdBy, task.title, task.description ?? null, task.dueOn, task.now],
+    `INSERT INTO tasks (school_id, created_by, title, description, due_on, created_at, updated_at, deliver_at, delivered_at, urgent, urgent_reason)
+     VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9, $10) RETURNING id`,
+    [
+      schoolId, task.createdBy, task.title, task.description ?? null, task.dueOn, task.now,
+      task.deliverAt, task.deliveredAt, task.urgent, task.urgentReason ?? null,
+    ],
   );
   return rows[0].id;
 }
@@ -43,8 +54,9 @@ export async function insertAssignments(db: Queryable, schoolId: string, taskId:
 }
 
 /**
- * The task if this user may see it (they sent it or it is assigned to them), with their own status; otherwise null. Callers
- * answer null with 404, so a task in another school or someone else's task looks the same as one that does not exist.
+ * The task if this user may see it (they sent it, or it is assigned to them and has been delivered), with their own status;
+ * otherwise null. Callers answer null with 404, so a held task, a task in another school or someone else's task all look the
+ * same to an assignee as one that does not exist.
  */
 export async function findVisibleTask(db: Queryable, schoolId: string, taskId: string, userId: string): Promise<VisibleTaskRow | null> {
   const { rows } = await db.query<VisibleTaskRow>(
@@ -52,7 +64,7 @@ export async function findVisibleTask(db: Queryable, schoolId: string, taskId: s
        FROM tasks t
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
        LEFT JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id AND a.user_id = $3
-      WHERE t.school_id = $1 AND t.id = $2 AND (t.created_by = $3 OR a.user_id IS NOT NULL)`,
+      WHERE t.school_id = $1 AND t.id = $2 AND (t.created_by = $3 OR (a.user_id IS NOT NULL AND t.delivered_at IS NOT NULL))`,
     [schoolId, taskId, userId],
   );
   return rows[0] ?? null;
@@ -78,7 +90,7 @@ export async function listAssignees(db: Queryable, schoolId: string, taskId: str
   return rows;
 }
 
-/** Board column for one assignee, soonest due first. */
+/** Board column for one assignee, soonest due first. Held tasks are not there until delivered. */
 export async function listAssigned(
   db: Queryable,
   schoolId: string,
@@ -92,7 +104,7 @@ export async function listAssigned(
        FROM task_assignments a
        JOIN tasks t ON t.id = a.task_id AND t.school_id = a.school_id
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
-      WHERE a.school_id = $1 AND a.user_id = $2 AND ($3::assignment_status IS NULL OR a.status = $3)
+      WHERE a.school_id = $1 AND a.user_id = $2 AND t.delivered_at IS NOT NULL AND ($3::assignment_status IS NULL OR a.status = $3)
         AND ($4::date IS NULL OR (t.due_on, t.id) > ($4::date, $5::uuid))
       ORDER BY t.due_on, t.id LIMIT $6`,
     [schoolId, userId, status ?? null, after?.dueOn ?? null, after?.id ?? null, limit + 1],
@@ -100,28 +112,29 @@ export async function listAssigned(
   return rows;
 }
 
-/** Tasks this user sent, newest first, with how many assignees have finished. */
+/** Tasks this user sent, newest first, with how many assignees have finished; heldOnly keeps those not yet delivered. */
 export async function listSent(
   db: Queryable,
   schoolId: string,
   userId: string,
   limit: number,
   after: { createdAt: string; id: string } | null,
+  heldOnly = false,
 ) {
   const { rows } = await db.query<TaskRow & { assignee_count: number; done_count: number }>(
     `SELECT ${TASK_COLUMNS},
             (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id) AS assignee_count,
             (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id AND a.status = 'done') AS done_count
        FROM tasks t JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
-      WHERE t.school_id = $1 AND t.created_by = $2
+      WHERE t.school_id = $1 AND t.created_by = $2 AND (NOT $6 OR t.delivered_at IS NULL)
         AND ($3::timestamptz IS NULL OR (t.created_at, t.id) < ($3::timestamptz, $4::uuid))
       ORDER BY t.created_at DESC, t.id DESC LIMIT $5`,
-    [schoolId, userId, after?.createdAt ?? null, after?.id ?? null, limit + 1],
+    [schoolId, userId, after?.createdAt ?? null, after?.id ?? null, limit + 1, heldOnly],
   );
   return rows;
 }
 
-/** Changes only this user's own assignment. Returns the previous status, or null if the user is not an assignee. */
+/** Changes only this user's own assignment on a delivered task. Returns the previous status, or null if there is none. */
 export async function updateOwnAssignment(
   db: Queryable,
   schoolId: string,
@@ -134,7 +147,10 @@ export async function updateOwnAssignment(
     `UPDATE task_assignments a
         SET status = $4::assignment_status, status_changed_at = $5,
             completed_at = CASE WHEN $4::assignment_status = 'done' THEN $5::timestamptz ELSE NULL END
-       FROM (SELECT status FROM task_assignments WHERE school_id = $1 AND task_id = $2 AND user_id = $3 FOR UPDATE) old
+       FROM (
+         SELECT ta.status FROM task_assignments ta JOIN tasks t ON t.id = ta.task_id AND t.school_id = ta.school_id
+          WHERE ta.school_id = $1 AND ta.task_id = $2 AND ta.user_id = $3 AND t.delivered_at IS NOT NULL FOR UPDATE OF ta
+       ) old
       WHERE a.school_id = $1 AND a.task_id = $2 AND a.user_id = $3
       RETURNING old.status AS previous`,
     [schoolId, taskId, userId, status, now],

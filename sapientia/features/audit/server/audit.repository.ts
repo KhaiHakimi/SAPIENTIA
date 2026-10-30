@@ -5,13 +5,19 @@ import type { Queryable } from '@/shared/server/database.service';
 export type AuditAction =
   | 'task.created'
   | 'task.assigned'
+  | 'task.held'
+  | 'task.urgent_override'
+  | 'task.delivered'
   | 'assignment.status_changed'
-  | 'comment.added';
+  | 'comment.added'
+  | 'settings.updated'
+  | 'calendar.event_added'
+  | 'calendar.event_removed';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
-  entityType: 'task';
+  entityType: 'task' | 'school' | 'calendar_event';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

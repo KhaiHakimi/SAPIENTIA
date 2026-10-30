@@ -4,6 +4,8 @@ import { PATCH as moveMine } from '@/app/api/tasks/[id]/assignments/me/route';
 import { POST as comment } from '@/app/api/tasks/[id]/comments/route';
 import { GET as getTask } from '@/app/api/tasks/[id]/route';
 import { GET as listTasks, POST as createTask } from '@/app/api/tasks/route';
+import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
+import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
 import type { AssignedTask, SentTask, TaskDetail } from '../interfaces/task.interface';
@@ -12,6 +14,8 @@ const signIn = async (email: string) =>
   cookieFrom(await call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } }));
 
 const FAR_FUTURE = '2099-12-31';
+/** A Wednesday morning, inside working hours, so every task here is delivered at once (held delivery has its own tests). */
+const WORKING_HOURS = '2026-11-04T10:00:00+08:00';
 
 describe('tasks (G3) and refusals', () => {
   let schoolA: string;
@@ -25,6 +29,7 @@ describe('tasks (G3) and refusals', () => {
     call(createTask, '/api/tasks', { method: 'POST', cookie, body, headers });
 
   beforeEach(async () => {
+    setTestClock(fixedClock(WORKING_HOURS));
     await resetDatabase();
     schoolA = await createSchool('A001');
     schoolB = await createSchool('B001');
@@ -36,7 +41,11 @@ describe('tasks (G3) and refusals', () => {
     sender = await signIn('pk@a.test');
   });
 
-  afterAll(closePool);
+  afterAll(async () => {
+    setTestClock(null);
+    await closeQueue();
+    await closePool();
+  });
 
   it('G3: a task moves from to do to done and every step is in the audit log', async () => {
     const created = await newTask(sender, { title: 'Hantar markah PPT', dueOn: FAR_FUTURE, assigneeIds: [guruA] });
@@ -59,15 +68,16 @@ describe('tasks (G3) and refusals', () => {
       'SELECT action, metadata FROM audit_logs WHERE entity_id = $1 ORDER BY id', [task.id],
     );
     expect(rows.map((row) => row.action)).toEqual([
-      'task.created', 'task.assigned', 'assignment.status_changed', 'assignment.status_changed', 'assignment.status_changed', 'comment.added',
+      'task.created', 'task.assigned', 'task.delivered',
+      'assignment.status_changed', 'assignment.status_changed', 'assignment.status_changed', 'comment.added',
     ]);
-    expect(rows.slice(2, 5).map((row) => `${row.metadata.from}>${row.metadata.to}`)).toEqual(['todo>in_progress', 'in_progress>waiting', 'waiting>done']);
+    expect(rows.slice(3, 6).map((row) => `${row.metadata.from}>${row.metadata.to}`)).toEqual(['todo>in_progress', 'in_progress>waiting', 'waiting>done']);
     // The log never holds the comment text.
     expect(JSON.stringify(rows)).not.toContain('Sudah dihantar');
 
     const detail = (await (await call(getTask, `/api/tasks/${task.id}`, { cookie: sender, params: { id: task.id } })).json()) as TaskDetail;
     expect(detail.doneCount).toBe(1);
-    expect(detail.activity).toHaveLength(6);
+    expect(detail.activity).toHaveLength(7);
     expect(detail.comments.map((item) => item.body)).toEqual(['Sudah dihantar.']);
   });
 
@@ -141,6 +151,8 @@ describe('tasks (G3) and refusals', () => {
 
   it('pages the sent list (newest first) and the board (soonest due first)', async () => {
     for (let day = 1; day <= 5; day++) {
+      // A minute apart, so "newest first" has a real order to follow.
+      setTestClock(fixedClock(new Date(Date.parse(WORKING_HOURS) + day * 60_000)));
       await newTask(sender, { title: `Tugas ${day}`, dueOn: `2099-01-0${day}`, assigneeIds: [guruA] });
     }
     const collect = async <T extends { id: string }>(cookie: string, query: string) => {

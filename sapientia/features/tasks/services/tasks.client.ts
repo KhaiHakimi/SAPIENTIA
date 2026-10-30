@@ -8,6 +8,7 @@ export const TASKS_KEY = ['tasks'] as const;
 export const taskKey = (id: string) => ['tasks', 'detail', id] as const;
 export const boardKey = (status: AssignmentStatus) => ['tasks', 'assigned', status] as const;
 export const SENT_KEY = ['tasks', 'sent'] as const;
+export const HELD_KEY = ['tasks', 'held'] as const;
 
 const cursorParam = (cursor: string | null) => (cursor ? `&cursor=${encodeURIComponent(cursor)}` : '');
 
@@ -15,8 +16,8 @@ export function fetchBoardColumn(status: AssignmentStatus, cursor: string | null
   return apiFetch(`/api/tasks?view=assigned&status=${status}&limit=25${cursorParam(cursor)}`);
 }
 
-export function fetchSentTasks(cursor: string | null): Promise<Page<SentTask>> {
-  return apiFetch(`/api/tasks?view=sent&limit=25${cursorParam(cursor)}`);
+export function fetchSentTasks(cursor: string | null, heldOnly = false): Promise<Page<SentTask>> {
+  return apiFetch(`/api/tasks?view=${heldOnly ? 'held' : 'sent'}&limit=25${cursorParam(cursor)}`);
 }
 
 export function fetchTask(id: string): Promise<TaskDetail> {

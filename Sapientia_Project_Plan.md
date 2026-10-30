@@ -1,6 +1,6 @@
 # Sapientia: Master Project Plan
 
-Version 1.1, 30 October 2026 (1.0: 16 October 2026). Prepared for Khairul Hakimi Bin Ma'amor.
+Version 1.2, 30 October 2026 (1.1: stack change, same day; 1.0: 16 October 2026). Prepared for Khairul Hakimi Bin Ma'amor.
 The app was called Meja Guru until 19 October 2026. Version 1.1 changes the stack (D1 to D4) to the Next.js app already built.
 Source documents: *Meja Guru Project Proposal Report* and *Meja Guru Development Guide* (both 15 October 2026).
 
@@ -131,42 +131,51 @@ Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the spri
 **Done when:** G1 passes.
 
 ### Sprint 2 (16 to 27 November): accounts and roles
-- [ ] Migrations: `users`, `sessions` (store a hash of the session token, never the token)
-- [ ] Fictional seed school (for example SMK Taman Contoh) and fictional users
-- [ ] argon2id password hashing; one-time invite tokens that expire after 48 hours
-- [ ] Endpoints: `POST /auth/login`, `POST /auth/logout`, `POST /auth/invites/accept`, `GET /me`, `GET` and `POST /users`
-- [ ] Cookies: HttpOnly, Secure, SameSite=Lax; session expiry on inactivity; CSRF protection
-- [ ] Rate limiting per account and per IP; identical error for wrong email or wrong password
-- [ ] Central error handler; error classes (`NotFoundError`, `ValidationError`, `ConflictError`)
-- [ ] Logger redacts cookies, authorisation headers and request bodies
-- [ ] Web: sign in, accept invite, admin user list and invite form
-- [ ] **Refusal tests:** a teacher cannot list users; School A cannot read School B
+Done ahead of the sprint on 30 October 2026. Endpoints live under `/api` (Next.js route handlers).
+- [x] Migrations: `users`, `sessions` (store a hash of the session token, never the token), `invites`, `auth_throttle`
+- [x] Fictional seed school (SMK Taman Contoh, plus SMK Bukit Contoh for cross-school checks) and fictional users (`npm run db:seed`)
+- [x] argon2id password hashing (Node's built-in `crypto.argon2`); one-time invite tokens that expire after 48 hours
+- [x] Endpoints: `POST /auth/login`, `POST /auth/logout`, `POST /auth/invites/accept`, `GET /me`, `GET` and `POST /users`, plus `GET /staff` (assignee picker)
+- [x] Cookies: HttpOnly, Secure (over HTTPS), SameSite=Lax; expiry after 60 minutes idle and 12 hours in total; CSRF protection by Origin check
+- [x] Rate limiting per account and per IP; identical error for wrong email or wrong password (and the same work, against a dummy hash)
+- [x] Central error handler; error classes (`NotFoundError`, `ValidationError`, `ConflictError` and others)
+- [x] Logger redacts cookies, authorisation headers, request bodies, names and emails
+- [x] Web: sign in, accept invite, admin user list and invite form. Invite links are shown to the administrator to pass on until email arrives in Sprint 5
+- [x] **Refusal tests:** a teacher cannot list users; School A cannot read School B
+
+Notes: per-IP limiting trusts the `X-Forwarded-For` header, which is only safe behind a proxy that overwrites it (check at deployment, Sprint 5). The demo student accounts on the login page are still checked in the browser; real student accounts arrive in Phase 4.
 
 **Done when:** G2 passes.
 
 ### Sprint 3 (30 November to 11 December): tasks
-- [ ] Migrations: `tasks`, `task_assignments`, `task_comments`, `audit_logs`
-- [ ] Repository functions take `schoolId` as a required first argument
-- [ ] Endpoints: `GET` and `POST /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/assignments/me`, `POST /tasks/:id/comments`
-- [ ] `Idempotency-Key` support on `POST /tasks`; cursor pagination (default 25, maximum 100)
-- [ ] Audit log writes for create, assign, status change, comment (metadata contains no personal data)
-- [ ] Web: teacher board (four columns), task detail with comments, sender create-task form (title, assignees, due date first; the rest optional)
-- [ ] All four states on every screen: loading, empty, error, success
-- [ ] **Refusal tests:** a non-assignee gets 404 on a task; a teacher cannot update another teacher's assignment
+Done ahead of the sprint on 30 October 2026.
+- [x] Migrations: `tasks`, `task_assignments`, `task_comments`, `audit_logs` (append-only, enforced by a trigger), `idempotency_keys`
+- [x] Repository functions take `schoolId` as a required first argument
+- [x] Endpoints: `GET` and `POST /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/assignments/me`, `POST /tasks/:id/comments`
+- [x] `Idempotency-Key` support on `POST /tasks` (concurrent retries replay the first response); cursor pagination (default 25, maximum 100)
+- [x] Audit log writes for create, assign, status change, comment (metadata contains no personal data)
+- [x] Web: teacher board (four columns; status changed with a labelled select rather than drag and drop, for keyboard and phone use), task detail with comments, sender create-task form (title, assignees, due date first; the rest optional), sent list
+- [x] All four states on every screen: loading, empty, error, success
+- [x] **Refusal tests:** a non-assignee gets 404 on a task; a teacher cannot update another teacher's assignment
+
+Notes: the board columns are To do, In progress, Waiting and Done. An assignee sees only their own status and the overall count, never colleagues' progress; the sender sees each assignee and the history.
 
 **Done when:** G3 passes.
 
 ### Sprint 4 (14 to 25 December): held delivery
-- [ ] Migrations: `calendar_events`; school settings fields; partial index on pending delivery
-- [ ] `lib/workingTime.js`: `isWorkingDay`, `nextWorkingStart`, with the clock passed in as a parameter (never `Date.now()` in business logic)
-- [ ] Unit tests for every case in the guide: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override; a calendar with no working days (expect `ConfigurationError`)
-- [ ] pg-boss worker (separate process, see D1): job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
-- [ ] Urgent override: reason mandatory (database CHECK plus validation); logged; counted for reports later
-- [ ] Held tasks invisible to assignees until delivered (service-level rule, with a test)
-- [ ] Sender sees the delivery time in plain language ("Akan dihantar: Isnin, 7:30 pagi")
-- [ ] Endpoints: `GET` and `PATCH /school/settings`, `GET` and `POST /calendar/events`
-- [ ] Web: school settings, holiday calendar, held-tasks list for senders
-- [ ] Test the weekend setting for Kelantan and Terengganu (Friday to Saturday). Note that the guide's default is `{6,7}`, so confirm that `{5,6}` works end to end.
+Done ahead of the sprint on 30 October 2026.
+- [x] Migrations: `calendar_events`; `school_settings` (a table, one row per school, rather than columns on `schools`); partial index on pending delivery
+- [x] `features/delivery/services/working-time.service.ts`: `isWorkingDay`, `nextWorkingStart`, `deliveryTime`, pure functions given the instant (never `Date.now()` in business logic)
+- [x] Unit tests for every listed case: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override (integration test); a calendar with no working days (`ConfigurationError`)
+- [x] pg-boss worker (`npm run worker`, separate process): job with `startAfter = deliverAt` and `singletonKey = task id` on a `short`-policy queue, created in the same transaction as the task; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`; a one-minute sweep catches any task whose job went missing
+- [x] Urgent override: reason mandatory (database CHECK plus validation); logged; stored for reports later
+- [x] Held tasks invisible to assignees until delivered (repository rule, with tests)
+- [x] Sender sees the delivery time in plain language ("Akan dihantar: Isnin 9 November, 7:30 pagi")
+- [x] Endpoints: `GET` and `PATCH /school/settings`, `GET` and `POST /calendar/events`, plus `DELETE /calendar/events/:id`, `GET /delivery/preview` and `GET /tasks?view=held`
+- [x] Web: school settings, holiday calendar, held-tasks list for senders
+- [x] Test the weekend setting for Kelantan and Terengganu (Friday to Saturday): `{5,6}` works end to end
+
+Notes: holidays are entered by the administrator; none are built in. Tasks already held keep the delivery time worked out when they were sent, even if the calendar changes later. The default working day is 07:30 to 17:00 until a school saves its own; confirm the 17:00 end with teachers. Section 15.2 of the guide could not be checked here because the guide was not available; the tests follow the cases listed above.
 
 **Done when:** the Section 15.2 acceptance criteria all pass as automated tests.
 
@@ -349,8 +358,8 @@ Resolve these before they cause rework:
 
 1. **Phase 1 duration:** the report says 6 to 10 weeks; the guide says 8 to 10 weeks and schedules 10 weeks (S1 to S5, with S0 before it). This plan uses the guide's version.
 2. **Weekend setting:** the schema default is `{6,7}` (Saturday and Sunday). Kelantan and Terengganu need `{5,6}`. Make sure the settings screen and the tests cover this, and that `state_code` suggests a default rather than hard-coding one.
-3. **Sessions and comments tables:** the guide leaves the design to you. Design them in Sprint 2 and Sprint 3 and review them against the security checklist.
-4. **`audit_logs` has no foreign keys** by design (so logs survive deletions), but the guide also says records are never deleted. Decide whether to keep it as is and document the reason.
+3. **Sessions and comments tables:** designed in Sprints 2 and 3 (migrations `accounts` and `tasks`). Sessions store only a SHA-256 of the token; comments are append-only (no edit or delete endpoint). Still to review against the full security checklist in Sprint 5.
+4. **`audit_logs` has no foreign keys:** kept, documented in the `tasks` migration. The log must outlive anything it mentions, and a trigger blocks UPDATE and DELETE on it.
 5. **Hours log and reports:** a monthly report must never expose the private hours log. Write that as an explicit test in Phase 3.
 6. **Report formats:** KPM and district formats are not assumed. If you cannot obtain blank templates in Phase 0, design a generic format and say so in the README.
 7. **External facts:** several statistics and legal claims in the report come from news and secondary sources (the report says so itself). Verify them before any external use.

@@ -12,7 +12,7 @@ export interface SpriteFrames {
 
 /**
  * A battle sprite sheet: one row of equal cells (idle, attack, hit, die), every frame standing with its feet on the same line.
- * Cut from the Malay Fantasy Sprite Atlas; the monsters are mirrored to face the pendekar.
+ * Cut by scripts/cut-sprite-sheets.mjs from the atlases in ../Character; the monsters face left, towards the player.
  */
 export interface SpriteSheet {
   src: string;

@@ -2175,17 +2175,18 @@ function setMenu(labels, token) {
   });
 }
 
-/* Battle sprites: frame strips cut from the Malay Fantasy Sprite Atlas (art/sheet-*.png). Each strip is one row of equal cells,
-   idle, attack, hit and die frames in that order ([first cell, count]), with every frame's feet on the same line (foot = its
-   height fraction). The monsters are mirrored to face the pendekar. The still pictures stay for the lair, icons and preview. */
+/* Battle sprites: frame strips cut from the atlases in ../../Character by sapientia/scripts/cut-sprite-sheets.mjs (the same
+   files as the app's public/characters). Each strip is one row of equal cells, idle, attack, hit and die frames in that order
+   ([first cell, count]), with every frame's feet on the same line (foot = its height fraction). The monsters face left, towards
+   the pendekar (Hang Tuah). The still pictures (art/<id>.png) are each character's first idle frame. */
 const SHEETS = {
-  pendekar: {src: 'art/sheet-pendekar.png', w: 136, h: 101, foot: 0.9901, actions: {idle: [0, 4], attack: [4, 4], hit: [8, 2], die: [10, 3]}},
-  bunian: {src: 'art/sheet-bunian.png', w: 190, h: 122, foot: 0.9918, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 2], die: [9, 3]}},
-  naga: {src: 'art/sheet-naga.png', w: 144, h: 124, foot: 0.9758, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 1], die: [8, 2]}},
-  harimau: {src: 'art/sheet-harimau.png', w: 202, h: 115, foot: 0.9913, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 1], die: [8, 2]}},
-  hantu: {src: 'art/sheet-hantu.png', w: 194, h: 124, foot: 0.9839, actions: {idle: [0, 3], attack: [3, 4], hit: [7, 2], die: [9, 2]}},
+  pendekar: {src: 'art/sheet-pendekar.png', w: 260, h: 238, foot: 0.9748, actions: {idle: [0, 3], attack: [3, 6], hit: [9, 2], die: [11, 4]}},
+  bunian: {src: 'art/sheet-bunian.png', w: 299, h: 239, foot: 0.9749, actions: {idle: [0, 4], attack: [4, 7], hit: [11, 2], die: [13, 4]}},
+  naga: {src: 'art/sheet-naga.png', w: 292, h: 186, foot: 0.9677, actions: {idle: [0, 4], attack: [4, 7], hit: [11, 2], die: [13, 4]}},
+  harimau: {src: 'art/sheet-harimau.png', w: 301, h: 202, foot: 0.9703, actions: {idle: [0, 4], attack: [4, 6], hit: [10, 2], die: [12, 4]}},
+  hantu: {src: 'art/sheet-hantu.png', w: 299, h: 222, foot: 0.973, actions: {idle: [0, 4], attack: [4, 6], hit: [10, 2], die: [12, 4]}},
 };
-const SHEET_SPAN = 100; // atlas pixels across one figure box
+const SHEET_SPAN = 200; // atlas pixels across one figure box (the new atlases are twice the old resolution)
 const FRAME_MS = {idle: 260, attack: 120, hit: 200, die: 240};
 
 function sheetEl(who) {

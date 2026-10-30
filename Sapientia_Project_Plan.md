@@ -126,7 +126,7 @@ Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the spri
 - [x] Port the approved login prototype (style D) to `/login`; wire it to the auth endpoints in Sprint 2
 - [x] ESLint with the Google style rules (no Prettier)
 - [x] GitHub Actions: lint, type check, unit tests, migrations (up, down, up), integration tests, build and dependency audit on every pull request
-- [ ] Branch protection on `main` (needs the GitHub settings page or `gh`; see README)
+- [x] Branch protection on `main` (repository ruleset: pull request required, both CI checks required, no force push or deletion)
 
 **Done when:** G1 passes.
 

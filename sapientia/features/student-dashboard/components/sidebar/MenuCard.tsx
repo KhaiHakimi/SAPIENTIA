@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 import { useSignOut } from '@/features/auth/hooks/useSession';
-import { PLAYER_CHARACTER } from '@/features/characters';
 import { CharacterPortrait } from '@/features/characters/components/CharacterPortrait';
 import { BATTLE_MESSAGES } from '@/features/battle/i18n/battle.messages';
+import { usePahlawanCharacter } from '@/features/pahlawan/hooks/usePahlawanCharacter';
 import { PAHLAWAN_MESSAGES } from '@/features/pahlawan/i18n/pahlawan.messages';
 import { SHOP_MESSAGES } from '@/features/shop/i18n/shop.messages';
 import { PixelCard } from '@/shared/components/PixelCard';
@@ -51,6 +51,7 @@ export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardPro
   const battleText = useMessages(BATTLE_MESSAGES);
   const shopText = useMessages(SHOP_MESSAGES);
   const pahlawanText = useMessages(PAHLAWAN_MESSAGES);
+  const hero = usePahlawanCharacter();
   const { toggleLang } = useLanguage();
   const signOut = useSignOut();
 
@@ -66,7 +67,7 @@ export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardPro
           onClick={onOpenPahlawan}
           icon={
             <span className={styles.navIcon} aria-hidden="true">
-              <CharacterPortrait character={PLAYER_CHARACTER} size={26} rim />
+              <CharacterPortrait character={hero} size={26} rim />
             </span>
           }
         >

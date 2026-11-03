@@ -1,20 +1,21 @@
 'use client';
 
 import { useId, useRef, type KeyboardEvent } from 'react';
-import type { Monster } from '@/features/characters';
+import { monsterForLevel } from '@/features/characters';
 import { usePahlawan } from '@/features/pahlawan/hooks/usePahlawan';
 import { useStudentProgress } from '@/features/student-dashboard/hooks/useStudentProgress';
 import { ModalDialog } from '@/shared/components/ModalDialog';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { useBattleController } from '../hooks/useBattleController';
 import { BATTLE_MESSAGES } from '../i18n/battle.messages';
+import type { QuizStage } from '../interfaces/quiz.interface';
 import styles from '../styles/BattleDialog.module.css';
 import { AnswerMenu } from './AnswerMenu';
 import { BattleArena, type BattleArenaHandle } from './BattleArena';
 
 interface BattleDialogProps {
-  /** The monster to fight; null keeps the dialog closed. */
-  monster: Monster | null;
+  /** The chapter and level to fight; null keeps the dialog closed. */
+  stage: QuizStage | null;
   onClose: () => void;
   /** A level reached in battle, shown once the fight is closed. */
   onLevelUp: (level: number) => void;
@@ -23,7 +24,7 @@ interface BattleDialogProps {
 const ARROW_STEP: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 2, ArrowUp: -2 };
 
 /** The quiz battle, laid out like a classic handheld RPG: arena, typed text box, answer menu. */
-export function BattleDialog({ monster, onClose, onLevelUp }: BattleDialogProps) {
+export function BattleDialog({ stage, onClose, onLevelUp }: BattleDialogProps) {
   const text = useMessages(BATTLE_MESSAGES);
   const { pick } = useLanguage();
   const { displayName } = usePahlawan();
@@ -33,8 +34,9 @@ export function BattleDialog({ monster, onClose, onLevelUp }: BattleDialogProps)
   const textRef = useRef<HTMLSpanElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const monster = stage ? monsterForLevel(stage.level) : null;
   const controller = useBattleController(
-    monster,
+    stage,
     { arena: arenaRef, textBox: textBoxRef, text: textRef, more: moreRef },
     onClose,
     onLevelUp,

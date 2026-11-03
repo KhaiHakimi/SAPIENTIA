@@ -1,7 +1,5 @@
 'use client';
 
-import { monsterForSubject } from '@/features/characters';
-import { CharacterPortrait } from '@/features/characters/components/CharacterPortrait';
 import { PixelSprite } from '@/shared/components/PixelSprite';
 import { SCHOOL_SUBJECTS } from '@/shared/data/school-subjects';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
@@ -25,18 +23,13 @@ export function TimetableSlotRow({ slot, isToday, variant }: TimetableSlotRowPro
   const status = slotStatus(slot, isToday, DEMO_NOW_MINUTES);
   const isNow = status === 'now';
   const progress = isNow ? slotProgress(slot, DEMO_NOW_MINUTES) : null;
-  // Each subject wears its monster from the Lair; Physical Education gets a trophy and any other subject a book.
-  const monster = monsterForSubject(slot.subject);
+  // Monsters belong to quiz levels, not subjects, so a lesson shows a book; Physical Education gets a trophy.
 
   return (
     <li className={[styles.slot, styles[variant], isNow && styles.now, status === 'past' && styles.past].filter(Boolean).join(' ')}>
       <time>{slot.from}</time>
       <span className={styles.icon} aria-hidden="true">
-        {monster ? (
-          <CharacterPortrait character={monster} size={32} rim className={styles.portrait} />
-        ) : (
-          <PixelSprite name={slot.subject === 'pe' ? 'trophy' : 'scroll'} scale={2} className={styles.sprite} />
-        )}
+        <PixelSprite name={slot.subject === 'pe' ? 'trophy' : 'scroll'} scale={2} className={styles.sprite} />
       </span>
       <div>
         <b>{pick(SCHOOL_SUBJECTS[slot.subject].name)}</b>

@@ -68,9 +68,9 @@ export function StudentProgressProvider({ student, baseline, children }: Student
     return { quest, nowDone, freshRelics, levelUp: levelAfter > level ? levelAfter : null };
   };
 
-  const claimBattleWin = (monsterId: string): BattleWinResult => {
-    if (battleWins.includes(monsterId)) return { firstWin: false, levelUp: null };
-    setBattleWins((wins) => (wins.includes(monsterId) ? wins : [...wins, monsterId]));
+  const claimBattleWin = (stageKey: string): BattleWinResult => {
+    if (battleWins.includes(stageKey)) return { firstWin: false, levelUp: null };
+    setBattleWins((wins) => (wins.includes(stageKey) ? wins : [...wins, stageKey]));
     const levelAfter = levelOf(xpFor(done, battleWins.length + 1));
     return { firstWin: true, levelUp: levelAfter > level ? levelAfter : null };
   };

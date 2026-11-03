@@ -1,7 +1,7 @@
 import type { Monster } from '../interfaces/character.interface';
 import moves from './naga-laut.module.css';
 
-/** Science monster. Medium: a sea serpent that rears back and strikes with a wave. */
+/** Level 2, Medium: a sea serpent that rears back and strikes with a wave. */
 export const nagaLaut: Monster = {
   id: 'naga-laut',
   name: { ms: 'Naga Laut', en: 'Sea Serpent' },
@@ -14,7 +14,6 @@ export const nagaLaut: Monster = {
     frames: { idle: { first: 0, count: 4 }, attack: { first: 4, count: 7 }, hit: { first: 11, count: 2 }, die: { first: 13, count: 4 } },
   },
   moves: { attack: moves.attack },
-  subject: 'sci',
-  hit: 25,
+  hit: 20,
   level: 2,
 };

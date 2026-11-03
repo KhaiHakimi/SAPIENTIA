@@ -1,16 +1,35 @@
 .intro { margin: 12px 0 0; font-size: .85rem; color: var(--muted); }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px; }
-.monster { display: grid; justify-items: center; align-content: start; gap: 8px; padding: 16px 12px 14px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
-.art { display: grid; place-items: center; width: 100%; height: 112px; }
-.portrait { width: 112px; height: 112px; }
+
+/* Subject picker: one pressed tab at a time. */
+.subjects { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.subjectTab { padding: 6px 12px; font: inherit; font-size: .85rem; color: var(--muted); background: var(--panel-2); border: 2px solid var(--bd); cursor: pointer; }
+.subjectTab:hover { color: var(--text); }
+.subjectTab[aria-pressed='true'] { color: var(--text); border-color: var(--accent); }
+.subjectTab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* One chapter: its title and progress, then the four levels side by side. */
+.chapter { margin-top: 18px; }
+.chapterHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
+.chapterHead h3 { margin: 0; font: 700 .95rem/1.2 var(--heading); letter-spacing: .04em; }
+.chapterHead span { font-size: .78rem; color: var(--muted); }
+.levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+.monster { display: grid; justify-items: center; align-content: start; gap: 6px; padding: 12px 8px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
+.art { display: grid; place-items: center; width: 100%; height: 88px; }
+.portrait { width: 88px; height: 88px; }
 .beaten .portrait { filter: grayscale(.6) opacity(.75); }
-.name { font: 700 .95rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
-.subject { font-size: .85rem; color: var(--muted); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+/* A locked level shows only the monster's silhouette. */
+.locked .portrait { filter: brightness(0) opacity(.45); }
+.locked .name { color: var(--muted); }
+.name { font: 700 .85rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
 .chip { padding: 2px 8px; font-size: .74rem; color: var(--text); border: 2px solid var(--bd); }
 .level1 { border-color: var(--ok); }
 .level2 { border-color: var(--accent); }
 .level3 { border-color: var(--danger); }
-.done { color: var(--ok); border-color: var(--ok); }
+.level4 { color: var(--danger); border-color: var(--danger); border-style: double; border-width: 4px; padding: 0 6px; }
 .record { font-size: .75rem; color: var(--muted); }
 .fight { margin: 4px 0 0; }
+
+@media (max-width: 700px) {
+  .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

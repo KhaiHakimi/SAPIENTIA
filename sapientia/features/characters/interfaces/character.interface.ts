@@ -1,5 +1,4 @@
 import type { LocalizedText } from '@/shared/interfaces/localized-text.interface';
-import type { SchoolSubjectKey } from '@/shared/interfaces/school-subject.interface';
 
 /** The moves every battle sprite sheet has, in this order on the sheet. */
 export type SpriteAction = 'idle' | 'attack' | 'hit' | 'die';
@@ -46,11 +45,11 @@ export interface Character {
   moves: CharacterMoves;
 }
 
-export type MonsterLevel = 1 | 2 | 3;
+/** 1 Easy, 2 Medium, 3 Hard, 4 Very Hard. */
+export type MonsterLevel = 1 | 2 | 3 | 4;
 
-/** A quiz monster: one per subject, with its own difficulty. */
+/** A quiz monster: one per difficulty level. Every chapter of every subject has a question set for each level. */
 export interface Monster extends Character {
-  subject: SchoolSubjectKey;
   /** HP the student loses on a wrong answer. */
   hit: number;
   level: MonsterLevel;

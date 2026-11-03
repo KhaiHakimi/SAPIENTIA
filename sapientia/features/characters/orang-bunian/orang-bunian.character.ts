@@ -1,7 +1,7 @@
 import type { Monster } from '../interfaces/character.interface';
 import moves from './orang-bunian.module.css';
 
-/** Maths monster. Easy: a heavy, slow forest ogre whose club blow shakes the whole arena. */
+/** Level 1, Easy: a heavy, slow forest ogre whose club blow shakes the whole arena. */
 export const orangBunian: Monster = {
   id: 'orang-bunian',
   name: { ms: 'Orang Bunian', en: 'Forest Ogre' },
@@ -14,7 +14,6 @@ export const orangBunian: Monster = {
     frames: { idle: { first: 0, count: 4 }, attack: { first: 4, count: 7 }, hit: { first: 11, count: 2 }, die: { first: 13, count: 4 } },
   },
   moves: { attack: moves.attack, impact: moves.impact },
-  subject: 'math',
-  hit: 20,
+  hit: 15,
   level: 1,
 };

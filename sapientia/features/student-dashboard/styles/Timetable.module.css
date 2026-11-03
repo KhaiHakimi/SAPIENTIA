@@ -17,7 +17,7 @@
 .card { grid-template-columns: 56px 34px minmax(0, 1fr) auto; gap: 12px; padding: 10px 12px; background: var(--panel-2); border: 2px solid var(--bd); }
 .card time { color: var(--accent-text); }
 .card .sub { color: var(--muted); }
-.card .portrait, .card .sprite { width: 30px; height: 30px; }
+.card .sprite { width: 30px; height: 30px; }
 .card.now { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
 
 /* Inside the parchment weekly timetable. */
@@ -25,11 +25,11 @@
 .scroll time { font-size: .8rem; color: var(--seal); }
 .scroll b { font-size: .9rem; color: var(--ink); }
 .scroll .sub { font-size: .78rem; color: var(--ink-muted); }
-.scroll .portrait, .scroll .sprite { width: 24px; height: 24px; }
+.scroll .sprite { width: 24px; height: 24px; }
 .scroll.now { border: 2px solid var(--seal); background: #fff8e6; }
 .scroll .relief { color: var(--seal); border-color: var(--seal); }
 
 @media (max-width: 560px) {
   .card { grid-template-columns: 48px 28px minmax(0, 1fr) auto; }
-  .card .portrait, .card .sprite { width: 26px; height: 26px; }
+  .card .sprite { width: 26px; height: 26px; }
 }

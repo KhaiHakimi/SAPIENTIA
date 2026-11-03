@@ -65,10 +65,12 @@ A single HTML file that shows what the student side could feel like. It is built
 - **Weekly guardian:** a boss whose health falls as the week's quests are finished.
 
 **Monster Lair (quiz battles)**
-- Each subject has its own monster, with its own difficulty: Orang Bunian (Maths), Naga Laut (Science), Harimau Jin (Malay) and Hantu Lelaki (English). The student fights as a pahlawan; the pictures are in `prototypes/student-dashboard/art/`.
+- The quiz is organised by **subject, chapter and level**. Each subject has chapters, and every chapter has four levels, each guarded by its own monster: Orang Bunian (Easy), Naga Laut (Medium), Harimau Jin (Hard) and Hantu Lelaki (Very Hard). Within a chapter, a level opens once the one before it is beaten. The student fights as a pahlawan; the pictures are in `prototypes/student-dashboard/art/`.
+- Each monster speaks as a villain: a taunt as it enters, a jeer when the student answers wrongly, a cry when it is hit, last words as it falls, and a gloat (ending with "go and study") if the pahlawan falls.
+- The questions are a Year 4 sample (two chapters per subject, three questions per level). The chapter titles have not been checked against the syllabus and no teacher has reviewed the questions.
 - The battle screen is laid out like a classic handheld RPG: the monster at the top right, the student's pahlawan at the bottom left, name and HP plates, typed text and an answer menu.
 - A right answer damages the monster. A wrong answer damages the pahlawan, and that question comes back until it is answered correctly.
-- If the pahlawan's health runs out, the student retries with the questions and answers in a **new order**. The screen lists the topics to revisit.
+- If the pahlawan's health runs out, the student retries with the questions and answers in a **new order**. After a fight with wrong answers, the screen names the chapter to revise.
 - The characters are animated frame by frame from a sprite atlas (`art/sheet-*.png`): idle, attack, hit and die frames for the pendekar and each monster (the keris swing, the naga's water strike, the harimau's leap, the hantu's sword wave). On top of the frames: the attacker lunges across the arena, a hit flashes the figure white, the orang bunian's blow shakes the arena, and the pendekar hops when a monster falls. With reduced motion the figures hold still frames and the movement is switched off. The lair, icons and the Pahlawan Saya preview use the larger still pictures.
 - Keyboard play works (keys 1 to 4 and the arrow keys), and animations switch off for people who ask for reduced motion.
 

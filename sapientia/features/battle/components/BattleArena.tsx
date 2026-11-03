@@ -1,8 +1,9 @@
 'use client';
 
 import { useImperativeHandle, useRef, type Ref } from 'react';
-import { PLAYER_CHARACTER, type Monster } from '@/features/characters';
+import type { Monster } from '@/features/characters';
 import { SpriteFigure, type SpriteFigureHandle } from '@/features/characters/components/SpriteFigure';
+import { usePahlawanCharacter } from '@/features/pahlawan/hooks/usePahlawanCharacter';
 import type { BattleSide } from '../interfaces/battle-view.interface';
 import type { HpState } from '../hooks/useBattleController';
 import styles from '../styles/BattleArena.module.css';
@@ -27,6 +28,7 @@ interface BattleArenaProps {
 
 /** The painted arena with both fighters and their name plates. The battle controller plays animations through the handle. */
 export function BattleArena({ monster, foeName, heroName, heroLevel, hp, ref }: BattleArenaProps) {
+  const hero = usePahlawanCharacter();
   const arena = useRef<HTMLDivElement>(null);
   const foeStage = useRef<HTMLDivElement>(null);
   const meStage = useRef<HTMLDivElement>(null);
@@ -61,7 +63,7 @@ export function BattleArena({ monster, foeName, heroName, heroLevel, hp, ref }: 
       <div className={`${styles.stage} ${styles.me}`} ref={meStage}>
         <span className={styles.shadow} aria-hidden="true" />
         <div className={styles.figure} ref={meFigure} aria-hidden="true">
-          <SpriteFigure character={PLAYER_CHARACTER} ref={meSprite} />
+          <SpriteFigure character={hero} ref={meSprite} />
         </div>
       </div>
       <HpPlate side="me" name={heroName} level={heroLevel} hp={hp.me} />

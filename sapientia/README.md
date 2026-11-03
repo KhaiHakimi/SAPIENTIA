@@ -89,11 +89,21 @@ docker/initdb/                   creates the test database on a fresh volume
 public/                          character art, scenes, logo
 ```
 
+### Quiz chapters and levels
+
+Each monster is one difficulty level: Orang Bunian (Easy), Naga Laut (Medium), Harimau Jin (Hard), Hantu Lelaki (Very Hard). Each subject has chapters, and every chapter has a question set for every level. Within a chapter, a level opens once the one before it has been beaten. Records are kept per chapter and level in localStorage `sapientia.battles` under keys like `math-1:2`.
+
+To add a chapter, add it with its questions to the subject's file in `features/battle/data/quiz/` (for example `math.quiz.ts`), with at least one question for each of the four levels. `quiz-stage.service.test.ts` checks that every chapter has every level. The bank is a Year 4 sample: the chapter titles have not been checked against the syllabus and no teacher has reviewed the questions.
+
+### Pahlawan outfit colours
+
+In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok, and a separate colour for the sampin (black, red, blue, white, green, purple). The pahlawan's pictures are recoloured in the browser (`features/pahlawan/services/outfit-recolour.service.ts`): the clothes are the drawing's cool blue-greys and the sampin its crimsons, so skin, hair, gold trim, the keris and outlines stay as drawn on every frame. Choices are kept in localStorage `sapientia.pahlawan.outfit`. The swatch pictures come from `../Character/Malay Warrior Pixel Art Sprite Sheet.png` via `node scripts/cut-outfit-icons.mjs`. If the pendekar art is replaced, check the colour ranges in `partOf` against the new drawing.
+
 ### Adding a monster
 
 1. Put its atlas in `../Character` (magenta background; rows idle, attack, hit, die, as the existing ones), add it to `CHARACTERS` in `scripts/cut-sprite-sheets.mjs` with the rows to mirror so it faces left, and run `node scripts/cut-sprite-sheets.mjs --preview`. It writes `public/characters/<name>/sprite-sheet.png` and `portrait.png`, previews in `../Character/preview`, and prints the cell size, foot line and frame ranges.
 2. Create `features/characters/<name>/<name>.character.ts` (copy another monster, then paste in the printed sheet values) and, if it moves differently, `<name>.module.css`.
-3. List it in `features/characters/index.ts` and add its questions to `features/battle/data/quiz-bank.ts`.
+3. List it in `features/characters/index.ts`. The list is one monster per level, so a new monster replaces one, or a fifth level needs `MonsterLevel`, `QUIZ_LEVELS` and the questions extended too.
 
 ## Notes and known limits
 

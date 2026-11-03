@@ -58,7 +58,7 @@ async function playFight(view: BattleView, context: BattleContext): Promise<void
   await view.say(text().go(context.heroName()));
   await view.wait(600);
 
-  for (;;) {
+  for (; ;) {
     let outcome: 'next' | 'win' | 'lose' = 'next';
     while (outcome === 'next') {
       const asked = nextQuestion(run);

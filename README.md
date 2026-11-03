@@ -75,7 +75,7 @@ A single HTML file that shows what the student side could feel like. It is built
 - Keyboard play works (keys 1 to 4 and the arrow keys), and animations switch off for people who ask for reduced motion.
 
 **Personalisation**
-- **My Warrior (Pahlawan Saya):** give the pahlawan a name. Its look is fixed.
+- **My Warrior (Pahlawan Saya):** give the pahlawan a name and choose two outfit colours: one for the baju, trousers and tengkolok, one for the sampin (black, red, blue, white, green or purple). The colour shows in every battle frame, the menu icon and the preview; the swatches are the item pictures from the Malay warrior sheet (`art/outfit/`).
 - **Profile photo:** upload a picture, which is cropped, shrunk and stored in the browser.
 - **Shop:** coins buy cosmetic skins, card frames and avatars. Items are cosmetic only and never affect marks. Skins are Stone Keep, Royal Hall, Forest Ruins, Ember Forge and Sakura Garden, each with its own pixel-art background.
 - **Languages and themes:** Bahasa Melayu and English, light and dark.
@@ -122,7 +122,7 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 - `prototypes/landing/index.html`
 - `prototypes/student-dashboard/index.html`
 
-An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, pahlawan name, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
+An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, pahlawan name and outfit colours, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
 
 **Application skeleton.**
 

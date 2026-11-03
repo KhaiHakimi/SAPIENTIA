@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { FOE_DAMAGE, HERO_HP } from '../constants/battle.constants';
-import { answerQuestion, nextQuestion, questionsFor, shuffleChoices, shuffled, startRun } from './battle-run.service';
+import { MATH_QUIZ } from '../data/quiz/math.quiz';
+import { answerQuestion, nextQuestion, shuffleChoices, shuffled, startRun } from './battle-run.service';
+import { questionsFor } from './quiz-stage.service';
 
 /** A repeatable "random" sequence, so shuffles can be tested. */
 function seeded(values: number[]) {
@@ -8,7 +10,7 @@ function seeded(values: number[]) {
   return () => values[i++ % values.length];
 }
 
-const maths = questionsFor('math');
+const maths = questionsFor({ chapter: MATH_QUIZ.chapters[0], level: 1 });
 
 describe('battle runs', () => {
   it('gives the monster 10 HP per question and the student 100 HP', () => {
@@ -46,14 +48,14 @@ describe('battle runs', () => {
     expect(outcome).toBe('win');
   });
 
-  it('a wrong answer hurts the student, sends the question back and counts the topic', () => {
+  it('a wrong answer hurts the student and sends the question back', () => {
     const { run } = startRun(maths, undefined);
     const asked = nextQuestion(run);
     const { run: after, outcome } = answerQuestion(asked.run, asked.question, false, 34);
     expect(after.heroHp).toBe(HERO_HP - 34);
     expect(after.queue.at(-1)).toBe(asked.question);
     expect(after.queue).toHaveLength(maths.length);
-    expect(after.missed.math).toBe(1);
+    expect(after.wrong).toBe(1);
     expect(outcome).toBe('next');
   });
 

@@ -285,18 +285,32 @@ main section { scroll-margin-top: 24px; }
 .boss p { margin: 8px 0 0; font-size: .88rem; color: var(--muted); }
 
 /* ===== Monster lair: one monster per subject ===== */
-.lair { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px; }
-.mon { display: grid; justify-items: center; align-content: start; gap: 8px; padding: 16px 12px 14px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
-.mon-art { display: grid; place-items: center; width: 100%; height: 112px; }
+/* Lair: subject tabs, then each chapter with its four levels side by side. */
+.lair { margin-top: 14px; }
+.lair-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.lair-tab { padding: 6px 12px; font: inherit; font-size: .85rem; color: var(--muted); background: var(--panel-2); border: 2px solid var(--bd); cursor: pointer; }
+.lair-tab:hover, .lair-tab[aria-pressed="true"] { color: var(--text); }
+.lair-tab[aria-pressed="true"] { border-color: var(--accent); }
+.lair-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lair-ch { margin-top: 18px; }
+.lair-ch-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 10px; }
+.lair-ch-head h3 { margin: 0; font: 700 .95rem/1.2 var(--heading); letter-spacing: .04em; }
+.lair-ch-head span { font-size: .78rem; color: var(--muted); }
+.lair-levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 700px) { .lair-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mon { display: grid; justify-items: center; align-content: start; gap: 6px; padding: 12px 8px; text-align: center; background: var(--panel-2); border: 2px solid var(--bd); }
+.mon-art { display: grid; place-items: center; width: 100%; height: 88px; }
 .mon.beaten .sprite, .mon.beaten .art { filter: grayscale(.6) opacity(.75); }
-.mon b { font: 700 .95rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
-.mon-sub { font-size: .85rem; color: var(--muted); }
-.mon-meta { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+/* A locked level shows only the monster's silhouette. */
+.mon.locked .art { filter: brightness(0) opacity(.45); }
+.mon.locked b { color: var(--muted); }
+.mon b { font: 700 .85rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
 .mchip { padding: 2px 8px; font-size: .74rem; color: var(--text); border: 2px solid var(--bd); }
 .mchip.lv1 { border-color: var(--ok); } .mchip.lv2 { border-color: var(--accent); } .mchip.lv3 { border-color: var(--danger); }
-.mchip.done { color: var(--ok); border-color: var(--ok); }
+.mchip.lv4 { color: var(--danger); border: 4px double var(--danger); padding: 0 6px; }
 .mon-rec { font-size: .75rem; color: var(--muted); }
 .mon .btn { margin: 4px 0 0; min-height: 38px; font-size: .75rem; }
+.mon .btn:disabled { opacity: .6; cursor: default; filter: none; transform: none; }
 
 /* ===== Battle screen: a painted dungeon with framed name plates (monster top-right, your pahlawan bottom-left) ===== */
 /* The arena is one pixel-art backdrop (brick wall, torches, a banded door, a flagstone floor in perspective); the monster and the pahlawan
@@ -1034,17 +1048,23 @@ const TEXT = {
     bossName: 'Penjaga Minggu Ini', bossHp: (p) => `HP ${p}%`,
     bossSealed: 'Siapkan semua bilik untuk menewaskannya.',
     bossDown: `Dikalahkan! Bonus +${BOSS_BONUS_XP} XP`,
-    lair: 'Sarang Raksasa', lairIntro: 'Setiap mata pelajaran ada raksasanya sendiri. Jawapan betul menyerang raksasa; jawapan salah mencederakan anda. Berbeza daripada Penjaga Minggu Ini, yang hanya tewas apabila semua bilik misi siap.',
-    lairFight: 'Lawan', lairAgain: 'Lawan lagi', lairBeaten: 'Ditewaskan', lairQuestions: (n) => n + ' soalan', lairHit: (n) => 'Serangan ' + n, lairLevels: ['', 'Mudah', 'Sederhana', 'Sukar'],
+    lair: 'Sarang Raksasa', lairIntro: 'Empat raksasa mengawal setiap bab, dari Mudah hingga Sangat Sukar. Tewaskan satu untuk membuka laluan ke seterusnya. Jawapan betul menyerang musuh; jawapan salah memberinya peluang.',
+    lairFight: 'Lawan', lairAgain: 'Lawan lagi', lairBeaten: 'Ditewaskan', lairHit: (n) => 'Serangan ' + n, lairLevels: ['', 'Mudah', 'Sederhana', 'Sukar', 'Sangat Sukar'],
     lairRecord: (a, w) => 'Cubaan ' + a + ' • Menang ' + w,
-    btClose: 'Tutup', btAnswerWas: 'Jawapan betul:', gbKnight: 'Pahlawan', gbMore: 'Teruskan', gbMenuLabel: 'Pilih jawapan', gbQuit: 'Keluar',
-    gbDialogTitle: (name) => 'Pertarungan kuiz: ' + name, gbAppeared: (foe) => foe + ' liar muncul!', gbGo: (me) => 'Pergi, ' + me + '!',
-    gbRightMove: (me) => me + ' menyerang dengan jawapan betul!', gbHit: (foe, n) => foe + ' kehilangan ' + n + ' HP.',
-    gbWrongMove: (foe) => 'Jawapan salah! ' + foe + ' menyerang balas!', gbHurt: (me, n) => me + ' kehilangan ' + n + ' HP.',
-    gbFoeFainted: (foe) => foe + ' tewas!', gbWinStats: (c, w) => c + ' betul, ' + w + ' salah.',
-    gbReward: (me, xp, coins) => me + ' memperoleh ' + xp + ' XP dan ' + coins + ' syiling!', gbWeak: (list) => 'Topik untuk diulang: ' + list + '.',
-    gbKnightFainted: (me) => me + ' tidak dapat bertarung lagi!', gbRetryHint: 'Cuba lagi. Soalan dan jawapan akan disusun dalam urutan baharu.',
-    gbAgain: 'Lawan lagi', gbRetry: 'Cuba lagi',
+    lairLocked: 'Terkunci', lairUnlockHint: (prev) => 'Kalahkan tahap ' + prev + ' dahulu', lairSubjects: 'Mata pelajaran',
+    lairChapter: (n, title) => 'Bab ' + n + ': ' + title, lairCleared: (b, total) => b + '/' + total + ' tahap',
+    lairTag: (subject, n) => subject + ' · Bab ' + n, lairStage: (subject, n, level) => subject + ' · Bab ' + n + ' · ' + level,
+    btClose: 'Tutup', btAnswerWas: 'Jawapan sebenar:', gbKnight: 'Pahlawan', gbMore: 'Teruskan', gbMenuLabel: 'Pilih jawapan', gbQuit: 'Keluar',
+    gbDialogTitle: (name) => 'Pertarungan kuiz: ' + name, gbAppeared: (foe) => foe + ' bangkit dari kegelapan!', gbGo: (me) => me + ', hunus kerismu! Pertarungan bermula!',
+    gbSpeaks: (name, line) => name + ': “' + line + '”',
+    gbRightMove: (me) => 'Tepat! ' + me + ' melancarkan serangan!', gbHit: (foe, n) => 'Kena! ' + foe + ' terhuyung-hayang, hilang ' + n + ' HP.',
+    gbWrongMove: (foe) => 'Silap! ' + foe + ' menerkam peluang itu!', gbHurt: (me, n) => me + ' tercedera, hilang ' + n + ' HP.',
+    gbFoeFainted: (foe) => foe + ' rebah! Kegelapannya lenyap.', gbWinStats: (c, w) => c + ' betul, ' + w + ' salah.',
+    gbReward: (me, xp, coins) => 'Kemenangan! ' + me + ' memperoleh ' + xp + ' XP dan ' + coins + ' syiling.',
+    gbUnlocked: (level) => 'Pintu ke tahap ' + level + ' terbuka. Musuh yang lebih kuat sedang menanti!',
+    gbRevisit: (chapter, w) => 'Asah ilmumu: ulang kaji ' + chapter + ' (' + w + ' jawapan salah).',
+    gbKnightFainted: (me) => me + ' rebah... tetapi seorang wira sentiasa bangkit semula.', gbRetryHint: 'Kumpul kekuatan dan cuba lagi. Soalan dan jawapan akan datang dalam susunan baharu.',
+    gbAgain: 'Lawan lagi', gbRetry: 'Bangkit semula',
     knightNav: 'Pahlawan Saya', knightTitle: 'Pahlawan Saya', knightIntro: 'Beri nama pahlawan anda. Dia muncul dalam setiap pertarungan kuiz.',
     knightNameLabel: 'Nama pahlawan',
     knightReset: 'Set semula', knightDone: 'Siap',
@@ -1094,17 +1114,23 @@ const TEXT = {
     bossName: "This Week's Guardian", bossHp: (p) => `HP ${p}%`,
     bossSealed: 'Finish every room to defeat it.',
     bossDown: `Defeated! Bonus +${BOSS_BONUS_XP} XP`,
-    lair: 'Monster Lair', lairIntro: "Every subject has its own monster. Right answers strike the monster; wrong answers hurt you. Different from This Week's Guardian, which only falls once every quest room is cleared.",
-    lairFight: 'Fight', lairAgain: 'Fight again', lairBeaten: 'Defeated', lairQuestions: (n) => n + (n === 1 ? ' question' : ' questions'), lairHit: (n) => 'Hits for ' + n, lairLevels: ['', 'Easy', 'Medium', 'Hard'],
+    lair: 'Monster Lair', lairIntro: 'Four monsters guard every chapter, from Easy to Very Hard. Defeat one to open the way to the next. Right answers strike the enemy; wrong answers give it an opening.',
+    lairFight: 'Fight', lairAgain: 'Fight again', lairBeaten: 'Defeated', lairHit: (n) => 'Hits for ' + n, lairLevels: ['', 'Easy', 'Medium', 'Hard', 'Very Hard'],
     lairRecord: (a, w) => 'Attempts ' + a + ' • Wins ' + w,
-    btClose: 'Close', btAnswerWas: 'Right answer:', gbKnight: 'Warrior', gbMore: 'Continue', gbMenuLabel: 'Choose an answer', gbQuit: 'Leave',
-    gbDialogTitle: (name) => 'Quiz battle: ' + name, gbAppeared: (foe) => 'A wild ' + foe + ' appeared!', gbGo: (me) => 'Go, ' + me + '!',
-    gbRightMove: (me) => me + ' attacks with the right answer!', gbHit: (foe, n) => foe + ' loses ' + n + ' HP.',
-    gbWrongMove: (foe) => 'Wrong answer! ' + foe + ' strikes back!', gbHurt: (me, n) => me + ' loses ' + n + ' HP.',
-    gbFoeFainted: (foe) => foe + ' fainted!', gbWinStats: (c, w) => c + ' right, ' + w + ' wrong.',
-    gbReward: (me, xp, coins) => me + ' gained ' + xp + ' XP and ' + coins + ' coins!', gbWeak: (list) => 'Topics to revisit: ' + list + '.',
-    gbKnightFainted: (me) => me + " can't fight any more!", gbRetryHint: 'Try again. The questions and answers will come in a new order.',
-    gbAgain: 'Fight again', gbRetry: 'Try again',
+    lairLocked: 'Locked', lairUnlockHint: (prev) => 'Beat ' + prev + ' first', lairSubjects: 'Subjects',
+    lairChapter: (n, title) => 'Chapter ' + n + ': ' + title, lairCleared: (b, total) => b + '/' + total + ' levels',
+    lairTag: (subject, n) => subject + ' · Ch. ' + n, lairStage: (subject, n, level) => subject + ' · Chapter ' + n + ' · ' + level,
+    btClose: 'Close', btAnswerWas: 'The true answer:', gbKnight: 'Warrior', gbMore: 'Continue', gbMenuLabel: 'Choose an answer', gbQuit: 'Leave',
+    gbDialogTitle: (name) => 'Quiz battle: ' + name, gbAppeared: (foe) => foe + ' rises from the darkness!', gbGo: (me) => me + ', draw your keris! The battle begins!',
+    gbSpeaks: (name, line) => name + ': “' + line + '”',
+    gbRightMove: (me) => 'Correct! ' + me + ' strikes!', gbHit: (foe, n) => 'A direct hit! ' + foe + ' staggers and loses ' + n + ' HP.',
+    gbWrongMove: (foe) => 'A mistake! ' + foe + ' seizes the opening!', gbHurt: (me, n) => me + ' is wounded and loses ' + n + ' HP.',
+    gbFoeFainted: (foe) => foe + ' falls! Its darkness fades.', gbWinStats: (c, w) => c + ' right, ' + w + ' wrong.',
+    gbReward: (me, xp, coins) => 'Victory! ' + me + ' claims ' + xp + ' XP and ' + coins + ' coins.',
+    gbUnlocked: (level) => 'The gate to ' + level + ' opens. A stronger foe awaits!',
+    gbRevisit: (chapter, w) => 'Sharpen your knowledge: revise ' + chapter + ' (' + w + (w === 1 ? ' wrong answer).' : ' wrong answers).'),
+    gbKnightFainted: (me) => me + ' falls... but a hero always rises again.', gbRetryHint: 'Gather your strength and try again. The questions and answers will come in a new order.',
+    gbAgain: 'Fight again', gbRetry: 'Rise again',
     knightNav: 'My Warrior', knightTitle: 'My Warrior', knightIntro: 'Name your pahlawan. They appear in every quiz battle.',
     knightNameLabel: 'Warrior name',
     knightReset: 'Reset', knightDone: 'Done',
@@ -1350,13 +1376,12 @@ function toMinutes(hhmm) {
 }
 
 /* One timetable slot. Used by the "today" card and the weekly scroll, so both show "now" and relief the same way. */
-// Each subject wears its monster from the Lair. Physical Education gets a trophy; any other subject without a monster gets a book.
+// Monsters belong to quiz levels, not subjects, so a lesson shows a book; Physical Education gets a trophy.
 function slotIcon(subject) {
-  const monster = MONSTERS.find((m) => m.subj === SUBJECT_KEY_BY_MS[subject.ms]);
   const box = document.createElement('span');
   box.className = 'tt-ico';
   box.setAttribute('aria-hidden', 'true');
-  box.append(monster ? artImg(monster.img, 32) : sprite(subject.ms === 'Pendidikan Jasmani' ? 'trophy' : 'scroll', 2));
+  box.append(sprite(subject.ms === 'Pendidikan Jasmani' ? 'trophy' : 'scroll', 2));
   return box;
 }
 
@@ -1457,33 +1482,38 @@ function renderSubjects() {
   box.append(nextFoeBlock());
 }
 
-// The weakest subject's monster, so the empty space under the bars points somewhere useful.
+// The next level to beat in the weakest subject, so the empty space under the bars points somewhere useful.
 const SUBJECT_KEY_BY_MS = {'Matematik': 'maths', 'Sains': 'science', 'Bahasa Melayu': 'malay', 'Bahasa Inggeris': 'english'};
 
 function nextFoeBlock() {
   const weakest = subjects.reduce((low, s) => (s.pct < low.pct ? s : low));
-  const monster = MONSTERS.find((m) => m.subj === SUBJECT_KEY_BY_MS[weakest.name.ms]);
+  const subj = SUBJECT_KEY_BY_MS[weakest.name.ms];
+  const stage = subj ? nextStage(subj) : null;
   const wrap = document.createElement('div');
   wrap.className = 'next-foe';
   const head = document.createElement('p');
   head.className = 'next-head';
   head.textContent = t().nextHead;
   wrap.append(head);
-  if (!monster) return wrap;
+  if (!stage) return wrap;
+  const monster = monsterForLevel(stage.level);
+  const stageText = t().lairStage(pick(QUIZ_SUBJECT[subj]), stage.chapter.n, t().lairLevels[stage.level]);
   const row = document.createElement('div');
   row.className = 'next-row';
   const info = document.createElement('div');
   const name = document.createElement('b');
   name.textContent = pick(monster.name);
+  const where = document.createElement('span');
+  where.textContent = stageText;
   const why = document.createElement('span');
   why.textContent = t().nextWhy(pick(weakest.name), weakest.pct);
-  info.append(name, why);
+  info.append(name, where, why);
   const fight = document.createElement('button');
   fight.type = 'button';
   fight.className = 'btn';
   fight.textContent = t().lairFight;
-  fight.setAttribute('aria-label', t().lairFight + ': ' + pick(monster.name));
-  fight.addEventListener('click', () => openBattle(monster.id));
+  fight.setAttribute('aria-label', t().lairFight + ': ' + stageText);
+  fight.addEventListener('click', () => openBattle(stage));
   row.append(artImg(monster.img, 48), info, fight);
   wrap.append(row);
   return wrap;
@@ -1921,11 +1951,14 @@ function applyTheme(theme) {
 }
 
 /* ===== Monster lair and quiz battles =====
-   Every subject has its own monster, with its own name, look, difficulty and question set. One fight is one run through that subject's
-   questions. A right answer takes BATTLE_FOE_DAMAGE off the monster; a wrong one costs the student the monster's hit (harder monsters
-   hit harder) and that question comes back later. The monster falls at 0 HP. If the student reaches 0 first they are defeated and must
-   retry; a retry reshuffles both the question order and each question's answers, and never repeats the previous order. Attempts and
-   wins are kept per monster in localStorage; the first win over each monster pays XP and coins (demo data, like the quests). */
+   Each subject has chapters, and every chapter has a question set for each of four levels. Each monster is one level: Orang Bunian
+   (Easy), Naga Laut (Medium), Harimau Jin (Hard), Hantu Lelaki (Very Hard). Within a chapter a level opens once the one before it has
+   been beaten. One fight is one run through that level's questions. A right answer takes BATTLE_FOE_DAMAGE off the monster; a wrong
+   one costs the student the monster's hit (harder monsters hit harder) and that question comes back later. The monster falls at 0 HP.
+   If the student reaches 0 first they are defeated and must retry; a retry reshuffles both the question order and each question's
+   answers, and never repeats the previous order. Each monster speaks its own lines (VILLAIN) as it enters, strikes, is hit, falls or
+   wins. Attempts and wins are kept per chapter level in localStorage; the first win at each pays XP and coins (demo data, like the
+   quests). The bank is the same Year 4 sample as the app's: unreviewed, chapter titles not checked against the syllabus. */
 const BATTLE_FOE_DAMAGE = 10;
 const BATTLE_HERO_HP = 100;
 const BATTLE_KEY = 'sapientia.battles';
@@ -1935,55 +1968,382 @@ const QUIZ_SUBJECT = {
   english: {ms: 'Bahasa Inggeris', en: 'English'}, malay: {ms: 'Bahasa Melayu', en: 'Malay'},
 };
 
+/* Lair order of the subjects, as in the app. */
+const QUIZ_SUBJECTS = ['malay', 'english', 'maths', 'science'];
+const QUIZ_LEVELS = [1, 2, 3, 4];
+
 // Pictures cut from the Pixel Warrior and Monster Lineup art; the orang bunian and the naga are mirrored to face the pahlawan.
+// One monster per level, easiest first, so MONSTERS[level - 1] is that level's monster.
 const MONSTERS = [
-  {id: 'bunian', subj: 'maths', img: 'art/bunian.png', name: {ms: 'Orang Bunian', en: 'Forest Ogre'}, hit: 20, level: 1},
-  {id: 'naga', subj: 'science', img: 'art/naga.png', name: {ms: 'Naga Laut', en: 'Sea Serpent'}, hit: 25, level: 2},
-  {id: 'harimau', subj: 'malay', img: 'art/harimau.png', name: {ms: 'Harimau Jin', en: 'Spirit Tiger'}, hit: 25, level: 2},
-  {id: 'hantu', subj: 'english', img: 'art/hantu.png', name: {ms: 'Hantu Lelaki', en: 'Ghost Warrior'}, hit: 34, level: 3},
+  {id: 'bunian', img: 'art/bunian.png', name: {ms: 'Orang Bunian', en: 'Forest Ogre'}, hit: 15, level: 1},
+  {id: 'naga', img: 'art/naga.png', name: {ms: 'Naga Laut', en: 'Sea Serpent'}, hit: 20, level: 2},
+  {id: 'harimau', img: 'art/harimau.png', name: {ms: 'Harimau Jin', en: 'Spirit Tiger'}, hit: 25, level: 3},
+  {id: 'hantu', img: 'art/hantu.png', name: {ms: 'Hantu Lelaki', en: 'Ghost Warrior'}, hit: 34, level: 4},
+];
+const monsterForLevel = (level) => MONSTERS[level - 1];
+
+/* Generated from the app's features/battle/data (quiz/*.quiz.ts and villain-lines.ts); change the app first and keep the two the same. */
+const QUIZ_CHAPTERS = [
+  {id: 'bm-1', subj: 'malay', n: 1, title: {ms: 'Kosa Kata: Sinonim dan Antonim', en: 'Vocabulary: Synonyms and Antonyms'}},
+  {id: 'bm-2', subj: 'malay', n: 2, title: {ms: 'Peribahasa', en: 'Proverbs'}},
+  {id: 'bi-1', subj: 'english', n: 1, title: {ms: 'Kata Kerja dan Kala', en: 'Verbs and Tenses'}},
+  {id: 'bi-2', subj: 'english', n: 2, title: {ms: 'Kata Nama dan Kata Ganti Nama', en: 'Nouns and Pronouns'}},
+  {id: 'math-1', subj: 'maths', n: 1, title: {ms: 'Nombor Bulat hingga 100 000', en: 'Whole Numbers up to 100 000'}},
+  {id: 'math-2', subj: 'maths', n: 2, title: {ms: 'Pecahan', en: 'Fractions'}},
+  {id: 'sci-1', subj: 'science', n: 1, title: {ms: 'Proses Hidup Manusia', en: 'Human Life Processes'}},
+  {id: 'sci-2', subj: 'science', n: 2, title: {ms: 'Tumbuhan', en: 'Plants'}},
 ];
 
 const QUIZ = [
-  {id: 'm1', subj: 'maths', q: {ms: 'Berapakah 7 \u00d7 8?', en: 'What is 7 \u00d7 8?'},
-    options: ['54', '56', '58', '64'], answer: 1, why: {ms: '7 \u00d7 8 = 56.', en: '7 \u00d7 8 = 56.'}},
-  {id: 'm2', subj: 'maths', q: {ms: 'Berapakah 25% daripada 80?', en: 'What is 25% of 80?'},
-    options: ['15', '20', '25', '30'], answer: 1, why: {ms: '25% ialah satu perempat; 80 \u00f7 4 = 20.', en: '25% is a quarter; 80 \u00f7 4 = 20.'}},
-  {id: 'm3', subj: 'maths', q: {ms: 'Sebuah segi empat tepat berukuran 6 cm \u00d7 4 cm. Berapakah perimeternya?', en: 'A rectangle measures 6 cm \u00d7 4 cm. What is its perimeter?'},
-    options: ['10 cm', '20 cm', '24 cm\u00b2', '48 cm'], answer: 1, why: {ms: '2 \u00d7 (6 + 4) = 20 cm. 24 cm\u00b2 ialah luasnya.', en: '2 \u00d7 (6 + 4) = 20 cm. 24 cm\u00b2 is the area.'}},
-  {id: 's1', subj: 'science', q: {ms: 'Gas apakah yang diserap tumbuhan untuk fotosintesis?', en: 'Which gas do plants take in for photosynthesis?'},
+  {id: 'bm-1-1-1', ch: 'bm-1', level: 1, q: {ms: 'Apakah antonim bagi perkataan "rajin"?', en: 'What is the antonym (opposite) of the Malay word "rajin"?'},
+    options: ['malas', 'tekun', 'cergas', 'gigih'], answer: 0,
+    why: {ms: '"Malas" bermaksud tidak suka bekerja, lawan bagi "rajin".', en: '"Malas" (lazy) is the opposite of "rajin" (hardworking).'}},
+  {id: 'bm-1-1-2', ch: 'bm-1', level: 1, q: {ms: 'Apakah sinonim bagi perkataan "cantik"?', en: 'What is a synonym of the Malay word "cantik"?'},
+    options: ['indah', 'hodoh', 'buruk', 'kotor'], answer: 0,
+    why: {ms: '"Indah" dan "cantik" hampir sama maksudnya.', en: '"Indah" and "cantik" both mean beautiful.'}},
+  {id: 'bm-1-1-3', ch: 'bm-1', level: 1, q: {ms: 'Apakah antonim bagi perkataan "tinggi"?', en: 'What is the antonym of the Malay word "tinggi"?'},
+    options: ['rendah', 'panjang', 'besar', 'lebar'], answer: 0,
+    why: {ms: '"Tinggi" dan "rendah" ialah pasangan berlawanan.', en: '"Tinggi" (tall, high) and "rendah" (low, short) are opposites.'}},
+  {id: 'bm-1-2-1', ch: 'bm-1', level: 2, q: {ms: 'Apakah sinonim bagi perkataan "gembira"?', en: 'What is a synonym of the Malay word "gembira"?'},
+    options: ['riang', 'sedih', 'marah', 'takut'], answer: 0,
+    why: {ms: '"Riang" dan "gembira" sama maksudnya.', en: '"Riang" and "gembira" both mean happy.'}},
+  {id: 'bm-1-2-2', ch: 'bm-1', level: 2, q: {ms: 'Apakah antonim bagi perkataan "berani"?', en: 'What is the antonym of the Malay word "berani"?'},
+    options: ['penakut', 'gagah', 'kuat', 'cerdik'], answer: 0,
+    why: {ms: '"Penakut" ialah orang yang mudah takut, lawan bagi "berani".', en: '"Penakut" (coward) is the opposite of "berani" (brave).'}},
+  {id: 'bm-1-2-3', ch: 'bm-1', level: 2, q: {ms: 'Apakah sinonim bagi perkataan "pintar"?', en: 'What is a synonym of the Malay word "pintar"?'},
+    options: ['cerdik', 'bodoh', 'lambat', 'malas'], answer: 0,
+    why: {ms: '"Cerdik" dan "pintar" sama maksudnya.', en: '"Cerdik" and "pintar" both mean clever.'}},
+  {id: 'bm-1-3-1', ch: 'bm-1', level: 3, q: {ms: 'Lengkapkan dengan antonim yang sesuai: "Bilik itu gelap, tetapi ruang tamu ___."', en: 'Complete with the right antonym: "Bilik itu gelap, tetapi ruang tamu ___."'},
+    options: ['terang', 'kelam', 'suram', 'malap'], answer: 0,
+    why: {ms: '"Terang" ialah lawan "gelap". "Kelam", "suram" dan "malap" hampir sama maksud dengan "gelap".', en: '"Terang" is the opposite of "gelap". "Kelam", "suram" and "malap" all mean nearly the same as "gelap".'}},
+  {id: 'bm-1-3-2', ch: 'bm-1', level: 3, q: {ms: 'Apakah antonim bagi "baharu" dalam ayat "Ayah membeli kereta baharu."?', en: 'What is the antonym of "baharu" in "Ayah membeli kereta baharu."?'},
+    options: ['lama', 'tua', 'muda', 'kecil'], answer: 0,
+    why: {ms: 'Bagi benda, lawan "baharu" ialah "lama". "Tua" ialah lawan "muda" dan digunakan untuk umur.', en: 'For things, the opposite of "baharu" is "lama". "Tua" is the opposite of "muda" and is used for age.'}},
+  {id: 'bm-1-3-3', ch: 'bm-1', level: 3, q: {ms: 'Pasangan manakah ialah sinonim?', en: 'Which pair are synonyms?'},
+    options: ['cepat \u2013 pantas', 'panas \u2013 sejuk', 'atas \u2013 bawah', 'masuk \u2013 keluar'], answer: 0,
+    why: {ms: '"Cepat" dan "pantas" sama maksudnya. Pasangan lain ialah antonim.', en: '"Cepat" and "pantas" mean the same. The other pairs are antonyms.'}},
+  {id: 'bm-1-4-1', ch: 'bm-1', level: 4, q: {ms: 'Pasangan manakah BUKAN antonim?', en: 'Which pair is NOT a pair of antonyms?'},
+    options: ['luas \u2013 lebar', 'tinggi \u2013 rendah', 'kaya \u2013 miskin', 'terang \u2013 gelap'], answer: 0,
+    why: {ms: '"Luas" dan "lebar" hampir sama maksudnya, jadi ia sinonim, bukan antonim.', en: '"Luas" and "lebar" mean nearly the same, so they are synonyms, not antonyms.'}},
+  {id: 'bm-1-4-2', ch: 'bm-1', level: 4, q: {ms: 'Apakah antonim bagi perkataan "mengecil"?', en: 'What is the antonym of the Malay word "mengecil"?'},
+    options: ['membesar', 'mengecut', 'menyusut', 'mengurang'], answer: 0,
+    why: {ms: '"Membesar" ialah lawan "mengecil". "Mengecut", "menyusut" dan "mengurang" hampir sama maksud dengan "mengecil".', en: '"Membesar" is the opposite of "mengecil". "Mengecut", "menyusut" and "mengurang" mean nearly the same as "mengecil".'}},
+  {id: 'bm-1-4-3', ch: 'bm-1', level: 4, q: {ms: 'Perkataan manakah TIDAK sama maksud dengan yang lain?', en: 'Which word does NOT mean the same as the others?'},
+    options: ['bising', 'senyap', 'sunyi', 'sepi'], answer: 0,
+    why: {ms: '"Senyap", "sunyi" dan "sepi" bermaksud tiada bunyi; "bising" ialah lawannya.', en: '"Senyap", "sunyi" and "sepi" all mean without sound; "bising" is their opposite.'}},
+  {id: 'bm-2-1-1', ch: 'bm-2', level: 1, q: {ms: 'Apakah maksud peribahasa "bagai aur dengan tebing"?', en: 'What does the proverb "bagai aur dengan tebing" mean?'},
+    options: [{ms: 'Saling bergantung dan membantu', en: 'Depending on and helping each other'}, {ms: 'Bermusuhan', en: 'Being enemies'}, {ms: 'Tinggal berjauhan', en: 'Living far apart'}, {ms: 'Berlainan pendapat', en: 'Having different opinions'}], answer: 0,
+    why: {ms: 'Aur dan tebing saling menguatkan: hubungan yang erat dan saling membantu.', en: 'Bamboo and riverbank hold each other up: a close relationship where people help one another.'}},
+  {id: 'bm-2-1-2', ch: 'bm-2', level: 1, q: {ms: 'Apakah maksud peribahasa "bagai pinang dibelah dua"?', en: 'What does the proverb "bagai pinang dibelah dua" mean?'},
+    options: [{ms: 'Sangat sepadan atau serupa', en: 'A perfect match, or very alike'}, {ms: 'Bergaduh hingga berpecah', en: 'Quarrelling until they split up'}, {ms: 'Berkongsi makanan', en: 'Sharing food'}, {ms: 'Bekerja keras', en: 'Working hard'}], answer: 0,
+    why: {ms: 'Dua belahan buah pinang kelihatan sama, jadi peribahasa ini untuk pasangan yang sangat sepadan.', en: 'The two halves of a split areca nut look the same, so it describes a perfect match.'}},
+  {id: 'bm-2-1-3', ch: 'bm-2', level: 1, q: {ms: 'Apakah maksud peribahasa "bagai kacang lupakan kulit"?', en: 'What does the proverb "bagai kacang lupakan kulit" mean?'},
+    options: [{ms: 'Lupa asal usul atau orang yang pernah membantu', en: 'Forgetting your roots or those who helped you'}, {ms: 'Suka makan kacang', en: 'Liking to eat nuts'}, {ms: 'Rajin menolong orang', en: 'Always helping others'}, {ms: 'Tidak suka berkongsi', en: 'Not liking to share'}], answer: 0,
+    why: {ms: 'Kacang yang lupa kulit yang pernah melindunginya: orang yang tidak mengenang jasa.', en: 'A nut that forgets the shell that protected it: someone who forgets who helped them.'}},
+  {id: 'bm-2-2-1', ch: 'bm-2', level: 2, q: {ms: 'Apakah maksud peribahasa "melentur buluh biarlah dari rebungnya"?', en: 'What does the proverb "melentur buluh biarlah dari rebungnya" mean?'},
+    options: [{ms: 'Mendidik anak sejak kecil', en: 'Teaching children while they are young'}, {ms: 'Menanam buluh di kebun', en: 'Planting bamboo in a garden'}, {ms: 'Memasak rebung', en: 'Cooking bamboo shoots'}, {ms: 'Membuat kerja dengan cepat', en: 'Doing work quickly'}], answer: 0,
+    why: {ms: 'Rebung (buluh muda) mudah dilentur; begitu juga anak lebih mudah dididik semasa kecil.', en: 'A bamboo shoot bends easily; children, too, are easiest to teach while young.'}},
+  {id: 'bm-2-2-2', ch: 'bm-2', level: 2, q: {ms: 'Apakah maksud peribahasa "sediakan payung sebelum hujan"?', en: 'What does the proverb "sediakan payung sebelum hujan" mean?'},
+    options: [{ms: 'Bersedia sebelum sesuatu berlaku', en: 'Getting ready before something happens'}, {ms: 'Membeli payung baharu', en: 'Buying a new umbrella'}, {ms: 'Tidak suka hujan', en: 'Not liking rain'}, {ms: 'Lambat membuat keputusan', en: 'Being slow to decide'}], answer: 0,
+    why: {ms: 'Peribahasa ini menasihati kita supaya berjaga-jaga dan bersedia lebih awal.', en: 'It tells us to be careful and get ready early.'}},
+  {id: 'bm-2-2-3', ch: 'bm-2', level: 2, q: {ms: 'Apakah maksud peribahasa "seperti katak di bawah tempurung"?', en: 'What does the proverb "seperti katak di bawah tempurung" mean?'},
+    options: [{ms: 'Kurang pengetahuan dan pengalaman', en: 'Knowing little of the world'}, {ms: 'Pandai bersembunyi', en: 'Good at hiding'}, {ms: 'Suka melompat', en: 'Liking to jump'}, {ms: 'Rajin bekerja', en: 'Hardworking'}], answer: 0,
+    why: {ms: 'Katak di bawah tempurung menyangka tempurung itu seluruh dunia: orang yang kurang pengetahuan.', en: 'A frog under a coconut shell thinks the shell is the whole world: someone who knows little.'}},
+  {id: 'bm-2-3-1', ch: 'bm-2', level: 3, q: {ms: 'Ahmad mengulang kaji sedikit setiap hari sehingga dia menjadi pandai. Peribahasa manakah sesuai?', en: 'Ahmad revises a little every day until he becomes good at it. Which proverb fits?'},
+    options: ['Sedikit-sedikit, lama-lama jadi bukit', 'Bagai kacang lupakan kulit', 'Bagai aur dengan tebing', 'Seperti katak di bawah tempurung'], answer: 0,
+    why: {ms: 'Usaha kecil yang berterusan akhirnya menjadi hasil yang besar.', en: 'Small, steady effort adds up to something big.'}},
+  {id: 'bm-2-3-2', ch: 'bm-2', level: 3, q: {ms: 'Penduduk kampung bergotong-royong membersihkan surau. Peribahasa manakah sesuai?', en: 'The villagers work together to clean the surau. Which proverb fits?'},
+    options: ['Berat sama dipikul, ringan sama dijinjing', 'Bagai pinang dibelah dua', 'Sediakan payung sebelum hujan', 'Bagai kacang lupakan kulit'], answer: 0,
+    why: {ms: 'Peribahasa ini bermaksud bekerjasama dan berkongsi susah dan senang.', en: 'It means working together and sharing both the hard and the easy.'}},
+  {id: 'bm-2-3-3', ch: 'bm-2', level: 3, q: {ms: 'Siti membawa baju hujan walaupun pagi itu cerah. Peribahasa manakah sesuai?', en: 'Siti brings a raincoat even though the morning is sunny. Which proverb fits?'},
+    options: ['Sediakan payung sebelum hujan', 'Melentur buluh biarlah dari rebungnya', 'Bagai aur dengan tebing', 'Seperti katak di bawah tempurung'], answer: 0,
+    why: {ms: 'Siti bersedia sebelum hujan turun.', en: 'Siti is ready before the rain comes.'}},
+  {id: 'bm-2-4-1', ch: 'bm-2', level: 4, q: {ms: 'Selepas berjaya, Kamal tidak lagi melawat guru yang pernah membantunya. Peribahasa manakah sesuai?', en: 'After he succeeds, Kamal never again visits the teacher who helped him. Which proverb fits?'},
+    options: ['Bagai kacang lupakan kulit', 'Melentur buluh biarlah dari rebungnya', 'Sediakan payung sebelum hujan', 'Bagai pinang dibelah dua'], answer: 0,
+    why: {ms: 'Kamal melupakan orang yang membantunya.', en: 'Kamal forgets the person who helped him.'}},
+  {id: 'bm-2-4-2', ch: 'bm-2', level: 4, q: {ms: 'Ibu mengajar adik menabung sejak adik berumur lima tahun. Peribahasa manakah sesuai?', en: 'Mother has taught her youngest to save money since the age of five. Which proverb fits?'},
+    options: ['Melentur buluh biarlah dari rebungnya', 'Seperti katak di bawah tempurung', 'Bagai aur dengan tebing', 'Bagai kacang lupakan kulit'], answer: 0,
+    why: {ms: 'Ibu mendidik adik sejak kecil, seperti rebung yang dilentur semasa masih muda.', en: 'Mother teaches the child while young, like bending a bamboo shoot while it is still soft.'}},
+  {id: 'bm-2-4-3', ch: 'bm-2', level: 4, q: {ms: 'Faris tidak pernah keluar dari kampungnya dan menyangka kampungnya paling besar di dunia. Peribahasa manakah sesuai?', en: 'Faris has never left his village and thinks it is the biggest in the world. Which proverb fits?'},
+    options: ['Seperti katak di bawah tempurung', 'Bagai pinang dibelah dua', 'Berat sama dipikul, ringan sama dijinjing', 'Sediakan payung sebelum hujan'], answer: 0,
+    why: {ms: 'Faris kurang pengalaman kerana tidak pernah melihat dunia luar.', en: 'Faris knows little because he has never seen the world outside.'}},
+  {id: 'bi-1-1-1', ch: 'bi-1', level: 1, q: {ms: 'Pilih perkataan yang betul: "She ___ to school every day."', en: 'Choose the correct word: "She ___ to school every day."'},
+    options: ['go', 'goes', 'going', 'gone'], answer: 1,
+    why: {ms: 'Subjek "she" (orang ketiga tunggal) memerlukan "goes".', en: 'The subject "she" (third person singular) takes "goes".'}},
+  {id: 'bi-1-1-2', ch: 'bi-1', level: 1, q: {ms: 'Pilih kala lampau (past tense) bagi "buy".', en: 'Choose the past tense of "buy".'},
+    options: ['buyed', 'bought', 'buying', 'buys'], answer: 1,
+    why: {ms: '"Buy" ialah kata kerja tak sekata; kala lampaunya "bought".', en: '"Buy" is irregular; its past tense is "bought".'}},
+  {id: 'bi-1-1-3', ch: 'bi-1', level: 1, q: {ms: 'Pilih jawapan yang betul: "They ___ football now."', en: 'Choose the correct answer: "They ___ football now."'},
+    options: ['are playing', 'plays', 'played', 'is playing'], answer: 0,
+    why: {ms: '"Now" menunjukkan sedang berlaku, dan "they" mengambil "are": "are playing".', en: '"Now" means it is happening, and "they" takes "are": "are playing".'}},
+  {id: 'bi-1-2-1', ch: 'bi-1', level: 2, q: {ms: 'Pilih kala lampau bagi "go".', en: 'Choose the past tense of "go".'},
+    options: ['goed', 'went', 'gone', 'going'], answer: 1,
+    why: {ms: '"Go" ialah kata kerja tak sekata: go, went, gone.', en: '"Go" is irregular: go, went, gone.'}},
+  {id: 'bi-1-2-2', ch: 'bi-1', level: 2, q: {ms: 'Pilih perkataan yang betul: "Yesterday, I ___ my grandmother."', en: 'Choose the correct word: "Yesterday, I ___ my grandmother."'},
+    options: ['visit', 'visits', 'visited', 'visiting'], answer: 2,
+    why: {ms: '"Yesterday" menunjukkan masa lampau, jadi "visited".', en: '"Yesterday" points to the past, so "visited".'}},
+  {id: 'bi-1-2-3', ch: 'bi-1', level: 2, q: {ms: 'Pilih perkataan yang betul: "My father ___ a blue car."', en: 'Choose the correct word: "My father ___ a blue car."'},
+    options: ['has', 'have', 'having', 'haves'], answer: 0,
+    why: {ms: '"My father" ialah orang ketiga tunggal, jadi "has".', en: '"My father" is third person singular, so "has".'}},
+  {id: 'bi-1-3-1', ch: 'bi-1', level: 3, q: {ms: 'Pilih jawapan yang betul: "Look! The baby ___."', en: 'Choose the correct answer: "Look! The baby ___."'},
+    options: ['is sleeping', 'sleeps', 'slept', 'sleep'], answer: 0,
+    why: {ms: '"Look!" menunjukkan perkara itu sedang berlaku sekarang: "is sleeping".', en: '"Look!" shows it is happening right now: "is sleeping".'}},
+  {id: 'bi-1-3-2', ch: 'bi-1', level: 3, q: {ms: 'Ayat manakah betul?', en: 'Which sentence is correct?'},
+    options: ['He doesn\'t like durian.', 'He don\'t like durian.', 'He doesn\'t likes durian.', 'He not like durian.'], answer: 0,
+    why: {ms: '"He" mengambil "doesn\'t", dan selepas "doesn\'t" kata kerja kekal asal: "like".', en: '"He" takes "doesn\'t", and after "doesn\'t" the verb stays plain: "like".'}},
+  {id: 'bi-1-3-3', ch: 'bi-1', level: 3, q: {ms: 'Pilih perkataan yang betul: "Every morning, the birds ___."', en: 'Choose the correct word: "Every morning, the birds ___."'},
+    options: ['sing', 'sings', 'singing', 'sang'], answer: 0,
+    why: {ms: '"The birds" ialah jamak, jadi kata kerja tanpa "-s": "sing".', en: '"The birds" is plural, so the verb has no "-s": "sing".'}},
+  {id: 'bi-1-4-1', ch: 'bi-1', level: 4, q: {ms: 'Ayat manakah betul?', en: 'Which sentence is correct?'},
+    options: ['She watched TV last night.', 'She watch TV last night.', 'She watches TV last night.', 'She watching TV last night.'], answer: 0,
+    why: {ms: '"Last night" ialah masa lampau, jadi "watched".', en: '"Last night" is in the past, so "watched".'}},
+  {id: 'bi-1-4-2', ch: 'bi-1', level: 4, q: {ms: 'Pilih perkataan yang betul: "Mei Ling ___ her homework before she went out to play."', en: 'Choose the correct word: "Mei Ling ___ her homework before she went out to play."'},
+    options: ['finished', 'finish', 'finishes', 'finishing'], answer: 0,
+    why: {ms: '"Went" menunjukkan cerita ini berlaku pada masa lampau, jadi "finished".', en: '"Went" shows the story is in the past, so "finished".'}},
+  {id: 'bi-1-4-3', ch: 'bi-1', level: 4, q: {ms: 'Pilih kala lampau bagi "catch".', en: 'Choose the past tense of "catch".'},
+    options: ['catched', 'caught', 'cought', 'catching'], answer: 1,
+    why: {ms: '"Catch" ialah kata kerja tak sekata: catch, caught.', en: '"Catch" is irregular: catch, caught.'}},
+  {id: 'bi-2-1-1', ch: 'bi-2', level: 1, q: {ms: 'Perkataan manakah ialah kata nama (noun)?', en: 'Which word is a noun?'},
+    options: ['sing', 'happy', 'table', 'quickly'], answer: 2,
+    why: {ms: 'Kata nama menamakan benda; "table" ialah benda.', en: 'A noun names a thing; "table" is a thing.'}},
+  {id: 'bi-2-1-2', ch: 'bi-2', level: 1, q: {ms: 'Apakah bentuk jamak bagi "box"?', en: 'What is the plural of "box"?'},
+    options: ['boxs', 'boxes', 'boxies', 'box'], answer: 1,
+    why: {ms: 'Perkataan yang berakhir dengan "x" mengambil "-es": boxes.', en: 'Words ending in "x" take "-es": boxes.'}},
+  {id: 'bi-2-1-3', ch: 'bi-2', level: 1, q: {ms: 'Pilih perkataan yang betul: "Ali is my friend. ___ is kind."', en: 'Choose the correct word: "Ali is my friend. ___ is kind."'},
+    options: ['He', 'She', 'It', 'They'], answer: 0,
+    why: {ms: 'Ali ialah seorang lelaki, jadi "he".', en: 'Ali is one boy, so "he".'}},
+  {id: 'bi-2-2-1', ch: 'bi-2', level: 2, q: {ms: 'Apakah bentuk jamak bagi "child"?', en: 'What is the plural of "child"?'},
+    options: ['childs', 'children', 'childes', 'childrens'], answer: 1,
+    why: {ms: '"Child" ialah jamak tak sekata: children.', en: '"Child" has an irregular plural: children.'}},
+  {id: 'bi-2-2-2', ch: 'bi-2', level: 2, q: {ms: 'Pilih perkataan yang betul: "Mei and Ravi play together. ___ are best friends."', en: 'Choose the correct word: "Mei and Ravi play together. ___ are best friends."'},
+    options: ['They', 'We', 'He', 'She'], answer: 0,
+    why: {ms: 'Mei dan Ravi ialah dua orang, jadi "they".', en: 'Mei and Ravi are two people, so "they".'}},
+  {id: 'bi-2-2-3', ch: 'bi-2', level: 2, q: {ms: 'Perkataan manakah ialah kata nama khas (proper noun)?', en: 'Which word is a proper noun?'},
+    options: ['city', 'Kuala Lumpur', 'river', 'school'], answer: 1,
+    why: {ms: 'Kata nama khas ialah nama tertentu dan bermula dengan huruf besar: Kuala Lumpur.', en: 'A proper noun is a particular name and starts with a capital letter: Kuala Lumpur.'}},
+  {id: 'bi-2-3-1', ch: 'bi-2', level: 3, q: {ms: 'Apakah bentuk jamak bagi "baby"?', en: 'What is the plural of "baby"?'},
+    options: ['babys', 'babies', 'babyes', 'babis'], answer: 1,
+    why: {ms: 'Konsonan + "y": tukar "y" kepada "i" dan tambah "-es": babies.', en: 'Consonant + "y": change the "y" to "i" and add "-es": babies.'}},
+  {id: 'bi-2-3-2', ch: 'bi-2', level: 3, q: {ms: 'Pilih perkataan yang betul: "This bag belongs to me. It is ___."', en: 'Choose the correct word: "This bag belongs to me. It is ___."'},
+    options: ['mine', 'my', 'me', 'I'], answer: 0,
+    why: {ms: '"Mine" berdiri sendiri tanpa kata nama selepasnya. "My" perlu diikuti kata nama (my bag).', en: '"Mine" stands alone with no noun after it. "My" needs a noun after it (my bag).'}},
+  {id: 'bi-2-3-3', ch: 'bi-2', level: 3, q: {ms: 'Yang manakah betul?', en: 'Which one is correct?'},
+    options: ['an umbrella', 'a umbrella', 'an book', 'a apple'], answer: 0,
+    why: {ms: 'Guna "an" sebelum bunyi vokal (umbrella) dan "a" sebelum bunyi konsonan (book).', en: 'Use "an" before a vowel sound (umbrella) and "a" before a consonant sound (book).'}},
+  {id: 'bi-2-4-1', ch: 'bi-2', level: 4, q: {ms: 'Ayat manakah menggunakan kata ganti nama dengan betul?', en: 'Which sentence uses the pronouns correctly?'},
+    options: ['She and I went to the shop.', 'Her and me went to the shop.', 'She and me went to the shop.', 'Her and I went to the shop.'], answer: 0,
+    why: {ms: 'Sebagai subjek, guna "she" dan "I". Uji satu-satu: "She went", "I went".', en: 'As the subject, use "she" and "I". Test each alone: "She went", "I went".'}},
+  {id: 'bi-2-4-2', ch: 'bi-2', level: 4, q: {ms: 'Apakah bentuk jamak bagi "mouse" (haiwan)?', en: 'What is the plural of "mouse" (the animal)?'},
+    options: ['mouses', 'mice', 'mices', 'meese'], answer: 1,
+    why: {ms: '"Mouse" ialah jamak tak sekata: mice.', en: '"Mouse" has an irregular plural: mice.'}},
+  {id: 'bi-2-4-3', ch: 'bi-2', level: 4, q: {ms: 'Lengkapkan kata nama kolektif: "a ___ of fish"', en: 'Complete the collective noun: "a ___ of fish"'},
+    options: ['school', 'herd', 'flock', 'pack'], answer: 0,
+    why: {ms: 'A school of fish, a herd of cows, a flock of birds, a pack of wolves.', en: 'A school of fish, a herd of cows, a flock of birds, a pack of wolves.'}},
+  {id: 'math-1-1-1', ch: 'math-1', level: 1, q: {ms: 'Apakah nilai digit 7 dalam 37 215?', en: 'What is the value of the digit 7 in 37 215?'},
+    options: ['7', '700', '7 000', '70 000'], answer: 2,
+    why: {ms: 'Digit 7 berada di tempat ribu, jadi nilainya 7 000.', en: 'The 7 is in the thousands place, so its value is 7 000.'}},
+  {id: 'math-1-1-2', ch: 'math-1', level: 1, q: {ms: 'Bundarkan 6 482 kepada ratus yang terdekat.', en: 'Round 6 482 to the nearest hundred.'},
+    options: ['6 400', '6 480', '6 500', '7 000'], answer: 2,
+    why: {ms: 'Digit puluh ialah 8 (5 atau lebih), jadi bundarkan ke atas: 6 500.', en: 'The tens digit is 8 (5 or more), so round up: 6 500.'}},
+  {id: 'math-1-1-3', ch: 'math-1', level: 1, q: {ms: 'Nombor manakah paling besar?', en: 'Which number is the largest?'},
+    options: ['45 099', '45 910', '45 190', '45 901'], answer: 1,
+    why: {ms: 'Bandingkan dari kiri: semua 45 ribu, kemudian ratus: 9 ratus paling besar; 910 lebih besar daripada 901.', en: 'Compare from the left: all are 45 thousand; then hundreds: 9 is largest, and 910 beats 901.'}},
+  {id: 'math-1-2-1', ch: 'math-1', level: 2, q: {ms: 'Berapakah 23 456 + 12 345?', en: 'What is 23 456 + 12 345?'},
+    options: ['35 791', '35 801', '35 811', '34 801'], answer: 1,
+    why: {ms: '6 + 5 = 11, tulis 1 bawa 1; kemudian 5 + 4 + 1 = 10, tulis 0 bawa 1 ... jumlahnya 35 801.', en: '6 + 5 = 11, write 1 carry 1; then 5 + 4 + 1 = 10, write 0 carry 1 ... the total is 35 801.'}},
+  {id: 'math-1-2-2', ch: 'math-1', level: 2, q: {ms: 'Berapakah 50 000 \u2212 1 234?', en: 'What is 50 000 \u2212 1 234?'},
+    options: ['48 766', '49 766', '48 876', '51 234'], answer: 0,
+    why: {ms: 'Pinjam dari tempat puluh ribu: 50 000 \u2212 1 234 = 48 766. Semak: 48 766 + 1 234 = 50 000.', en: 'Borrow from the ten thousands: 50 000 \u2212 1 234 = 48 766. Check: 48 766 + 1 234 = 50 000.'}},
+  {id: 'math-1-2-3', ch: 'math-1', level: 2, q: {ms: 'Berapakah 1 205 \u00d7 4?', en: 'What is 1 205 \u00d7 4?'},
+    options: ['4 820', '4 802', '4 280', '5 820'], answer: 0,
+    why: {ms: '1 000 \u00d7 4 = 4 000, 200 \u00d7 4 = 800, 5 \u00d7 4 = 20; jumlahnya 4 820.', en: '1 000 \u00d7 4 = 4 000, 200 \u00d7 4 = 800, 5 \u00d7 4 = 20; together 4 820.'}},
+  {id: 'math-1-3-1', ch: 'math-1', level: 3, q: {ms: 'Berapakah 7 245 \u00f7 5?', en: 'What is 7 245 \u00f7 5?'},
+    options: ['1 409', '1 449', '1 459', '1 549'], answer: 1,
+    why: {ms: '7 245 \u00f7 5 = 1 449. Semak: 1 449 \u00d7 5 = 7 245.', en: '7 245 \u00f7 5 = 1 449. Check: 1 449 \u00d7 5 = 7 245.'}},
+  {id: 'math-1-3-2', ch: 'math-1', level: 3, q: {ms: 'Berapakah 3 000 \u2212 425 \u00d7 4?', en: 'What is 3 000 \u2212 425 \u00d7 4?'},
+    options: ['10 300', '1 700', '1 300', '2 575'], answer: 2,
+    why: {ms: 'Darab dahulu: 425 \u00d7 4 = 1 700, kemudian 3 000 \u2212 1 700 = 1 300. (10 300 ialah jika ditolak dahulu.)', en: 'Multiply first: 425 \u00d7 4 = 1 700, then 3 000 \u2212 1 700 = 1 300. (10 300 is what you get by subtracting first.)'}},
+  {id: 'math-1-3-3', ch: 'math-1', level: 3, q: {ms: 'Anggarkan 4 896 + 3 105 dengan membundarkan setiap nombor kepada ribu yang terdekat.', en: 'Estimate 4 896 + 3 105 by rounding each number to the nearest thousand.'},
+    options: ['7 000', '8 000', '8 001', '9 000'], answer: 1,
+    why: {ms: '4 896 menjadi 5 000 dan 3 105 menjadi 3 000; 5 000 + 3 000 = 8 000. (8 001 ialah jawapan tepat, bukan anggaran.)', en: '4 896 rounds to 5 000 and 3 105 to 3 000; 5 000 + 3 000 = 8 000. (8 001 is the exact sum, not the estimate.)'}},
+  {id: 'math-1-4-1', ch: 'math-1', level: 4, q: {ms: 'Sebuah kilang menghasilkan 2 450 botol sehari. Berapakah botol dihasilkan dalam 6 hari?', en: 'A factory makes 2 450 bottles a day. How many bottles does it make in 6 days?'},
+    options: ['12 450', '14 200', '14 700', '15 700'], answer: 2,
+    why: {ms: '2 450 \u00d7 6 = 14 700 botol.', en: '2 450 \u00d7 6 = 14 700 bottles.'}},
+  {id: 'math-1-4-2', ch: 'math-1', level: 4, q: {ms: 'Puan Lim membahagikan 12 000 biji gula-gula sama banyak ke dalam 8 kotak, kemudian menjual 3 kotak. Berapakah gula-gula yang tinggal?', en: 'Puan Lim shares 12 000 sweets equally into 8 boxes, then sells 3 boxes. How many sweets are left?'},
+    options: ['1 500', '4 500', '7 500', '9 000'], answer: 2,
+    why: {ms: '12 000 \u00f7 8 = 1 500 sekotak. Tinggal 5 kotak: 5 \u00d7 1 500 = 7 500. (4 500 ialah yang dijual.)', en: '12 000 \u00f7 8 = 1 500 a box. 5 boxes are left: 5 \u00d7 1 500 = 7 500. (4 500 is how many were sold.)'}},
+  {id: 'math-1-4-3', ch: 'math-1', level: 4, q: {ms: 'Perpustakaan sekolah ada 3 615 buah buku. Sekolah membeli 1 285 buah lagi, kemudian menderma 900 buah. Berapakah buku sekarang?', en: 'The school library has 3 615 books. The school buys 1 285 more, then gives away 900. How many books are there now?'},
+    options: ['2 330', '4 000', '4 900', '5 800'], answer: 1,
+    why: {ms: '3 615 + 1 285 = 4 900, kemudian 4 900 \u2212 900 = 4 000.', en: '3 615 + 1 285 = 4 900, then 4 900 \u2212 900 = 4 000.'}},
+  {id: 'math-2-1-1', ch: 'math-2', level: 1, q: {ms: 'Dalam pecahan 3/8, apakah penyebutnya?', en: 'In the fraction 3/8, what is the denominator?'},
+    options: ['3', '5', '8', '11'], answer: 2,
+    why: {ms: 'Penyebut ialah nombor di bawah: 8 bahagian sama banyak.', en: 'The denominator is the number at the bottom: 8 equal parts.'}},
+  {id: 'math-2-1-2', ch: 'math-2', level: 1, q: {ms: 'Pecahan manakah sama nilai dengan 1/2?', en: 'Which fraction is equal to 1/2?'},
+    options: ['1/3', '2/4', '2/3', '3/4'], answer: 1,
+    why: {ms: 'Darab pengangka dan penyebut 1/2 dengan 2: 2/4.', en: 'Multiply the top and bottom of 1/2 by 2: 2/4.'}},
+  {id: 'math-2-1-3', ch: 'math-2', level: 1, q: {ms: 'Pecahan manakah paling besar?', en: 'Which fraction is the largest?'},
+    options: ['1/2', '1/3', '1/4', '1/8'], answer: 0,
+    why: {ms: 'Jika pengangka sama, penyebut yang lebih kecil bermaksud bahagian yang lebih besar.', en: 'When the tops are the same, a smaller denominator means bigger parts.'}},
+  {id: 'math-2-2-1', ch: 'math-2', level: 2, q: {ms: 'Berapakah 2/7 + 3/7?', en: 'What is 2/7 + 3/7?'},
+    options: ['1/7', '5/7', '5/14', '6/7'], answer: 1,
+    why: {ms: 'Penyebut sama: tambah pengangka sahaja. 2 + 3 = 5, jadi 5/7.', en: 'Same denominator: add the tops only. 2 + 3 = 5, so 5/7.'}},
+  {id: 'math-2-2-2', ch: 'math-2', level: 2, q: {ms: 'Berapakah 7/9 \u2212 4/9?', en: 'What is 7/9 \u2212 4/9?'},
+    options: ['3/9', '3/18', '4/9', '11/9'], answer: 0,
+    why: {ms: 'Tolak pengangka sahaja: 7 \u2212 4 = 3, jadi 3/9 (sama dengan 1/3).', en: 'Subtract the tops only: 7 \u2212 4 = 3, so 3/9 (the same as 1/3).'}},
+  {id: 'math-2-2-3', ch: 'math-2', level: 2, q: {ms: 'Apakah bentuk termudah bagi 6/8?', en: 'What is 6/8 in its simplest form?'},
+    options: ['1/2', '2/3', '3/4', '6/4'], answer: 2,
+    why: {ms: 'Bahagi pengangka dan penyebut dengan 2: 6/8 = 3/4.', en: 'Divide the top and bottom by 2: 6/8 = 3/4.'}},
+  {id: 'math-2-3-1', ch: 'math-2', level: 3, q: {ms: 'Tukarkan 7/4 kepada nombor bercampur.', en: 'Write 7/4 as a mixed number.'},
+    options: ['1 1/4', '1 3/4', '1 4/7', '3 1/4'], answer: 1,
+    why: {ms: '7 \u00f7 4 = 1 baki 3, jadi 1 3/4.', en: '7 \u00f7 4 = 1 remainder 3, so 1 3/4.'}},
+  {id: 'math-2-3-2', ch: 'math-2', level: 3, q: {ms: 'Berapakah 1/2 + 1/4?', en: 'What is 1/2 + 1/4?'},
+    options: ['1/6', '2/4', '2/6', '3/4'], answer: 3,
+    why: {ms: 'Tukar 1/2 kepada 2/4 dahulu, kemudian 2/4 + 1/4 = 3/4. Jangan tambah penyebut.', en: 'Change 1/2 to 2/4 first, then 2/4 + 1/4 = 3/4. Never add the denominators.'}},
+  {id: 'math-2-3-3', ch: 'math-2', level: 3, q: {ms: 'Berapakah 1/3 daripada 18?', en: 'What is 1/3 of 18?'},
+    options: ['3', '6', '9', '54'], answer: 1,
+    why: {ms: '1/3 daripada 18 bermaksud 18 \u00f7 3 = 6.', en: '1/3 of 18 means 18 \u00f7 3 = 6.'}},
+  {id: 'math-2-4-1', ch: 'math-2', level: 4, q: {ms: 'Ali makan 3/8 daripada sebiji piza dan Abu makan 2/8. Berapakah pecahan piza yang tinggal?', en: 'Ali eats 3/8 of a pizza and Abu eats 2/8. What fraction of the pizza is left?'},
+    options: ['1/8', '3/8', '5/8', '5/16'], answer: 1,
+    why: {ms: 'Dimakan: 3/8 + 2/8 = 5/8. Tinggal: 8/8 \u2212 5/8 = 3/8.', en: 'Eaten: 3/8 + 2/8 = 5/8. Left: 8/8 \u2212 5/8 = 3/8.'}},
+  {id: 'math-2-4-2', ch: 'math-2', level: 4, q: {ms: 'Daripada 40 orang murid, 3/4 pergi ke lawatan. Berapakah murid yang tidak pergi?', en: 'Of 40 pupils, 3/4 go on the trip. How many pupils do not go?'},
+    options: ['7', '10', '13', '30'], answer: 1,
+    why: {ms: '1/4 tidak pergi: 40 \u00f7 4 = 10. (30 ialah yang pergi.)', en: '1/4 do not go: 40 \u00f7 4 = 10. (30 is how many go.)'}},
+  {id: 'math-2-4-3', ch: 'math-2', level: 4, q: {ms: 'Siti membaca 2 1/3 jam pada hari Sabtu dan 1 1/3 jam pada hari Ahad. Berapa jam semuanya?', en: 'Siti reads for 2 1/3 hours on Saturday and 1 1/3 hours on Sunday. How many hours is that altogether?'},
+    options: ['3 1/3', '3 2/3', '3 2/6', '4'], answer: 1,
+    why: {ms: 'Tambah nombor bulat: 2 + 1 = 3. Tambah pecahan: 1/3 + 1/3 = 2/3. Jumlah 3 2/3 jam.', en: 'Add the wholes: 2 + 1 = 3. Add the fractions: 1/3 + 1/3 = 2/3. Total 3 2/3 hours.'}},
+  {id: 'sci-1-1-1', ch: 'sci-1', level: 1, q: {ms: 'Organ manakah yang kita gunakan untuk bernafas?', en: 'Which organ do we breathe with?'},
+    options: [{ms: 'Peparu', en: 'Lungs'}, {ms: 'Jantung', en: 'Heart'}, {ms: 'Perut', en: 'Stomach'}, {ms: 'Ginjal', en: 'Kidneys'}], answer: 0,
+    why: {ms: 'Peparu mengambil udara masuk dan mengeluarkannya semula.', en: 'The lungs take air in and let it out again.'}},
+  {id: 'sci-1-1-2', ch: 'sci-1', level: 1, q: {ms: 'Antara berikut, yang manakah proses hidup manusia?', en: 'Which of these is a human life process?'},
+    options: [{ms: 'Bernafas', en: 'Breathing'}, {ms: 'Menyanyi', en: 'Singing'}, {ms: 'Membaca', en: 'Reading'}, {ms: 'Melukis', en: 'Drawing'}], answer: 0,
+    why: {ms: 'Semua manusia mesti bernafas untuk hidup. Menyanyi, membaca dan melukis ialah aktiviti, bukan proses hidup.', en: 'Every person must breathe to live. Singing, reading and drawing are activities, not life processes.'}},
+  {id: 'sci-1-1-3', ch: 'sci-1', level: 1, q: {ms: 'Gas apakah yang diperlukan badan daripada udara yang kita sedut?', en: 'Which gas does the body need from the air we breathe in?'},
+    options: [{ms: 'Oksigen', en: 'Oxygen'}, {ms: 'Karbon dioksida', en: 'Carbon dioxide'}, {ms: 'Nitrogen', en: 'Nitrogen'}, {ms: 'Hidrogen', en: 'Hydrogen'}], answer: 0,
+    why: {ms: 'Badan menggunakan oksigen untuk mendapatkan tenaga.', en: 'The body uses oxygen to get energy.'}},
+  {id: 'sci-1-2-1', ch: 'sci-1', level: 2, q: {ms: 'Gas apakah yang lebih banyak dalam udara yang kita hembus berbanding udara yang kita sedut?', en: 'Which gas is there more of in the air we breathe out than in the air we breathe in?'},
+    options: [{ms: 'Oksigen', en: 'Oxygen'}, {ms: 'Karbon dioksida', en: 'Carbon dioxide'}, {ms: 'Nitrogen', en: 'Nitrogen'}, {ms: 'Hidrogen', en: 'Hydrogen'}], answer: 1,
+    why: {ms: 'Badan menghasilkan karbon dioksida sebagai bahan buangan dan menyingkirkannya semasa menghembus nafas.', en: 'The body makes carbon dioxide as waste and gets rid of it when we breathe out.'}},
+  {id: 'sci-1-2-2', ch: 'sci-1', level: 2, q: {ms: 'Organ manakah menghasilkan air kencing (urin)?', en: 'Which organ makes urine?'},
+    options: [{ms: 'Ginjal', en: 'Kidneys'}, {ms: 'Peparu', en: 'Lungs'}, {ms: 'Kulit', en: 'Skin'}, {ms: 'Otak', en: 'Brain'}], answer: 0,
+    why: {ms: 'Ginjal menapis bahan buangan daripada darah dan menghasilkan urin.', en: 'The kidneys filter waste out of the blood and make urine.'}},
+  {id: 'sci-1-2-3', ch: 'sci-1', level: 2, q: {ms: 'Amin menarik tangannya dengan cepat apabila tersentuh kuali panas. Ini contoh apa?', en: 'Amin pulls his hand away fast when he touches a hot pan. What is this an example of?'},
+    options: [{ms: 'Gerak balas terhadap rangsangan', en: 'Responding to a stimulus'}, {ms: 'Bernafas', en: 'Breathing'}, {ms: 'Perkumuhan', en: 'Excretion'}, {ms: 'Pembiakan', en: 'Reproduction'}], answer: 0,
+    why: {ms: 'Panas ialah rangsangan; menarik tangan ialah gerak balas yang melindungi badan.', en: 'Heat is the stimulus; pulling the hand away is the response that protects the body.'}},
+  {id: 'sci-1-3-1', ch: 'sci-1', level: 3, q: {ms: 'Mengapakah kita bernafas lebih cepat selepas berlari?', en: 'Why do we breathe faster after running?'},
+    options: [{ms: 'Badan memerlukan lebih banyak oksigen', en: 'The body needs more oxygen'}, {ms: 'Peparu menjadi lebih kecil', en: 'The lungs get smaller'}, {ms: 'Badan mempunyai terlalu banyak oksigen', en: 'The body has too much oxygen'}, {ms: 'Jantung berhenti berdenyut', en: 'The heart stops beating'}], answer: 0,
+    why: {ms: 'Otot yang bekerja kuat menggunakan lebih banyak oksigen, jadi kita bernafas lebih cepat untuk mendapatkannya.', en: 'Hard-working muscles use more oxygen, so we breathe faster to take more in.'}},
+  {id: 'sci-1-3-2', ch: 'sci-1', level: 3, q: {ms: 'Peluh disingkirkan dari badan melalui organ apa?', en: 'Through which organ does sweat leave the body?'},
+    options: [{ms: 'Kulit', en: 'Skin'}, {ms: 'Ginjal', en: 'Kidneys'}, {ms: 'Peparu', en: 'Lungs'}, {ms: 'Perut', en: 'Stomach'}], answer: 0,
+    why: {ms: 'Peluh keluar melalui liang roma pada kulit. Ginjal menyingkirkan urin, peparu menyingkirkan karbon dioksida.', en: 'Sweat comes out through pores in the skin. The kidneys remove urine; the lungs remove carbon dioxide.'}},
+  {id: 'sci-1-3-3', ch: 'sci-1', level: 3, q: {ms: 'Apakah yang berlaku kepada dada apabila kita menarik nafas?', en: 'What happens to the chest when we breathe in?'},
+    options: [{ms: 'Dada naik dan mengembang', en: 'It rises and gets bigger'}, {ms: 'Dada turun dan mengecut', en: 'It falls and gets smaller'}, {ms: 'Dada tidak berubah', en: 'It does not change'}, {ms: 'Dada turun tetapi mengembang', en: 'It falls but gets bigger'}], answer: 0,
+    why: {ms: 'Semasa menarik nafas, peparu dipenuhi udara, jadi dada naik dan mengembang.', en: 'When we breathe in the lungs fill with air, so the chest rises and gets bigger.'}},
+  {id: 'sci-1-4-1', ch: 'sci-1', level: 4, q: {ms: 'Mengapakah kita tidak boleh menahan nafas terlalu lama?', en: 'Why can we not hold our breath for very long?'},
+    options: [{ms: 'Badan perlukan oksigen dan perlu membuang karbon dioksida', en: 'The body needs oxygen and must get rid of carbon dioxide'}, {ms: 'Peparu akan pecah', en: 'The lungs will burst'}, {ms: 'Darah menjadi sejuk', en: 'The blood gets cold'}, {ms: 'Perut menjadi kosong', en: 'The stomach gets empty'}], answer: 0,
+    why: {ms: 'Tanpa bernafas, oksigen dalam badan berkurang dan karbon dioksida bertambah, jadi badan memaksa kita bernafas semula.', en: 'Without breathing, oxygen in the body runs low and carbon dioxide builds up, so the body makes us breathe again.'}},
+  {id: 'sci-1-4-2', ch: 'sci-1', level: 4, q: {ms: 'Ahmad tidak minum air yang cukup pada hari yang panas. Apakah yang paling mungkin berlaku?', en: 'Ahmad does not drink enough water on a hot day. What is most likely to happen?'},
+    options: [{ms: 'Air kencingnya sedikit dan lebih gelap', en: 'He passes less urine and it is darker'}, {ms: 'Air kencingnya banyak dan jernih', en: 'He passes a lot of clear urine'}, {ms: 'Dia bernafas lebih perlahan', en: 'He breathes more slowly'}, {ms: 'Dia berhenti bergerak balas', en: 'He stops responding to stimuli'}], answer: 0,
+    why: {ms: 'Badan menyimpan air apabila kekurangan, jadi ginjal menghasilkan urin yang sedikit dan pekat.', en: 'Short of water, the body holds on to it, so the kidneys make a little, strong urine.'}},
+  {id: 'sci-1-4-3', ch: 'sci-1', level: 4, q: {ms: 'Ali mengira kadar pernafasannya sebelum dan selepas berlari. Apakah yang dia ukur?', en: 'Ali counts his breathing rate before and after running. What is he measuring?'},
+    options: [{ms: 'Bilangan tarikan nafas dalam satu minit', en: 'The number of breaths in one minute'}, {ms: 'Kelajuan lariannya', en: 'How fast he runs'}, {ms: 'Ketinggiannya', en: 'His height'}, {ms: 'Suhu bilik', en: 'The room temperature'}], answer: 0,
+    why: {ms: 'Kadar pernafasan ialah bilangan kali kita bernafas dalam satu minit.', en: 'Breathing rate is how many times we breathe in one minute.'}},
+  {id: 'sci-2-1-1', ch: 'sci-2', level: 1, q: {ms: 'Gas apakah yang diserap tumbuhan untuk fotosintesis?', en: 'Which gas do plants take in for photosynthesis?'},
     options: [{ms: 'Oksigen', en: 'Oxygen'}, {ms: 'Karbon dioksida', en: 'Carbon dioxide'}, {ms: 'Nitrogen', en: 'Nitrogen'}, {ms: 'Hidrogen', en: 'Hydrogen'}], answer: 1,
     why: {ms: 'Tumbuhan menyerap karbon dioksida dan membebaskan oksigen.', en: 'Plants take in carbon dioxide and give out oxygen.'}},
-  {id: 's2', subj: 'science', q: {ms: 'Planet manakah paling dekat dengan Matahari?', en: 'Which planet is closest to the Sun?'},
-    options: [{ms: 'Venus', en: 'Venus'}, {ms: 'Marikh', en: 'Mars'}, {ms: 'Utarid', en: 'Mercury'}, {ms: 'Bumi', en: 'Earth'}], answer: 2,
-    why: {ms: 'Utarid (Mercury) ialah planet pertama dari Matahari.', en: 'Mercury is the first planet from the Sun.'}},
-  {id: 's3', subj: 'science', q: {ms: 'Pada suhu berapakah air mendidih pada aras laut?', en: 'At what temperature does water boil at sea level?'},
-    options: ['50 \u00b0C', '90 \u00b0C', '100 \u00b0C', '120 \u00b0C'], answer: 2, why: {ms: 'Air mendidih pada 100 \u00b0C pada tekanan biasa aras laut.', en: 'Water boils at 100 \u00b0C at normal sea-level pressure.'}},
-  {id: 'e1', subj: 'english', q: {ms: 'Pilih perkataan yang betul: "She ___ to school every day."', en: 'Choose the correct word: "She ___ to school every day."'},
-    options: ['go', 'goes', 'going', 'gone'], answer: 1, why: {ms: 'Subjek "she" (orang ketiga tunggal) memerlukan "goes".', en: 'The subject "she" (third person singular) takes "goes".'}},
-  {id: 'e2', subj: 'english', q: {ms: 'Perkataan manakah ialah kata nama (noun)?', en: 'Which word is a noun?'},
-    options: ['sing', 'happy', 'table', 'quickly'], answer: 2, why: {ms: 'Kata nama menamakan benda; "table" ialah benda.', en: 'A noun names a thing; "table" is a thing.'}},
-  {id: 'e3', subj: 'english', q: {ms: 'Pilih kala lampau (past tense) bagi "buy".', en: 'Choose the past tense of "buy".'},
-    options: ['buyed', 'bought', 'buying', 'buys'], answer: 1, why: {ms: '"Buy" ialah kata kerja tak sekata; kala lampaunya "bought".', en: '"Buy" is irregular; its past tense is "bought".'}},
-  {id: 'b1', subj: 'malay', q: {ms: 'Apakah antonim bagi perkataan "rajin"?', en: 'What is the opposite (antonym) of the Malay word "rajin"?'},
-    options: ['Malas', 'Tekun', 'Cergas', 'Gigih'], answer: 0,
-    why: {ms: '"Malas" bermaksud tidak suka bekerja, lawan bagi "rajin".', en: '"Malas" (lazy) means unwilling to work, the opposite of "rajin" (hardworking).'}},
-  {id: 'b2', subj: 'malay', q: {ms: 'Apakah maksud peribahasa "bagai aur dengan tebing"?', en: 'What does the proverb "bagai aur dengan tebing" mean?'},
-    options: [{ms: 'Saling bergantung dan membantu', en: 'Depending on and helping each other'}, {ms: 'Bermusuhan', en: 'Being enemies'}, {ms: 'Tinggal berjauhan', en: 'Living far apart'}, {ms: 'Berlainan pendapat', en: 'Having different opinions'}], answer: 0,
-    why: {ms: 'Aur dan tebing saling menguatkan; peribahasa ini untuk hubungan yang erat dan saling membantu.', en: 'Bamboo and riverbank hold each other up: a close relationship where people help one another.'}},
-  {id: 'b3', subj: 'malay', q: {ms: 'Apakah sinonim bagi perkataan "cantik"?', en: 'What is a synonym of the Malay word "cantik"?'},
-    options: ['Indah', 'Hodoh', 'Buruk', 'Kotor'], answer: 0,
-    why: {ms: '"Indah" dan "cantik" hampir sama maksudnya.', en: '"Indah" and "cantik" both mean beautiful.'}},
+  {id: 'sci-2-1-2', ch: 'sci-2', level: 1, q: {ms: 'Bahagian tumbuhan manakah yang paling banyak membuat makanan?', en: 'Which part of a plant makes most of its food?'},
+    options: [{ms: 'Daun', en: 'Leaves'}, {ms: 'Akar', en: 'Roots'}, {ms: 'Bunga', en: 'Flowers'}, {ms: 'Biji benih', en: 'Seeds'}], answer: 0,
+    why: {ms: 'Daun menangkap cahaya matahari untuk membuat makanan.', en: 'Leaves catch sunlight to make food.'}},
+  {id: 'sci-2-1-3', ch: 'sci-2', level: 1, q: {ms: 'Apakah yang diperlukan tumbuhan untuk hidup?', en: 'What does a plant need to live?'},
+    options: [{ms: 'Air', en: 'Water'}, {ms: 'Garam', en: 'Salt'}, {ms: 'Minyak', en: 'Oil'}, {ms: 'Gula', en: 'Sugar'}], answer: 0,
+    why: {ms: 'Tumbuhan memerlukan air, udara dan cahaya matahari.', en: 'Plants need water, air and sunlight.'}},
+  {id: 'sci-2-2-1', ch: 'sci-2', level: 2, q: {ms: 'Akar tumbuh ke arah air. Tumbuhan bergerak balas terhadap apa?', en: 'Roots grow towards water. What is the plant responding to?'},
+    options: [{ms: 'Air', en: 'Water'}, {ms: 'Cahaya', en: 'Light'}, {ms: 'Sentuhan', en: 'Touch'}, {ms: 'Bunyi', en: 'Sound'}], answer: 0,
+    why: {ms: 'Akar tumbuh ke arah air supaya tumbuhan mendapat air yang diperlukan.', en: 'Roots grow towards water so the plant gets the water it needs.'}},
+  {id: 'sci-2-2-2', ch: 'sci-2', level: 2, q: {ms: 'Pucuk anak pokok di tepi tingkap membengkok ke arah tingkap. Tumbuhan bergerak balas terhadap apa?', en: 'A seedling by a window bends towards the window. What is it responding to?'},
+    options: [{ms: 'Cahaya', en: 'Light'}, {ms: 'Air', en: 'Water'}, {ms: 'Sentuhan', en: 'Touch'}, {ms: 'Graviti', en: 'Gravity'}], answer: 0,
+    why: {ms: 'Pucuk tumbuh ke arah cahaya supaya daun dapat membuat makanan.', en: 'Shoots grow towards light so the leaves can make food.'}},
+  {id: 'sci-2-2-3', ch: 'sci-2', level: 2, q: {ms: 'Daun pokok semalu menguncup apabila disentuh. Tumbuhan bergerak balas terhadap apa?', en: 'The leaves of a semalu (touch-me-not) plant close when touched. What is it responding to?'},
+    options: [{ms: 'Sentuhan', en: 'Touch'}, {ms: 'Cahaya', en: 'Light'}, {ms: 'Air', en: 'Water'}, {ms: 'Graviti', en: 'Gravity'}], answer: 0,
+    why: {ms: 'Pokok semalu bergerak balas terhadap sentuhan dengan menguncupkan daunnya.', en: 'The semalu plant responds to touch by closing its leaves.'}},
+  {id: 'sci-2-3-1', ch: 'sci-2', level: 3, q: {ms: 'Gas apakah yang dibebaskan tumbuhan semasa fotosintesis?', en: 'Which gas do plants give out during photosynthesis?'},
+    options: [{ms: 'Oksigen', en: 'Oxygen'}, {ms: 'Karbon dioksida', en: 'Carbon dioxide'}, {ms: 'Nitrogen', en: 'Nitrogen'}, {ms: 'Wap air sahaja', en: 'Only water vapour'}], answer: 0,
+    why: {ms: 'Tumbuhan menyerap karbon dioksida dan membebaskan oksigen, yang kita sedut.', en: 'Plants take in carbon dioxide and give out oxygen, which we breathe.'}},
+  {id: 'sci-2-3-2', ch: 'sci-2', level: 3, q: {ms: 'Apakah keperluan untuk fotosintesis?', en: 'What does photosynthesis need?'},
+    options: [{ms: 'Cahaya matahari, air dan karbon dioksida', en: 'Sunlight, water and carbon dioxide'}, {ms: 'Oksigen, tanah dan gula', en: 'Oxygen, soil and sugar'}, {ms: 'Bunyi, air dan oksigen', en: 'Sound, water and oxygen'}, {ms: 'Gelap, garam dan air', en: 'Darkness, salt and water'}], answer: 0,
+    why: {ms: 'Daun menggunakan cahaya matahari untuk menukar air dan karbon dioksida menjadi makanan.', en: 'Leaves use sunlight to turn water and carbon dioxide into food.'}},
+  {id: 'sci-2-3-3', ch: 'sci-2', level: 3, q: {ms: 'Sepasu pokok disimpan dalam almari gelap selama seminggu. Apakah yang berlaku?', en: 'A potted plant is kept in a dark cupboard for a week. What happens?'},
+    options: [{ms: 'Daun menjadi kuning dan pokok lemah', en: 'The leaves turn yellow and the plant gets weak'}, {ms: 'Pokok tumbuh lebih cepat', en: 'The plant grows faster'}, {ms: 'Daun menjadi lebih hijau', en: 'The leaves get greener'}, {ms: 'Tiada perubahan', en: 'Nothing changes'}], answer: 0,
+    why: {ms: 'Tanpa cahaya, pokok tidak dapat membuat makanan, jadi ia menjadi kuning dan lemah.', en: 'Without light the plant cannot make food, so it turns yellow and weak.'}},
+  {id: 'sci-2-4-1', ch: 'sci-2', level: 4, q: {ms: 'Mei menanam dua pokok yang sama. Pokok A disiram setiap hari, pokok B tidak. Apakah yang diubah dalam eksperimen ini?', en: 'Mei grows two identical plants. Plant A is watered every day; plant B is not. What is changed in this experiment?'},
+    options: [{ms: 'Jumlah air', en: 'The amount of water'}, {ms: 'Jenis pokok', en: 'The type of plant'}, {ms: 'Jumlah cahaya', en: 'The amount of light'}, {ms: 'Saiz pasu', en: 'The size of the pot'}], answer: 0,
+    why: {ms: 'Hanya air yang berbeza; yang lain dikekalkan sama supaya ujian itu adil.', en: 'Only the water is different; everything else stays the same so the test is fair.'}},
+  {id: 'sci-2-4-2', ch: 'sci-2', level: 4, q: {ms: 'Mengapakah tumbuhan penting kepada manusia dan haiwan?', en: 'Why are plants important to people and animals?'},
+    options: [{ms: 'Membekalkan makanan dan oksigen', en: 'They give us food and oxygen'}, {ms: 'Menyerap semua oksigen', en: 'They take in all the oxygen'}, {ms: 'Menghasilkan karbon dioksida sahaja', en: 'They only make carbon dioxide'}, {ms: 'Tidak memerlukan cahaya', en: 'They do not need light'}], answer: 0,
+    why: {ms: 'Tumbuhan membuat makanan sendiri dan membebaskan oksigen; manusia dan haiwan bergantung pada kedua-duanya.', en: 'Plants make their own food and give out oxygen; people and animals depend on both.'}},
+  {id: 'sci-2-4-3', ch: 'sci-2', level: 4, q: {ms: 'Sepasu pokok diletakkan secara mendatar. Selepas beberapa hari, apakah yang berlaku?', en: 'A potted plant is laid on its side. What happens after a few days?'},
+    options: [{ms: 'Batang membengkok ke atas dan akar ke bawah', en: 'The stem bends up and the roots bend down'}, {ms: 'Batang dan akar terus tumbuh mendatar', en: 'The stem and roots keep growing sideways'}, {ms: 'Batang membengkok ke bawah', en: 'The stem bends down'}, {ms: 'Akar membengkok ke atas', en: 'The roots bend up'}], answer: 0,
+    why: {ms: 'Batang tumbuh ke arah cahaya (ke atas) dan akar tumbuh mengikut graviti (ke bawah).', en: 'The stem grows towards light (up) and the roots grow with gravity (down).'}},
 ];
 
+const VILLAIN = {
+  bunian: {
+    entrance: {ms: 'Siapa berani masuk ke hutanku? Hutan ini akan menyesatkanmu!', en: 'Who dares enter my forest? These woods will swallow you whole!'},
+    taunts: [{ms: 'Ha! Baru sedikit, kau sudah sesat!', en: 'Ha! Lost in the woods already!'}, {ms: 'Tongkatku lebih tajam daripada fikiranmu!', en: 'My club is sharper than your mind!'}],
+    pain: [{ms: 'Aduh! Pokok-pokokku bergoyang!', en: 'Argh! My trees are shaking!'}, {ms: 'Mustahil... budak kecil ini kuat!', en: 'Impossible... this little one is strong!'}],
+    defeat: {ms: 'Hutan... ini... milikmu...', en: 'The forest... is... yours...'},
+    victory: {ms: 'Pulanglah! Belajar dahulu sebelum masuk ke hutanku lagi!', en: 'Go home! Study before you enter my forest again!'},
+  },
+  naga: {
+    entrance: {ms: 'Ombak bergelora! Akulah penguasa lautan dalam!', en: 'The waves rage! I am ruler of the deep sea!'},
+    taunts: [{ms: 'Tenggelamlah dalam kekeliruanmu!', en: 'Drown in your confusion!'}, {ms: 'Ilmu yang cetek tidak dapat menyeberangi lautku!', en: 'Shallow knowledge cannot cross my sea!'}],
+    pain: [{ms: 'Grrr! Sisikku retak!', en: 'Grrr! My scales are cracking!'}, {ms: 'Air pasangku mula surut!', en: 'My tide is turning!'}],
+    defeat: {ms: 'Lautan... kembali... tenang...', en: 'The sea... grows... calm...'},
+    victory: {ms: 'Lautku terlalu dalam untukmu. Kembalilah apabila kau lebih bijak!', en: 'My sea is too deep for you. Return when you are wiser!'},
+  },
+  harimau: {
+    entrance: {ms: 'Rrraaawr! Aku memburu sesiapa yang lupa pelajarannya!', en: 'Rrraaawr! I hunt those who forget their lessons!'},
+    taunts: [{ms: 'Kukuku dapat menghidu keraguanmu!', en: 'My claws can smell your doubt!'}, {ms: 'Terlalu lambat, mangsa kecil!', en: 'Too slow, little prey!'}],
+    pain: [{ms: 'Rrgh! Belangku semakin pudar!', en: 'Rrgh! My stripes are fading!'}, {ms: 'Pemburu... menjadi buruan?', en: 'The hunter... becomes the hunted?'}],
+    defeat: {ms: 'Rimba... akan mengingati namamu...', en: 'The jungle... will remember your name...'},
+    victory: {ms: 'Buruan hari ini milikku. Asah ilmumu dan datang lagi!', en: 'Today the hunt is mine. Sharpen your mind and come again!'},
+  },
+  hantu: {
+    entrance: {ms: 'Seratus tahun aku menunggu lawan yang layak... Adakah kaulah orangnya?', en: 'A hundred years I have waited for a worthy foe... Are you the one?'},
+    taunts: [{ms: 'Ilmumu hanyalah bayang-bayang!', en: 'Your knowledge is but a shadow!'}, {ms: 'Kegelapan menelan setiap jawapan yang salah!', en: 'Darkness swallows every wrong answer!'}],
+    pain: [{ms: 'Mustahil! Cahaya ilmumu membakarku!', en: 'Impossible! The light of your knowledge burns me!'}, {ms: 'Pedangku... bergetar...', en: 'My blade... trembles...'}],
+    defeat: {ms: 'Akhirnya... seorang pahlawan sejati... Aku boleh berehat...', en: 'At last... a true warrior... I can rest...'},
+    victory: {ms: 'Belum cukup layak. Bayang-bayangku akan menunggumu.', en: 'Not yet worthy. My shadow will wait for you.'},
+  },
+};
+
 const battle = {
-  monster: null, queue: [], current: null, choices: [], foeHp: 0, foeMax: 0, heroHp: BATTLE_HERO_HP,
-  right: 0, wrong: 0, missed: {}, lastOrder: {}, pendingLevel: 0, stats: {},
+  stage: null, monster: null, queue: [], current: null, choices: [], foeHp: 0, foeMax: 0, heroHp: BATTLE_HERO_HP,
+  right: 0, wrong: 0, lastOrder: {}, pendingLevel: 0, stats: {}, lairSubject: QUIZ_SUBJECTS[0],
   token: 0, skip: false, typing: false, cleanups: [],
 };
 
-const questionsFor = (monster) => QUIZ.filter((q) => q.subj === monster.subj);
-const statsFor = (id) => battle.stats[id] || {attempts: 0, wins: 0};
+// A stage is one level of one chapter: {chapter, level}. Records are kept under 'math-1:2' style keys.
+const stageKey = (stage) => stage.chapter.id + ':' + stage.level;
+const chaptersFor = (subj) => QUIZ_CHAPTERS.filter((chapter) => chapter.subj === subj);
+const questionsFor = (stage) => QUIZ.filter((q) => q.ch === stage.chapter.id && q.level === stage.level);
+const statsFor = (key) => battle.stats[key] || {attempts: 0, wins: 0};
+const isBeaten = (stage) => statsFor(stageKey(stage)).wins > 0;
+const isUnlocked = (stage) => stage.level === 1 || isBeaten({chapter: stage.chapter, level: stage.level - 1});
 const optionText = (option) => (typeof option === 'string' ? option : pick(option));
+const oneOf = (list) => list[Math.floor(Math.random() * list.length)];
+// The monster's own line for this moment, quoted after its name.
+const villainSays = (monster, line) => t().gbSpeaks(pick(monster.name), pick(line(VILLAIN[monster.id])));
+
+// What to practise next in a subject: the lowest unbeaten level of the first chapter not yet cleared; once every chapter is cleared,
+// the last chapter's Very Hard level, for revision.
+function nextStage(subj) {
+  const chapters = chaptersFor(subj);
+  for (const chapter of chapters) {
+    const level = QUIZ_LEVELS.find((candidate) => !isBeaten({chapter, level: candidate}));
+    if (level) return {chapter, level};
+  }
+  return chapters.length ? {chapter: chapters[chapters.length - 1], level: 4} : null;
+}
 
 function shuffled(list) {
   const copy = list.slice();
@@ -1994,59 +2354,101 @@ function shuffled(list) {
   return copy;
 }
 
+// Records from before chapters (one per monster) no longer match anything and are dropped.
+const STAGE_KEY = /^[a-z]+-[0-9]+:[1-4]$/;
+
 function loadBattleStats() {
   battle.stats = {};
   let saved = null;
   try { saved = JSON.parse(readPref(BATTLE_KEY)); } catch (e) { saved = null; }
-  for (const monster of MONSTERS) {
-    const entry = saved && saved[monster.id];
-    const attempts = Number(entry && entry.attempts);
-    const wins = Number(entry && entry.wins);
-    battle.stats[monster.id] = {attempts: Number.isInteger(attempts) && attempts >= 0 ? attempts : 0, wins: Number.isInteger(wins) && wins >= 0 ? wins : 0};
+  if (!saved || typeof saved !== 'object') return;
+  for (const [key, entry] of Object.entries(saved)) {
+    if (!STAGE_KEY.test(key) || !entry || typeof entry !== 'object') continue;
+    const attempts = Number(entry.attempts);
+    const wins = Number(entry.wins);
+    battle.stats[key] = {attempts: Number.isInteger(attempts) && attempts >= 0 ? attempts : 0, wins: Number.isInteger(wins) && wins >= 0 ? wins : 0};
   }
 }
 
 function recordBattle(won) {
-  const entry = statsFor(battle.monster.id);
-  battle.stats[battle.monster.id] = {attempts: entry.attempts + 1, wins: entry.wins + (won ? 1 : 0)};
+  const key = stageKey(battle.stage);
+  const entry = statsFor(key);
+  battle.stats[key] = {attempts: entry.attempts + 1, wins: entry.wins + (won ? 1 : 0)};
   writePref(BATTLE_KEY, JSON.stringify(battle.stats));
 }
 
 function renderLair() {
-  const cards = MONSTERS.map((monster) => {
-    const record = statsFor(monster.id);
-    const card = document.createElement('article');
-    card.className = 'mon' + (record.wins > 0 ? ' beaten' : '');
-    const art = document.createElement('div');
-    art.className = 'mon-art';
-    art.append(artImg(monster.img, 112));
-    const name = document.createElement('b');
-    name.textContent = pick(monster.name);
-    const sub = document.createElement('span');
-    sub.className = 'mon-sub';
-    sub.textContent = pick(QUIZ_SUBJECT[monster.subj]);
-    const meta = document.createElement('div');
-    meta.className = 'mon-meta';
-    const chips = [
-      ['lv' + monster.level, t().lairLevels[monster.level]],
-      ['', t().lairQuestions(questionsFor(monster).length)],
-      ['', t().lairHit(monster.hit)],
-    ];
-    if (record.wins > 0) chips.push(['done', t().lairBeaten]);
-    meta.append(...chips.map(([kind, text]) => Object.assign(document.createElement('span'), {className: ('mchip ' + kind).trim(), textContent: text})));
-    const rec = document.createElement('span');
-    rec.className = 'mon-rec';
-    rec.textContent = t().lairRecord(record.attempts, record.wins);
-    const fight = document.createElement('button');
-    fight.type = 'button';
-    fight.className = 'btn';
-    fight.textContent = record.attempts > 0 ? t().lairAgain : t().lairFight;
-    fight.setAttribute('aria-label', fight.textContent + ': ' + pick(monster.name));
-    fight.addEventListener('click', () => openBattle(monster.id));
-    card.append(art, name, sub, meta, rec, fight);
+  const tabs = document.createElement('div');
+  tabs.className = 'lair-tabs';
+  tabs.setAttribute('role', 'group');
+  tabs.setAttribute('aria-label', t().lairSubjects);
+  for (const subj of QUIZ_SUBJECTS) {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'lair-tab';
+    tab.textContent = pick(QUIZ_SUBJECT[subj]);
+    tab.setAttribute('aria-pressed', String(subj === battle.lairSubject));
+    tab.addEventListener('click', () => {
+      battle.lairSubject = subj;
+      renderLair();
+      $('lairGrid').querySelector('.lair-tab[aria-pressed="true"]').focus(); // the old button is gone after the redraw
+    });
+    tabs.append(tab);
+  }
+  $('lairGrid').replaceChildren(tabs, ...chaptersFor(battle.lairSubject).map(lairChapter));
+}
+
+function lairChapter(chapter) {
+  const section = document.createElement('section');
+  section.className = 'lair-ch';
+  const head = document.createElement('div');
+  head.className = 'lair-ch-head';
+  const title = document.createElement('h3');
+  title.id = 'lair-' + chapter.id;
+  title.textContent = t().lairChapter(chapter.n, pick(chapter.title));
+  section.setAttribute('aria-labelledby', title.id);
+  const progress = document.createElement('span');
+  progress.textContent = t().lairCleared(QUIZ_LEVELS.filter((level) => isBeaten({chapter, level})).length, QUIZ_LEVELS.length);
+  head.append(title, progress);
+  const levels = document.createElement('div');
+  levels.className = 'lair-levels';
+  levels.append(...QUIZ_LEVELS.map((level) => lairTile({chapter, level})));
+  section.append(head, levels);
+  return section;
+}
+
+function lairTile(stage) {
+  const monster = monsterForLevel(stage.level);
+  const record = statsFor(stageKey(stage));
+  const open = isUnlocked(stage);
+  const beaten = record.wins > 0;
+  const card = document.createElement('article');
+  card.className = 'mon' + (beaten ? ' beaten' : '') + (open ? '' : ' locked');
+  const art = document.createElement('div');
+  art.className = 'mon-art';
+  art.append(artImg(monster.img, 88));
+  const chip = Object.assign(document.createElement('span'), {className: 'mchip lv' + stage.level, textContent: t().lairLevels[stage.level]});
+  const name = document.createElement('b');
+  name.textContent = pick(monster.name);
+  const info = Object.assign(document.createElement('span'), {className: 'mon-rec'});
+  const fight = document.createElement('button');
+  fight.type = 'button';
+  fight.className = 'btn';
+  if (!open) {
+    info.textContent = t().lairUnlockHint(t().lairLevels[stage.level - 1]);
+    fight.textContent = t().lairLocked;
+    fight.className = 'btn ghost';
+    fight.disabled = true;
+    card.append(art, chip, name, info, fight);
     return card;
-  });
-  $('lairGrid').replaceChildren(...cards);
+  }
+  info.textContent = beaten ? t().lairBeaten : t().lairHit(monster.hit);
+  const rec = Object.assign(document.createElement('span'), {className: 'mon-rec', textContent: t().lairRecord(record.attempts, record.wins)});
+  fight.textContent = record.attempts > 0 ? t().lairAgain : t().lairFight;
+  fight.setAttribute('aria-label', fight.textContent + ': ' + t().lairChapter(stage.chapter.n, pick(stage.chapter.title)) + ', ' + t().lairLevels[stage.level]);
+  fight.addEventListener('click', () => openBattle(stage));
+  card.append(art, chip, name, info, rec, fight);
+  return card;
 }
 
 /* ===== My Pahlawan: the battle character =====
@@ -2262,24 +2664,23 @@ function setHp(side, hp, max, instant) {
   $(side + 'HpNum').textContent = Math.max(0, hp) + ' / ' + max;
 }
 
-// A fresh run never repeats the order of the previous run against the same monster, so a retry really is a new order.
+// A fresh run never repeats the order of the previous run at the same stage, so a retry really is a new order.
 function newRun() {
-  const monster = battle.monster;
-  const questions = questionsFor(monster);
+  const key = stageKey(battle.stage);
+  const questions = questionsFor(battle.stage);
   let order;
   let tries = 0;
   do {
     order = shuffled(questions);
     tries += 1;
-  } while (questions.length > 1 && order.map((q) => q.id).join() === battle.lastOrder[monster.id] && tries < 10);
-  battle.lastOrder[monster.id] = order.map((q) => q.id).join();
+  } while (questions.length > 1 && order.map((q) => q.id).join() === battle.lastOrder[key] && tries < 10);
+  battle.lastOrder[key] = order.map((q) => q.id).join();
   battle.queue = order;
   battle.foeMax = questions.length * BATTLE_FOE_DAMAGE;
   battle.foeHp = battle.foeMax;
   battle.heroHp = BATTLE_HERO_HP;
   battle.right = 0;
   battle.wrong = 0;
-  battle.missed = {};
 }
 
 function resetArena() {
@@ -2298,7 +2699,7 @@ function resetArena() {
 
 function renderBattleFrame() {
   const monster = battle.monster;
-  const record = statsFor(monster.id);
+  const record = statsFor(stageKey(battle.stage));
   $('btTitle').textContent = t().gbDialogTitle(pick(monster.name));
   $('foeName').textContent = pick(monster.name);
   $('foeLv').textContent = 'L' + monster.level;
@@ -2319,7 +2720,8 @@ function renderBattleFrame() {
 async function askQuestion(token) {
   battle.current = battle.queue.shift();
   battle.choices = shuffled(battle.current.options.map((option, index) => ({option, correct: index === battle.current.answer})));
-  $('btTopic').textContent = pick(QUIZ_SUBJECT[battle.current.subj]);
+  const chapter = battle.stage.chapter;
+  $('btTopic').textContent = t().lairTag(pick(QUIZ_SUBJECT[chapter.subj]), chapter.n);
   await say(pick(battle.current.q), token);
   return setMenu(battle.choices.map((choice) => optionText(choice.option)), token);
 }
@@ -2341,12 +2743,10 @@ async function resolveAnswer(index, token) {
     setHp('foe', battle.foeHp, battle.foeMax);
     await Promise.all([play($('btSlash'), 'is-slash', 420, token), play($('foeFig'), 'is-hit-foe', 620, token), act(sheetOf('foe'), 'hit', token)]);
     await sleep(500, token);
-    await say(t().gbHit(foe, BATTLE_FOE_DAMAGE) + ' ' + why, token);
+    await say([villainSays(monster, (v) => oneOf(v.pain)), t().gbHit(foe, BATTLE_FOE_DAMAGE), why].join(' '), token);
   } else {
     battle.wrong += 1;
     battle.heroHp -= monster.hit;
-    const topic = pick(QUIZ_SUBJECT[battle.current.subj]);
-    battle.missed[topic] = (battle.missed[topic] || 0) + 1;
     battle.queue.push(battle.current); // it comes back until it is answered correctly
     const right = optionText(battle.choices.find((c) => c.correct).option);
     await say(t().gbWrongMove(foe), token);
@@ -2354,7 +2754,7 @@ async function resolveAnswer(index, token) {
     setHp('me', battle.heroHp, BATTLE_HERO_HP);
     await Promise.all([play($('btArena'), 'is-shake', 500, token), play($('meFig'), 'is-hit-me', 620, token), act(sheetOf('me'), 'hit', token)]);
     await sleep(500, token);
-    await say(t().gbHurt(me, monster.hit) + ' ' + t().btAnswerWas + ' ' + right + '. ' + why, token);
+    await say([villainSays(monster, (v) => oneOf(v.taunts)), t().gbHurt(me, monster.hit), t().btAnswerWas + ' ' + right + '.', why].join(' '), token);
   }
   await waitMore(token);
   if (battle.foeHp <= 0) return 'win';
@@ -2366,21 +2766,25 @@ async function finishRun(won, token) {
   const monster = battle.monster;
   const foe = pick(monster.name);
   const me = knightName();
+  const key = stageKey(battle.stage);
   recordBattle(won);
-  const record = statsFor(monster.id);
+  const record = statsFor(key);
   $('btRecord').textContent = t().lairRecord(record.attempts, record.wins);
   renderLair();
 
   if (won) {
+    // Last words while it still stands, then it falls.
+    await say(villainSays(monster, (v) => v.defeat), token);
+    await waitMore(token);
     await act(sheetOf('foe'), 'die', token, true);
     $('foeFig').classList.add('is-faint');
     await play($('meFig'), 'is-cheer', 800, token);
     await say(t().gbFoeFainted(foe) + ' ' + t().gbWinStats(battle.right, battle.wrong), token);
     await waitMore(token);
-    // Each monster pays out once per visit, on the first win over it; later wins are practice.
-    if (!state.battleWins.has(monster.id)) {
+    // Each chapter level pays out once per visit, on the first win there; later wins are practice.
+    if (!state.battleWins.has(key)) {
       const levelBefore = levelOf(totalXp());
-      state.battleWins.add(monster.id);
+      state.battleWins.add(key);
       const levelAfter = levelOf(totalXp());
       if (levelAfter > levelBefore) battle.pendingLevel = levelAfter;
       renderHero();
@@ -2388,17 +2792,24 @@ async function finishRun(won, token) {
       await say(t().gbReward(me, BATTLE_BONUS_XP, BATTLE_BONUS_COINS), token);
       await waitMore(token);
     }
+    // The first ever win at a level opens the next one in this chapter.
+    if (record.wins === 1 && battle.stage.level < 4) {
+      await say(t().gbUnlocked(t().lairLevels[battle.stage.level + 1]), token);
+      await waitMore(token);
+    }
   } else {
     await act(sheetOf('me'), 'die', token, true);
     $('meFig').classList.add('is-faint');
     await sleep(700, token);
+    await say(villainSays(monster, (v) => v.victory), token);
+    await waitMore(token);
     await say(t().gbKnightFainted(me), token);
     await waitMore(token);
   }
 
-  const weak = Object.entries(battle.missed);
-  if (weak.length) {
-    await say(t().gbWeak(weak.map(([topic, count]) => topic + ' (' + count + ')').join(', ')), token);
+  if (battle.wrong > 0) {
+    const chapter = battle.stage.chapter;
+    await say(t().gbRevisit(t().lairChapter(chapter.n, pick(chapter.title)), battle.wrong), token);
     await waitMore(token);
   }
   if (!won) {
@@ -2421,6 +2832,8 @@ async function playBattle(token) {
     await sleep(700, token);
     $('foeStage').classList.remove('is-slide-foe');
     $('meStage').classList.remove('is-slide-me');
+    await say(villainSays(battle.monster, (v) => v.entrance), token);
+    await waitMore(token);
     await say(t().gbGo(knightName()), token);
     await sleep(600, token);
     for (;;) {
@@ -2442,9 +2855,9 @@ async function playBattle(token) {
   }
 }
 
-function openBattle(monsterId) {
-  battle.monster = MONSTERS.find((m) => m.id === monsterId);
-  if (!battle.monster) return;
+function openBattle(stage) {
+  battle.stage = stage;
+  battle.monster = monsterForLevel(stage.level);
   battle.token += 1;
   battle.cleanups.forEach((fn) => fn());
   battle.cleanups = [];

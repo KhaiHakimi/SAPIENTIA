@@ -12,7 +12,7 @@ export interface QuestToggleResult {
 }
 
 export interface BattleWinResult {
-  /** Only the first win over each monster per visit pays out. */
+  /** Only the first win at each chapter level per visit pays out. */
   firstWin: boolean;
   levelUp: number | null;
 }
@@ -39,5 +39,5 @@ export interface StudentProgress {
   battleWins: readonly string[];
 
   toggleQuest: (questId: string) => QuestToggleResult | null;
-  claimBattleWin: (monsterId: string) => BattleWinResult;
+  claimBattleWin: (stageKey: string) => BattleWinResult;
 }

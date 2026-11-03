@@ -2,6 +2,7 @@ import type { TextOrLocalized } from '@/shared/interfaces/localized-text.interfa
 import type { Monster } from '@/features/characters';
 import type { BattleMessages } from '../i18n/battle-messages.interface';
 import type { BattleRecord } from './battle-run.interface';
+import type { QuizStage } from './quiz.interface';
 
 export type BattleSide = 'foe' | 'me';
 
@@ -35,6 +36,8 @@ export interface BattleView {
 
 /** What the battle script needs from the rest of the dashboard. */
 export interface BattleContext {
+  stage: QuizStage;
+  /** The monster for the stage's level. */
   monster: Monster;
   /** Read at each line, so a language switch shows up on the next line. */
   messages: () => BattleMessages;
@@ -42,7 +45,7 @@ export interface BattleContext {
   heroName: () => string;
   /** Count a finished fight and return the updated record. */
   recordResult: (won: boolean) => BattleRecord;
-  /** Pay the first-win reward; false when this monster has already paid out this visit. */
+  /** Pay the first-win reward; false when this stage has already paid out this visit. */
   claimFirstWin: () => boolean;
   /** Celebration after a reward (coin burst). */
   celebrate: () => void;

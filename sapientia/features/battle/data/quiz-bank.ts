@@ -1,34 +1,16 @@
-import type { QuizQuestion } from '../interfaces/quiz.interface';
+import type { QuizChapter, QuizQuestion } from '../interfaces/quiz.interface';
+import { ENGLISH_QUIZ } from './quiz/english.quiz';
+import { MALAY_QUIZ } from './quiz/malay.quiz';
+import { MATH_QUIZ } from './quiz/math.quiz';
+import { SCIENCE_QUIZ } from './quiz/science.quiz';
 
-/** Sample question bank, three per subject. Not yet reviewed by a teacher; the real bank comes from the API. */
-export const QUIZ_BANK: readonly QuizQuestion[] = [
-  { id: 'm1', subject: 'math', question: { ms: 'Berapakah 7 × 8?', en: 'What is 7 × 8?' },
-    options: ['54', '56', '58', '64'], answer: 1, why: { ms: '7 × 8 = 56.', en: '7 × 8 = 56.' } },
-  { id: 'm2', subject: 'math', question: { ms: 'Berapakah 25% daripada 80?', en: 'What is 25% of 80?' },
-    options: ['15', '20', '25', '30'], answer: 1, why: { ms: '25% ialah satu perempat; 80 ÷ 4 = 20.', en: '25% is a quarter; 80 ÷ 4 = 20.' } },
-  { id: 'm3', subject: 'math', question: { ms: 'Sebuah segi empat tepat berukuran 6 cm × 4 cm. Berapakah perimeternya?', en: 'A rectangle measures 6 cm × 4 cm. What is its perimeter?' },
-    options: ['10 cm', '20 cm', '24 cm²', '48 cm'], answer: 1, why: { ms: '2 × (6 + 4) = 20 cm. 24 cm² ialah luasnya.', en: '2 × (6 + 4) = 20 cm. 24 cm² is the area.' } },
-  { id: 's1', subject: 'sci', question: { ms: 'Gas apakah yang diserap tumbuhan untuk fotosintesis?', en: 'Which gas do plants take in for photosynthesis?' },
-    options: [{ ms: 'Oksigen', en: 'Oxygen' }, { ms: 'Karbon dioksida', en: 'Carbon dioxide' }, { ms: 'Nitrogen', en: 'Nitrogen' }, { ms: 'Hidrogen', en: 'Hydrogen' }], answer: 1,
-    why: { ms: 'Tumbuhan menyerap karbon dioksida dan membebaskan oksigen.', en: 'Plants take in carbon dioxide and give out oxygen.' } },
-  { id: 's2', subject: 'sci', question: { ms: 'Planet manakah paling dekat dengan Matahari?', en: 'Which planet is closest to the Sun?' },
-    options: [{ ms: 'Venus', en: 'Venus' }, { ms: 'Marikh', en: 'Mars' }, { ms: 'Utarid', en: 'Mercury' }, { ms: 'Bumi', en: 'Earth' }], answer: 2,
-    why: { ms: 'Utarid (Mercury) ialah planet pertama dari Matahari.', en: 'Mercury is the first planet from the Sun.' } },
-  { id: 's3', subject: 'sci', question: { ms: 'Pada suhu berapakah air mendidih pada aras laut?', en: 'At what temperature does water boil at sea level?' },
-    options: ['50 °C', '90 °C', '100 °C', '120 °C'], answer: 2, why: { ms: 'Air mendidih pada 100 °C pada tekanan biasa aras laut.', en: 'Water boils at 100 °C at normal sea-level pressure.' } },
-  { id: 'e1', subject: 'bi', question: { ms: 'Pilih perkataan yang betul: "She ___ to school every day."', en: 'Choose the correct word: "She ___ to school every day."' },
-    options: ['go', 'goes', 'going', 'gone'], answer: 1, why: { ms: 'Subjek "she" (orang ketiga tunggal) memerlukan "goes".', en: 'The subject "she" (third person singular) takes "goes".' } },
-  { id: 'e2', subject: 'bi', question: { ms: 'Perkataan manakah ialah kata nama (noun)?', en: 'Which word is a noun?' },
-    options: ['sing', 'happy', 'table', 'quickly'], answer: 2, why: { ms: 'Kata nama menamakan benda; "table" ialah benda.', en: 'A noun names a thing; "table" is a thing.' } },
-  { id: 'e3', subject: 'bi', question: { ms: 'Pilih kala lampau (past tense) bagi "buy".', en: 'Choose the past tense of "buy".' },
-    options: ['buyed', 'bought', 'buying', 'buys'], answer: 1, why: { ms: '"Buy" ialah kata kerja tak sekata; kala lampaunya "bought".', en: '"Buy" is irregular; its past tense is "bought".' } },
-  { id: 'b1', subject: 'bm', question: { ms: 'Apakah antonim bagi perkataan "rajin"?', en: 'What is the opposite (antonym) of the Malay word "rajin"?' },
-    options: ['Malas', 'Tekun', 'Cergas', 'Gigih'], answer: 0,
-    why: { ms: '"Malas" bermaksud tidak suka bekerja, lawan bagi "rajin".', en: '"Malas" (lazy) means unwilling to work, the opposite of "rajin" (hardworking).' } },
-  { id: 'b2', subject: 'bm', question: { ms: 'Apakah maksud peribahasa "bagai aur dengan tebing"?', en: 'What does the proverb "bagai aur dengan tebing" mean?' },
-    options: [{ ms: 'Saling bergantung dan membantu', en: 'Depending on and helping each other' }, { ms: 'Bermusuhan', en: 'Being enemies' }, { ms: 'Tinggal berjauhan', en: 'Living far apart' }, { ms: 'Berlainan pendapat', en: 'Having different opinions' }], answer: 0,
-    why: { ms: 'Aur dan tebing saling menguatkan; peribahasa ini untuk hubungan yang erat dan saling membantu.', en: 'Bamboo and riverbank hold each other up: a close relationship where people help one another.' } },
-  { id: 'b3', subject: 'bm', question: { ms: 'Apakah sinonim bagi perkataan "cantik"?', en: 'What is a synonym of the Malay word "cantik"?' },
-    options: ['Indah', 'Hodoh', 'Buruk', 'Kotor'], answer: 0,
-    why: { ms: '"Indah" dan "cantik" hampir sama maksudnya.', en: '"Indah" and "cantik" both mean beautiful.' } },
-];
+/**
+ * Sample Year 4 question bank: two chapters per subject, three questions per chapter per level. The chapter titles are sample
+ * topics, not checked against the syllabus, and no teacher has reviewed the questions; the real bank comes from the API.
+ */
+const SUBJECTS = [MALAY_QUIZ, ENGLISH_QUIZ, MATH_QUIZ, SCIENCE_QUIZ];
+
+/** In lair order: Bahasa Melayu, English, Mathematics, Science, then chapter number. */
+export const QUIZ_CHAPTERS: readonly QuizChapter[] = SUBJECTS.flatMap((subject) => subject.chapters);
+
+export const QUIZ_BANK: readonly QuizQuestion[] = SUBJECTS.flatMap((subject) => subject.questions);

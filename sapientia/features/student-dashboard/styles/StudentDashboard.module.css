@@ -3,7 +3,9 @@
   max-width: 1320px; margin: 0 auto; padding: 22px 22px 28px; }
 /* The sidebar has no frame of its own: each section inside is its own framed card, so a frame never scrolls away from its content.
    The 4px padding leaves room for the corner brackets that overhang each card by 3px. */
-.side { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 24px; max-height: calc(100vh - 48px); overflow-x: hidden; overflow-y: auto; padding: 4px; }
+.side { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 24px; max-height: calc(100vh - 48px); overflow-x: hidden; overflow-y: auto; padding: 4px;
+  scrollbar-width: none; } /* Still scrolls by wheel, touch and keyboard; the bar just clashes with the framed cards. */
+.side::-webkit-scrollbar { display: none; }
 
 .pageHead { margin: 4px 0 22px; }
 .pageHead h1 { margin: 0; font: 700 clamp(1.4rem, 3vw, 1.9rem)/1.2 var(--font); letter-spacing: -.01em; color: var(--on-scene-text); text-shadow: var(--on-scene-shadow); }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import type { Monster } from '@/features/characters';
+import { monsterForLevel } from '@/features/characters';
 import type { ArenaPart, BattleArenaHandle } from '../components/BattleArena';
 import { usePahlawan } from '@/features/pahlawan/hooks/usePahlawan';
 import { useStudentProgress } from '@/features/student-dashboard/hooks/useStudentProgress';
@@ -12,8 +12,10 @@ import { TYPE_MS_PER_CHARACTER } from '../constants/battle.constants';
 import { BATTLE_MESSAGES } from '../i18n/battle.messages';
 import type { BattleRecord } from '../interfaces/battle-run.interface';
 import { BattleCancelled, type BattleSide, type BattleView } from '../interfaces/battle-view.interface';
+import type { QuizStage } from '../interfaces/quiz.interface';
 import { runBattle } from '../services/battle-script.service';
 import { battleStatsStore, recordBattle, recordFor } from '../services/battle-stats.store';
+import { stageKey } from '../services/quiz-stage.service';
 import arena from '../styles/BattleArena.module.css';
 
 export interface HpState {
@@ -54,11 +56,12 @@ const ANIMATION_CLASSES = [
 ];
 
 /**
- * Runs one quiz battle against `monster` while it is set. It implements BattleView on top of the dialog's DOM refs, starts the
- * battle script, and cancels it (every pending wait rejects) when the monster changes or the dialog unmounts.
+ * Runs one quiz battle at `stage` (one level of one chapter, fought against that level's monster) while it is set. It implements
+ * BattleView on top of the dialog's DOM refs, starts the battle script, and cancels it (every pending wait rejects) when the stage
+ * changes or the dialog unmounts.
  */
 export function useBattleController(
-  monster: Monster | null,
+  stage: QuizStage | null,
   refs: BattleRefs,
   onRequestClose: () => void,
   onLevelUp: (level: number) => void,
@@ -89,7 +92,9 @@ export function useBattleController(
   const resolveMenu = useRef<((index: number) => void) | null>(null);
 
   useEffect(() => {
-    if (!monster) return undefined;
+    if (!stage) return undefined;
+    const monster = monsterForLevel(stage.level);
+    const key = stageKey(stage);
     let live = true;
     const pending = new Set<(error: BattleCancelled) => void>();
     let pendingLevel: number | null = null;
@@ -226,18 +231,19 @@ export function useBattleController(
 
     // Start once the dialog has painted, so every ref points at its element.
     const frame = requestAnimationFrame(() => {
-      setRecord(recordFor(battleStatsStore.getSnapshot(), monster.id));
+      setRecord(recordFor(battleStatsStore.getSnapshot(), key));
       setMenuLabels(null);
       setTopic('');
       refs.textBox.current?.focus(); // not the close button, so a stray Enter or Space while a line is typing never closes the fight
       void runBattle(view, {
+        stage,
         monster,
         messages: () => latest.current.messages,
         pick: (value) => latest.current.pick(value),
         heroName: () => latest.current.displayName,
-        recordResult: (won) => recordBattle(monster.id, won),
+        recordResult: (won) => recordBattle(key, won),
         claimFirstWin: () => {
-          const result = latest.current.progress.claimBattleWin(monster.id);
+          const result = latest.current.progress.claimBattleWin(key);
           if (result.levelUp) pendingLevel = result.levelUp;
           return result.firstWin;
         },
@@ -256,9 +262,9 @@ export function useBattleController(
       // A level reached in battle is celebrated once the fight is closed, so the two dialogs never stack.
       if (pendingLevel) latest.current.onLevelUp(pendingLevel);
     };
-    // The refs are stable objects; only a new monster starts a new fight.
+    // The refs are stable objects; only a new stage starts a new fight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monster]);
+  }, [stage]);
 
   return {
     topic,

@@ -1,6 +1,4 @@
-import type { SchoolSubjectKey } from '@/shared/interfaces/school-subject.interface';
 import { FOE_DAMAGE, HERO_HP } from '../constants/battle.constants';
-import { QUIZ_BANK } from '../data/quiz-bank';
 import type { AnswerOutcome, BattleRun } from '../interfaces/battle-run.interface';
 import type { QuizChoice, QuizQuestion } from '../interfaces/quiz.interface';
 
@@ -11,8 +9,6 @@ import type { QuizChoice, QuizQuestion } from '../interfaces/quiz.interface';
  */
 
 export type RandomSource = () => number;
-
-export const questionsFor = (subject: SchoolSubjectKey): QuizQuestion[] => QUIZ_BANK.filter((question) => question.subject === subject);
 
 export function shuffled<T>(list: readonly T[], random: RandomSource = Math.random): T[] {
   const copy = list.slice();
@@ -25,7 +21,7 @@ export function shuffled<T>(list: readonly T[], random: RandomSource = Math.rand
 
 const orderKey = (questions: readonly QuizQuestion[]) => questions.map((question) => question.id).join();
 
-/** A fresh run; `previousOrder` is the last run's order against this monster, which a retry must not repeat. */
+/** A fresh run; `previousOrder` is the last run's order at this stage, which a retry must not repeat. */
 export function startRun(
   questions: readonly QuizQuestion[],
   previousOrder: string | undefined,
@@ -36,7 +32,7 @@ export function startRun(
     order = shuffled(questions, random);
   }
   const foeMax = questions.length * FOE_DAMAGE;
-  return { run: { queue: order, foeHp: foeMax, foeMax, heroHp: HERO_HP, right: 0, wrong: 0, missed: {} }, order: orderKey(order) };
+  return { run: { queue: order, foeHp: foeMax, foeMax, heroHp: HERO_HP, right: 0, wrong: 0 }, order: orderKey(order) };
 }
 
 /** The answers in a new order every time the question is asked. */
@@ -61,7 +57,6 @@ export function answerQuestion(
         heroHp: run.heroHp - monsterHit,
         wrong: run.wrong + 1,
         queue: [...run.queue, question], // it comes back until it is answered correctly
-        missed: { ...run.missed, [question.subject]: (run.missed[question.subject] ?? 0) + 1 },
       };
   const outcome: AnswerOutcome = next.foeHp <= 0 ? 'win' : next.heroHp <= 0 ? 'lose' : 'next';
   return { run: next, outcome };

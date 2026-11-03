@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Monster } from '@/features/characters';
 import { BattleDialog } from '@/features/battle/components/BattleDialog';
 import { MonsterLairCard } from '@/features/battle/components/MonsterLairCard';
+import type { QuizStage } from '@/features/battle/interfaces/quiz.interface';
 import { PahlawanDialog } from '@/features/pahlawan/components/PahlawanDialog';
 import { AppearanceSync } from '@/features/shop/components/AppearanceSync';
 import { ShopDialog } from '@/features/shop/components/ShopDialog';
@@ -42,7 +42,7 @@ export function StudentDashboard() {
   const [weekOpen, setWeekOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   const [pahlawanOpen, setPahlawanOpen] = useState(false);
-  const [battleMonster, setBattleMonster] = useState<Monster | null>(null);
+  const [battleStage, setBattleStage] = useState<QuizStage | null>(null);
   const [levelUp, setLevelUp] = useState<number | null>(null);
   const [freshRelicIds, setFreshRelicIds] = useState<readonly string[]>([]);
 
@@ -91,11 +91,11 @@ export function StudentDashboard() {
           <div className={styles.grid}>
             <TorchStreakCard className={styles.areaWeek} />
             <TimetableCard className={styles.areaTime} />
-            <SubjectMasteryCard className={styles.areaSkill} onFight={setBattleMonster} />
+            <SubjectMasteryCard className={styles.areaSkill} onFight={setBattleStage} />
             <QuestMapCard className={styles.areaQuests} onOpenQuest={setOpenQuestId} onToggleQuest={toggleQuest} />
             <RelicsCard className={styles.areaRelics} freshRelicIds={freshRelicIds} />
             <ClassPartyCard className={styles.areaParty} />
-            <MonsterLairCard className={styles.areaLair} onFight={setBattleMonster} />
+            <MonsterLairCard className={styles.areaLair} onFight={setBattleStage} />
           </div>
 
           <p className={styles.foot}>{text.footer}</p>
@@ -111,7 +111,7 @@ export function StudentDashboard() {
         onAvatarChosen={() => profilePhotoStore.clear()}
       />
       <PahlawanDialog open={pahlawanOpen} onClose={() => setPahlawanOpen(false)} />
-      <BattleDialog monster={battleMonster} onClose={() => setBattleMonster(null)} onLevelUp={setLevelUp} />
+      <BattleDialog stage={battleStage} onClose={() => setBattleStage(null)} onLevelUp={setLevelUp} />
       <LevelUpDialog level={levelUp} onClose={() => setLevelUp(null)} />
     </>
   );

@@ -52,6 +52,15 @@ describe('recolouring pixels', () => {
     expect(sampin[1]).toBeGreaterThan(sampin[0]); // now green
   });
 
+  it('makes white clothes look white, not grey', () => {
+    const white = OUTFIT_COLOURS.find((colour) => colour.id === 'white')!;
+    const data = pixels();
+    recolourPixels(data, { clothes: white.ramp });
+    const [r, g, b] = Array.from(data.slice(0, 3));
+    expect(Math.min(r, g, b)).toBeGreaterThan(190); // a typical mid-tone of the drawn cloth lands near white
+    expect(white.sampinRamp).toBeDefined(); // the white sampin uses a deeper cream so its orange songket thread reads as gold
+  });
+
   it('leaves everything as drawn with no ramps', () => {
     const data = pixels();
     recolourPixels(data, {});

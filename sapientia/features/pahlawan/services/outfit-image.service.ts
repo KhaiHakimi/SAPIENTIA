@@ -8,7 +8,7 @@ import { recolourPixels } from './outfit-recolour.service';
  */
 const cache = new Map<string, Promise<string>>();
 
-const rampOf = (id: string) => OUTFIT_COLOURS.find((colour) => colour.id === id)?.ramp;
+const colourOf = (id: string) => OUTFIT_COLOURS.find((colour) => colour.id === id);
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -28,7 +28,8 @@ async function recolour(src: string, outfit: PahlawanOutfit): Promise<string> {
   if (!context) throw new Error('Canvas 2D is not available');
   context.drawImage(image, 0, 0);
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-  recolourPixels(pixels.data, { clothes: rampOf(outfit.clothes), sampin: rampOf(outfit.sampin) });
+  const sampin = colourOf(outfit.sampin);
+  recolourPixels(pixels.data, { clothes: colourOf(outfit.clothes)?.ramp, sampin: sampin?.sampinRamp ?? sampin?.ramp });
   context.putImageData(pixels, 0, 0);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error(`Could not encode the recoloured ${src}`);

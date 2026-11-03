@@ -29,7 +29,7 @@ async function recolour(src: string, outfit: PahlawanOutfit): Promise<string> {
   context.drawImage(image, 0, 0);
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
   const sampin = colourOf(outfit.sampin);
-  recolourPixels(pixels.data, { clothes: colourOf(outfit.clothes)?.ramp, sampin: sampin?.sampinRamp ?? sampin?.ramp });
+  recolourPixels(pixels.data, canvas.width, { clothes: colourOf(outfit.clothes)?.ramp, sampin: sampin?.sampinRamp ?? sampin?.ramp });
   context.putImageData(pixels, 0, 0);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error(`Could not encode the recoloured ${src}`);

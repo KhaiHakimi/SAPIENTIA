@@ -2562,24 +2562,110 @@ function rampAt(ramp, position) {
   return [1, 3, 5].map((at) => Math.round(hex(ramp[low], at) + (hex(ramp[high], at) - hex(ramp[low], at)) * mix));
 }
 
-function recolourPixels(data, ramps) {
-  const cache = new Map(); // the drawing has about 255 colours, so each is worked out once
-  for (let i = 0; i < data.length; i += 4) {
+// The jaw outline, skin shadows and hair are drawn in the same dark reds and purples as the sampin's shadows, so where a pixel sits
+// decides it: a sampin-coloured patch counts as sampin when it is large and crimson enough, or lies within SAMPIN_REACH pixels of
+// such a patch (the sampin's gold thread cuts it into smaller pieces). The face's reds are small patches far from it.
+const SAMPIN_PATCH_MIN = 200; // pixels; at this art's scale a sampin is 1,000 to 2,600
+const SAMPIN_CRIMSON_SHARE = 0.15;
+const SAMPIN_REACH = 5;
+// Of a near-black pixel's 8 neighbours, how many must be cloth for it to count as the cloth's dark texture, not an outline.
+const CLOTH_TEXTURE_NEIGHBOURS = 6;
+
+function isCrimson(r, g, b) {
+  const {hue, saturation, lightness} = toHsl(r, g, b);
+  return (hue >= 325 || hue <= 2) && saturation >= 0.55 && lightness >= 0.12 && lightness <= 0.42;
+}
+
+function forEachNeighbour(p, width, height, visit) {
+  const x = p % width;
+  const y = (p - x) / width;
+  for (let dy = -1; dy <= 1; dy += 1) {
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if ((dx || dy) && nx >= 0 && ny >= 0 && nx < width && ny < height) visit(ny * width + nx);
+    }
+  }
+}
+
+// Clears `sampin` marks that are not really the sampin (see SAMPIN_PATCH_MIN).
+function keepRealSampin(data, sampin, width, height) {
+  const patchOf = new Int32Array(sampin.length).fill(-1);
+  const patches = [];
+  const reach = new Int16Array(sampin.length).fill(-1);
+  const queue = [];
+  for (let start = 0; start < sampin.length; start += 1) {
+    if (!sampin[start] || patchOf[start] >= 0) continue;
+    const members = [start];
+    let crimson = 0;
+    patchOf[start] = patches.length;
+    for (let k = 0; k < members.length; k += 1) {
+      const p = members[k];
+      if (isCrimson(data[p * 4], data[p * 4 + 1], data[p * 4 + 2])) crimson += 1;
+      forEachNeighbour(p, width, height, (q) => {
+        if (sampin[q] && patchOf[q] < 0) {
+          patchOf[q] = patches.length;
+          members.push(q);
+        }
+      });
+    }
+    patches.push(members);
+    if (members.length >= SAMPIN_PATCH_MIN && crimson / members.length >= SAMPIN_CRIMSON_SHARE) {
+      for (const p of members) {
+        reach[p] = 0;
+        queue.push(p);
+      }
+    }
+  }
+  for (let k = 0; k < queue.length; k += 1) { // spread SAMPIN_REACH pixels out from the real sampin
+    const p = queue[k];
+    if (reach[p] >= SAMPIN_REACH) continue;
+    forEachNeighbour(p, width, height, (q) => {
+      if (reach[q] < 0) {
+        reach[q] = reach[p] + 1;
+        queue.push(q);
+      }
+    });
+  }
+  for (const members of patches) {
+    if (!members.some((p) => reach[p] >= 0)) for (const p of members) sampin[p] = 0;
+  }
+}
+
+function recolourPixels(data, width, ramps) {
+  const count = data.length / 4;
+  const height = count / width;
+  const parts = new Array(count).fill(null);
+  const classified = new Map(); // the drawing has about 255 colours, so each is classified once
+  for (let p = 0; p < count; p += 1) {
+    const i = p * 4;
     if (data[i + 3] === 0) continue;
     const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
-    let colour = cache.get(key);
-    if (colour === undefined) {
-      const part = outfitPartOf(data[i], data[i + 1], data[i + 2]);
-      const ramp = part && ramps[part];
-      if (ramp) {
-        const [darkest, lightest] = OUTFIT_LIGHTNESS[part];
-        colour = rampAt(ramp, (toHsl(data[i], data[i + 1], data[i + 2]).lightness - darkest) / (lightest - darkest));
-      } else {
-        colour = null;
-      }
-      cache.set(key, colour);
+    if (!classified.has(key)) classified.set(key, outfitPartOf(data[i], data[i + 1], data[i + 2]));
+    parts[p] = classified.get(key);
+  }
+  if (ramps.clothes) {
+    const texture = [];
+    for (let p = 0; p < count; p += 1) {
+      if (parts[p] || data[p * 4 + 3] === 0 || toHsl(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]).lightness >= 0.04) continue;
+      let cloth = 0;
+      forEachNeighbour(p, width, height, (q) => { if (parts[q] === 'clothes') cloth += 1; });
+      if (cloth >= CLOTH_TEXTURE_NEIGHBOURS) texture.push(p);
     }
-    if (colour) [data[i], data[i + 1], data[i + 2]] = colour;
+    for (const p of texture) parts[p] = 'clothes';
+  }
+  if (ramps.sampin) {
+    const sampin = Uint8Array.from(parts, (part) => (part === 'sampin' ? 1 : 0));
+    keepRealSampin(data, sampin, width, height);
+    for (let p = 0; p < count; p += 1) if (parts[p] === 'sampin' && !sampin[p]) parts[p] = null;
+  }
+  for (let p = 0; p < count; p += 1) {
+    const part = parts[p];
+    const ramp = part && ramps[part];
+    if (!ramp) continue;
+    const i = p * 4;
+    const [darkest, lightest] = OUTFIT_LIGHTNESS[part];
+    [data[i], data[i + 1], data[i + 2]] = rampAt(ramp, (toHsl(data[i], data[i + 1], data[i + 2]).lightness - darkest) / (lightest - darkest));
   }
 }
 
@@ -2603,7 +2689,7 @@ function recolourArt(kind) {
       const context = canvas.getContext('2d', {willReadFrequently: true});
       context.drawImage(image, 0, 0);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-      recolourPixels(pixels.data, ramps);
+      recolourPixels(pixels.data, canvas.width, ramps);
       context.putImageData(pixels, 0, 0);
       canvas.toBlob((blob) => (blob ? resolve(URL.createObjectURL(blob)) : reject(new Error('Could not encode the pahlawan ' + kind))), 'image/png');
     };

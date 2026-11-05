@@ -4,6 +4,13 @@ export const DELIVER_TASK_QUEUE = 'deliver-task';
 export const DELIVER_DUE_QUEUE = 'deliver-due-tasks';
 export const DELIVER_DUE_CRON = '* * * * *';
 
+/** pg-boss queue that tells assignees a task has reached them. Queued in the transaction that delivers the task. */
+export const NOTIFY_TASK_QUEUE = 'notify-task-delivered';
+
 export interface DeliverTaskJob {
+  taskId: string;
+}
+
+export interface NotifyTaskJob {
   taskId: string;
 }

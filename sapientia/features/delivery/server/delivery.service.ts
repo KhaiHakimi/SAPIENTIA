@@ -3,6 +3,7 @@ import { writeAudit } from '@/features/audit/server/audit.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { withTransaction } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
+import { queueDeliveryNotice } from './delivery-queue.service';
 
 /** How many overdue tasks one sweep delivers; the next sweep a minute later takes the rest. */
 const SWEEP_BATCH = 500;
@@ -22,6 +23,7 @@ export async function deliverTask(taskId: string, clock: Clock): Promise<boolean
     await writeAudit(client, task.school_id, [
       { actorId: null, action: 'task.delivered', entityType: 'task', entityId: task.id, metadata: { via: 'job' } },
     ]);
+    await queueDeliveryNotice(client, task.id);
     logger.info('delivery.delivered', { taskId: task.id, schoolId: task.school_id, via: 'job' });
     return true;
   });
@@ -42,6 +44,7 @@ export async function deliverDueTasks(clock: Clock): Promise<number> {
       await writeAudit(client, task.school_id, [
         { actorId: null, action: 'task.delivered', entityType: 'task', entityId: task.id, metadata: { via: 'sweep' } },
       ]);
+      await queueDeliveryNotice(client, task.id);
     }
     if (rows.length > 0) logger.info('delivery.swept', { count: rows.length });
     return rows.length;

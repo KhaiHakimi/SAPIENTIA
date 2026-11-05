@@ -14,7 +14,8 @@ const vt323 = VT323({
 export const metadata: Metadata = {
   title: 'Sapientia',
   description: 'Sapientia: papan pelajar dan penyelarasan tugasan sekolah.',
-  icons: { icon: '/brand/sapientia-logo.jpg' },
+  // Listed here because an explicit icons entry overrides the app/apple-icon file convention. Files: scripts/make-app-icons.mjs.
+  icons: { icon: '/brand/sapientia-logo.jpg', apple: '/icons/apple-touch-icon.png' },
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

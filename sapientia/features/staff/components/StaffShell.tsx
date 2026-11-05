@@ -5,9 +5,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { signOutStaff } from '@/features/auth/services/staff-auth.client';
+import { disablePush } from '@/features/notifications/services/push-device.client';
 import { ApiError } from '@/shared/api/api-client';
 import calm from '@/shared/calm/Calm.module.css';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
+import { startInstallListener } from '@/shared/pwa/install-prompt.store';
+import { registerServiceWorker } from '@/shared/pwa/service-worker.client';
 import { toggleTheme } from '@/shared/theme/theme.store';
 import { STAFF_NAV } from '../constants/staff-nav.constants';
 import { StaffUserContext, useCurrentUserQuery } from '../hooks/useStaffUser';
@@ -29,8 +32,20 @@ export function StaffShell({ children }: { children: ReactNode }) {
     if (signedOut) router.replace('/login');
   }, [signedOut, router]);
 
+  // The service worker shows push notifications; the install listener must be in place before the browser offers to install.
+  useEffect(() => {
+    startInstallListener();
+    void registerServiceWorker();
+  }, []);
+
   const signOut = async () => {
     setSigningOut(true);
+    try {
+      // A shared staffroom PC should not keep showing this person's task notices after they sign out.
+      await disablePush();
+    } catch (error) {
+      console.error('Could not turn off push for this device', error);
+    }
     try {
       await signOutStaff();
     } catch (error) {

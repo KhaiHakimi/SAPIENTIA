@@ -171,10 +171,10 @@ Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the spri
 **Done when:** the Section 15.2 acceptance criteria all pass as automated tests.
 
 ### Sprint 5 (28 December to 8 January): notifications, polish, MVP
-- [ ] Web Push (VAPID keys from environment variables) and email (local mail catcher in development)
-- [ ] Notifications sent only by the worker after the conditional update succeeds
-- [ ] External calls have timeouts and retry with exponential backoff
-- [ ] PWA manifest (`app/manifest.ts`), icons, service worker, install prompt
+- [x] Web Push (VAPID keys from environment variables) and email (Mailpit in `docker-compose.yml` in development)
+- [x] Notifications sent only by the worker after the conditional update succeeds (notify job queued in the delivering transaction; `notification_sends` stops repeats)
+- [x] External calls have timeouts and retry with exponential backoff (`shared/server/external-call.service.ts`, then pg-boss job retries)
+- [x] PWA manifest (`app/manifest.ts`), icons, service worker, install prompt (Notifications page)
 - [ ] Bahasa Melayu by default, English available; check every string is in the i18n files
 - [ ] Accessibility pass to WCAG 2.2 AA: contrast, labels, keyboard use, status shown by text as well as colour
 - [ ] Playwright journeys: invite and sign in; create a task at night and see it held; teacher completes it

@@ -1,6 +1,6 @@
 import type { StaffRole } from '@/features/auth/interfaces/session-user.interface';
 
-export type StaffNavKey = 'board' | 'sent' | 'held' | 'newTask' | 'users' | 'settings' | 'calendar';
+export type StaffNavKey = 'board' | 'sent' | 'held' | 'newTask' | 'users' | 'settings' | 'calendar' | 'notifications';
 
 export interface StaffNavItem {
   key: StaffNavKey;
@@ -17,4 +17,5 @@ export const STAFF_NAV: readonly StaffNavItem[] = [
   { key: 'users', href: '/staff/users', roles: ['admin'] },
   { key: 'settings', href: '/staff/settings', roles: ['admin'] },
   { key: 'calendar', href: '/staff/calendar', roles: ['admin'] },
+  { key: 'notifications', href: '/staff/notifications', roles: ['admin', 'sender', 'teacher'] },
 ];

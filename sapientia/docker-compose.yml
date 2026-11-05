@@ -1,4 +1,4 @@
-# Local PostgreSQL for development. Values come from .env (copy .env.example); the password has no default on purpose.
+# Local PostgreSQL and a mail catcher for development. Values come from .env (copy .env.example); the password has no default on purpose.
 # Bound to 127.0.0.1 so the database is not reachable from the rest of the network.
 services:
   db:
@@ -18,6 +18,14 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Catches every email in development; nothing leaves the machine. Inbox: http://localhost:8025
+  mail:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
 
 volumes:
   db-data:

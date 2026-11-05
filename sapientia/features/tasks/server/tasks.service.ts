@@ -2,7 +2,7 @@ import 'server-only';
 import { type AuditEntry, type AuditRow, listEntityAudit, writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import { planDelivery, type DeliveryPlan } from '@/features/delivery/server/delivery-plan.service';
-import { scheduleDelivery } from '@/features/delivery/server/delivery-queue.service';
+import { queueDeliveryNotice, scheduleDelivery } from '@/features/delivery/server/delivery-queue.service';
 import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -57,7 +57,8 @@ export async function createTask(
         ...input, createdBy: actor.id, now, deliverAt: plan.deliverAt, deliveredAt: plan.deliveredAt, urgent: Boolean(input.urgent),
       });
       await insertAssignments(client, actor.schoolId, taskId, input.assigneeIds, now);
-      if (!plan.deliveredAt) await scheduleDelivery(client, taskId, plan.deliverAt);
+      if (plan.deliveredAt) await queueDeliveryNotice(client, taskId);
+      else await scheduleDelivery(client, taskId, plan.deliverAt);
       await writeAudit(client, actor.schoolId, [
         { actorId: actor.id, action: 'task.created', entityType: 'task', entityId: taskId, metadata: { assigneeCount: input.assigneeIds.length } },
         ...input.assigneeIds.map((assigneeId) => ({
@@ -120,13 +121,14 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
   const task = await findVisibleTask(db, actor.schoolId, taskId, actor.id);
   if (!task) throw new NotFoundError();
   const isSender = task.created_by === actor.id;
-  const [timeZone, counts, comments, assignees, activity] = await Promise.all([
-    db.query<{ time_zone: string }>('SELECT time_zone FROM schools WHERE id = $1', [actor.schoolId]).then(({ rows }) => rows[0].time_zone),
-    countAssignments(db, actor.schoolId, taskId),
-    listComments(db, actor.schoolId, taskId, COMMENTS_SHOWN_MAX),
-    isSender ? listAssignees(db, actor.schoolId, taskId) : null,
-    isSender ? listEntityAudit(db, actor.schoolId, 'task', taskId) : null,
-  ]);
+  // One after another: db may be a single transaction client, which runs queries in turn anyway, and pg 9 drops support
+  // for queuing several on one client at once.
+  const { rows: schoolRows } = await db.query<{ time_zone: string }>('SELECT time_zone FROM schools WHERE id = $1', [actor.schoolId]);
+  const timeZone = schoolRows[0].time_zone;
+  const counts = await countAssignments(db, actor.schoolId, taskId);
+  const comments = await listComments(db, actor.schoolId, taskId, COMMENTS_SHOWN_MAX);
+  const assignees = isSender ? await listAssignees(db, actor.schoolId, taskId) : null;
+  const activity = isSender ? await listEntityAudit(db, actor.schoolId, 'task', taskId) : null;
   return {
     id: task.id,
     title: task.title,

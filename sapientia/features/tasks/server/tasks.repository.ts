@@ -16,6 +16,8 @@ export interface TaskRow {
   delivered_at: Date | null;
   urgent: boolean;
   urgent_reason: string | null;
+  estimated_minutes: number | null;
+  deadline_flagged: boolean;
 }
 
 export interface VisibleTaskRow extends TaskRow {
@@ -24,7 +26,7 @@ export interface VisibleTaskRow extends TaskRow {
 
 // due_on is read as text: a pg Date would shift the calendar day by the server's time zone.
 const TASK_COLUMNS = `t.id, t.title, t.description, t.due_on::text AS due_on, t.created_at, t.created_by, c.name AS creator_name,
-  t.deliver_at, t.delivered_at, t.urgent, t.urgent_reason`;
+  t.deliver_at, t.delivered_at, t.urgent, t.urgent_reason, t.estimated_minutes, t.deadline_flagged`;
 
 export async function insertTask(
   db: Queryable,
@@ -32,14 +34,17 @@ export async function insertTask(
   task: {
     createdBy: string; title: string; description?: string; dueOn: string; now: Date;
     deliverAt: Date; deliveredAt: Date | null; urgent: boolean; urgentReason?: string;
+    taskTypeId?: string; estimatedMinutes: number | null; deadlineFlagged: boolean;
   },
 ): Promise<string> {
   const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO tasks (school_id, created_by, title, description, due_on, created_at, updated_at, deliver_at, delivered_at, urgent, urgent_reason)
-     VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9, $10) RETURNING id`,
+    `INSERT INTO tasks (school_id, created_by, title, description, due_on, created_at, updated_at, deliver_at, delivered_at, urgent, urgent_reason,
+                        task_type_id, estimated_minutes, deadline_flagged)
+     VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
     [
       schoolId, task.createdBy, task.title, task.description ?? null, task.dueOn, task.now,
       task.deliverAt, task.deliveredAt, task.urgent, task.urgentReason ?? null,
+      task.taskTypeId ?? null, task.estimatedMinutes, task.deadlineFlagged,
     ],
   );
   return rows[0].id;

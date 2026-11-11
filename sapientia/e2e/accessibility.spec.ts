@@ -11,8 +11,8 @@ import { signIn } from './support/staff-actions';
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 const STAFF_SCREENS = [
-  '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/users', '/staff/settings', '/staff/calendar',
-  '/staff/notifications',
+  '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/users', '/staff/school-data',
+  '/staff/settings', '/staff/calendar', '/staff/notifications',
 ];
 
 /** One line per failing element, so a failure says what to fix without opening the trace. */
@@ -34,8 +34,8 @@ for (const theme of ['dark', 'light']) {
     });
 
     test('the staff screens have no detectable WCAG 2.2 AA failures', async ({ page }) => {
-      // Eight screens, each compiled on first visit by the development server.
-      test.setTimeout(240_000);
+      // Ten screens in one test, so that the sign-in is done once per theme.
+      test.setTimeout(180_000);
       await signIn(page, ACCOUNTS.admin.email);
       for (const path of STAFF_SCREENS) {
         await page.goto(path);

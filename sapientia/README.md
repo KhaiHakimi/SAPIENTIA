@@ -1,6 +1,6 @@
 # Sapientia web app
 
-Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery and notifications run against the database (plan Sprints 2 to 5). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
+Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery, notifications, the timetable and the deadline check run against the database (plan Sprints 2 to 6). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
 
 ## Run
 
@@ -11,7 +11,7 @@ npm install
 cp .env.example .env     # set a long random password (both places), a SEED_PASSWORD, and the test database URL
 npm run db:up            # PostgreSQL 16 on 127.0.0.1:55432 (creates sapientia and sapientia_test) and Mailpit (inbox http://localhost:8025)
 npm run db:migrate       # SQL migrations in migrations/, then pg-boss's schema and queues
-npm run db:seed          # two fictional schools and their staff, all with SEED_PASSWORD
+npm run db:seed          # two fictional schools and their staff, all with SEED_PASSWORD; the first school also gets subjects, classes, task types and a timetable
 npm run dev              # http://localhost:3000 (redirects to /login)
 npm run worker           # in a second terminal: delivers held tasks and sends notifications (see below)
 ```
@@ -23,7 +23,7 @@ Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@g
 | `npm test` | Unit tests (Vitest), no database needed |
 | `npm run db:migrate:test` | Migrates the test database (`TEST_DATABASE_URL`) |
 | `npm run test:integration` | `*.integration.test.ts` against the test database: it is emptied between tests, so never point it at real data |
-| `npm run test:e2e` | Playwright: the three MVP journeys and an accessibility scan (axe, WCAG 2.2 AA) of the sign-in and staff screens, on a desktop window and a phone-sized screen. Starts its own server on port 3100 against the test database, which it empties and seeds first. Uses the installed Microsoft Edge; stop `npm run dev` first (Next.js allows one dev server per folder) |
+| `npm run test:e2e` | Playwright: the MVP and capacity journeys and an accessibility scan (axe, WCAG 2.2 AA) of the sign-in and staff screens, on a desktop window and a phone-sized screen. Builds the app and starts it on port 3100 against the test database, which it empties and seeds first (about five minutes in all). Uses the installed Microsoft Edge |
 | `npm run lint` | ESLint: Next.js rules plus the Google style rules |
 | `npm run typecheck` | Generates route types, then `tsc --noEmit` |
 | `npm run build` | Production build |
@@ -41,6 +41,7 @@ CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations
 - **Sign-in**: an HttpOnly, SameSite=Lax session cookie; the database keeps only a SHA-256 of the token. Sessions end after 60 minutes idle or 12 hours in total. Wrong email, wrong password and inactive accounts all get the same answer. Failed attempts are counted per account and per address.
 - **Refusals**: `requireUser(request, clock, roles)` answers 401 when signed out and 404 for the wrong role. Repositories take `schoolId` first, so no query can reach another school. Someone who may not see a task gets 404, exactly as if it did not exist.
 - **Held delivery**: creating a task works out its delivery time from the school's working hours, weekend and calendar (`features/delivery/services/working-time.service.ts`, pure and fully unit-tested). Inside working hours it is delivered at once. Outside them it is held, and a pg-boss job for its delivery time is saved in the same transaction. The worker delivers it with a conditional update, so a repeated job is harmless, and a one-minute sweep catches any task whose job went missing. An urgent override delivers at once and needs a reason.
+- **Capacity** (plan Phase 2, stories and threat model in `../docs/phase-2-capacity.md`): administrators keep the school's subjects, classes and task types (School Data) and each teacher's weekly timetable. A task may carry a time estimate for one person, from its task type or typed in. With one, the new-task form asks `POST /api/tasks/feasibility` whether each assignee has that much free working time between delivery and the end of the due day: working hours on working days, less timetable periods, less the estimates of their unfinished tasks due by then. It shows who is short, the arithmetic and the earliest realistic date. It warns and never blocks: sending anyway marks the task "tight deadline" and logs it. The rules are pure functions in `features/capacity/services/capacity.service.ts`.
 - **Notifications**: whenever a task is delivered (at once, by its job, or by the sweep) a `notify-task-delivered` job is queued in the same transaction, so a held task is never announced early and only the worker sends. It emails each active assignee who has email on, and sends Web Push to each device they turned it on for. Every send has a timeout and up to three tries with backoff; a temporary failure makes pg-boss retry the job later (over about an hour), and `notification_sends` records what went out so a retry sends only what is missing. A device the push service reports gone is removed. Push addresses must be on a known push service (`PUSH_SERVICE_HOSTS`), so the worker cannot be pointed at other servers. Email is bilingual (BM first); push is in BM. A channel without its `.env` settings is off. Signing out turns push off for that device.
 - **App install**: `app/manifest.ts` and `public/sw.js` (shows push notices, caches nothing). The Notifications page has the install button where the browser offers one, and the Add to Home Screen steps on iPhone and iPad.
 - **Audit log**: `audit_logs` records ids and states only, never names or text. A database trigger blocks UPDATE and DELETE.
@@ -71,8 +72,8 @@ Code is grouped **by feature**. Every feature folder uses the same sub-folders, 
 app/
   layout.tsx, globals.css        root layout, design tokens (magic and calm scopes), colour skins, card frames
   (magic)/                       login, accept-invite, student (magic-academy theme)
-  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], users, settings, calendar, notifications
-  api/                           JSON API (auth, me, me/notifications, me/push-subscriptions, users, staff, tasks, school/settings, calendar/events, delivery/preview)
+  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], timetable, users, school-data, settings, calendar, notifications
+  api/                           JSON API (auth, me, me/notifications, me/push-subscriptions, users, staff, tasks, tasks/feasibility, timetable, school-data, school/settings, calendar/events, delivery/preview)
   health/route.ts                GET /health: 200 when the database answers, 503 when not
 features/
   auth/                          sign-in page, sessions, passwords, invites, throttling
@@ -80,6 +81,9 @@ features/
   staff/                         the staff shell (menu by role, language, theme, sign-out)
   tasks/                         tasks, board, comments, idempotent create, sent and held lists
   delivery/                      working-time rules, school settings and calendar, delivery queue and service
+  capacity/                      free-time and feasibility rules, the dry-run check, the warning on the new-task form
+  timetable/                     each teacher's weekly periods
+  school-data/                   subjects, classes and task types
   notifications/                 email and push senders, the notify job, each person's settings, the Notifications page
   audit/                         the append-only audit log
   health/                        the /health check
@@ -90,7 +94,7 @@ shared/
   server/                        database pool, transactions, API wrapper, errors, logger, clock, pagination, idempotency
   ...                            storage, i18n, theme, pixel sprites, buttons, cards, dialogs, toast
 migrations/                      SQL migrations (node-pg-migrate)
-seeds/dev-seed.ts                fictional schools and staff
+seeds/dev-seed.ts                fictional schools and staff; capacity-seed.ts adds the demo school's timetable data
 worker/index.ts                  the background worker
 scripts/install-queues.ts        pg-boss schema and queues (run by db:migrate)
 e2e/                             Playwright journeys and accessibility scan (npm run test:e2e)
@@ -115,6 +119,10 @@ In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok
 3. List it in `features/characters/index.ts`. The list is one monster per level, so a new monster replaces one, or a fifth level needs `MonsterLevel`, `QUIZ_LEVELS` and the questions extended too.
 
 ## Notes and known limits
+
+- Capacity is a deliberate simplification: committed work is one total, not a schedule. An unfinished task counts in full once its due date falls inside the period being checked, and not at all before that. Only tasks with an estimate count, so the check is only as good as the estimates. A task's flag is worked out once, when it is sent, and does not change if the timetable changes later.
+- The timetable has no terms or alternating weeks: one week repeats all year. School holidays count only if they are in the Calendar.
+- A teacher's timetable can be read by that teacher and by administrators only. Senders see free-time totals through the deadline check, never the timetable itself.
 
 - Invite links are still shown to the administrator to pass on; they are not emailed yet.
 - Push needs a VAPID key pair in `.env` (`npx web-push generate-vapid-keys`) and, outside localhost, HTTPS. On iPhone and iPad it works only after Sapientia is added to the Home Screen. If a browser renews its push subscription by itself, push stops on that device until the person turns it on again.

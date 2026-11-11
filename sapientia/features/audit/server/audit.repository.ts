@@ -12,12 +12,17 @@ export type AuditAction =
   | 'comment.added'
   | 'settings.updated'
   | 'calendar.event_added'
-  | 'calendar.event_removed';
+  | 'calendar.event_removed'
+  | 'task.deadline_flagged'
+  | 'school_data.added'
+  | 'school_data.removed'
+  | 'timetable.slot_added'
+  | 'timetable.slot_removed';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
-  entityType: 'task' | 'school' | 'calendar_event';
+  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

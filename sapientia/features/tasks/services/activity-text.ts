@@ -36,6 +36,10 @@ export function describeActivity(
       return text.activity.urgent(actor);
     case 'task.delivered':
       return text.activity.delivered;
+    case 'task.deadline_flagged':
+      return typeof metadata.shortOfTime === 'number'
+        ? text.activity.flagged(actor, metadata.shortOfTime)
+        : text.activity.other(actor, entry.action);
     default:
       return text.activity.other(actor, entry.action);
   }

@@ -200,6 +200,16 @@ Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the spri
 Before each phase: write user stories with acceptance criteria and a short threat model (what could go wrong with the new data, who could misuse it, how the design prevents it).
 
 ### Phase 2: Capacity (S6 to S8, 11 January to 19 February 2027)
+User stories, the threat model and the sprint split are in `docs/phase-2-capacity.md`. Sprint 6 was built ahead of its dates on 11 November 2026:
+- [x] Tables `subjects`, `classes`, `task_types`, `timetable_slots` (overlaps refused by the database); estimate and flagged-deadline marker on `tasks`
+- [x] `freeMinutes` and `checkFeasibility` as pure functions with unit tests (evening, weekend, Friday to Saturday weekend, holidays, replacement days, overlapping periods, overdue and later work)
+- [x] `POST /api/tasks/feasibility` (dry run); warning on the new-task form with the earliest realistic date; sending anyway sets the marker and writes the audit log
+- [x] Web: School Data (subjects, classes, task types), Timetable (own week for everyone, editing for administrators)
+- [x] Refusal tests for every new endpoint; Playwright journeys; both new screens in the accessibility scan
+- [ ] Sprint 7: extension requests (`extension_requests`), workload view when assigning
+- [ ] Sprint 8: relief (`relief_assignments`), completion question, gate G4
+
+Scope for the phase:
 - Tables: `task_types`, `classes`, `subjects`, `timetable_slots`, `extension_requests`, `relief_assignments`
 - Store the timetable as weekly recurring slots and expand them into busy periods in code (do not store every week)
 - `freeMinutes` and `checkFeasibility` as pure functions. Time outside working hours is never free. Return conflicts and an earliest realistic due date.

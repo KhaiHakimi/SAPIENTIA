@@ -46,6 +46,14 @@ export interface TasksMessages {
   urgentLabel: string;
   urgentHelp: string;
   urgentReason: string;
+  // Capacity (Phase 2)
+  taskType: string;
+  noTaskType: string;
+  estimate: string;
+  estimateHelp: string;
+  estimateLine: (duration: string) => string;
+  flaggedBadge: string;
+  flaggedExplained: string;
   // Detail
   back: string;
   sentBy: (name: string, when: string) => string;
@@ -70,6 +78,7 @@ export interface TasksMessages {
     held: (actor: string, when: string) => string;
     urgent: (actor: string) => string;
     delivered: string;
+    flagged: (actor: string, count: number) => string;
     other: (actor: string, action: string) => string;
   };
   someone: string;

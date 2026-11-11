@@ -13,6 +13,8 @@ export interface AssignedTask {
   createdBy: PersonRef;
   myStatus: AssignmentStatus;
   urgent: boolean;
+  /** The sender's estimate for one person, in minutes; null when none was given. */
+  estimatedMinutes: number | null;
 }
 
 /** A row in the sender's list (GET /api/tasks?view=sent). */
@@ -27,6 +29,8 @@ export interface SentTask {
   deliverAt: string;
   deliveredAt: string | null;
   urgent: boolean;
+  /** The sender was warned that at least one assignee does not have the time by the due date, and sent it anyway. */
+  deadlineFlagged: boolean;
 }
 
 export interface TaskAssignee extends PersonRef {
@@ -64,6 +68,10 @@ export interface TaskDetail {
   deliveredAt: string | null;
   urgent: boolean;
   urgentReason: string | null;
+  /** The sender's estimate for one person, in minutes; null when none was given. */
+  estimatedMinutes: number | null;
+  /** The sender was warned that at least one assignee does not have the time by the due date, and sent it anyway. */
+  deadlineFlagged: boolean;
   /** The school's zone, for showing deliverAt in school time. */
   timeZone: string;
   isSender: boolean;
@@ -83,4 +91,7 @@ export interface CreateTaskRequest {
   /** Deliver now even outside working hours. Needs a reason, which is recorded. */
   urgent?: boolean;
   urgentReason?: string;
+  /** A task type supplies its usual estimate; estimatedMinutes, when given, is used instead. */
+  taskTypeId?: string;
+  estimatedMinutes?: number;
 }

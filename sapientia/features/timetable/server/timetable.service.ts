@@ -1,0 +1,67 @@
+import 'server-only';
+import { writeAudit } from '@/features/audit/server/audit.repository';
+import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
+import { listActiveStaff } from '@/features/users/server/users.repository';
+import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
+import { getPool, withTransaction } from '@/shared/server/database.service';
+import { SLOTS_PER_TEACHER_MAX } from '../constants/timetable.constants';
+import type { NewTimetableSlot, Timetable, TimetableSlot } from '../interfaces/timetable.interface';
+import { countSlots, deleteSlot, insertSlot, listSlots } from './timetable.repository';
+
+const EXCLUSION_VIOLATION = '23P01';
+const FOREIGN_KEY_VIOLATION = '23503';
+
+/**
+ * A teacher's week. Everyone may read their own; only an administrator may read a colleague's, and anyone else asking gets
+ * 404, so the timetable never becomes a way to look up where a colleague is.
+ */
+export async function getTimetable(actor: SessionUser, teacherId: string | undefined): Promise<Timetable> {
+  const targetId = teacherId ?? actor.id;
+  if (targetId !== actor.id && actor.role !== 'admin') throw new NotFoundError();
+  const [teacher] = await listActiveStaff(getPool(), actor.schoolId, [targetId]);
+  if (!teacher) throw new NotFoundError();
+  return {
+    teacher: { id: teacher.id, name: teacher.name },
+    slots: await listSlots(getPool(), actor.schoolId, targetId, SLOTS_PER_TEACHER_MAX),
+  };
+}
+
+/** A clash or a class from elsewhere is the database's to refuse (it holds even if two requests race); name the field. */
+function slotError(error: unknown): unknown {
+  const { code, constraint = '' } = error as { code?: string; constraint?: string };
+  if (code === EXCLUSION_VIOLATION) return new ConflictError('This overlaps another period for the same teacher.', { startTime: 'overlaps' });
+  if (code === FOREIGN_KEY_VIOLATION && constraint.includes('class')) return new ValidationError({ classId: 'invalid_class' });
+  if (code === FOREIGN_KEY_VIOLATION && constraint.includes('subject')) return new ValidationError({ subjectId: 'invalid_subject' });
+  return error;
+}
+
+/** Administrators add a weekly period for an active member of staff in their school. */
+export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSlot): Promise<TimetableSlot> {
+  try {
+    return await withTransaction(async (client) => {
+      const [teacher] = await listActiveStaff(client, actor.schoolId, [input.teacherId]);
+      if (!teacher) throw new ValidationError({ teacherId: 'invalid_teacher' });
+      if ((await countSlots(client, actor.schoolId, input.teacherId)) >= SLOTS_PER_TEACHER_MAX) throw new ValidationError({ teacherId: 'too_many' });
+      const slot = await insertSlot(client, actor.schoolId, input);
+      await writeAudit(client, actor.schoolId, [
+        {
+          actorId: actor.id, action: 'timetable.slot_added', entityType: 'timetable_slot', entityId: slot.id,
+          metadata: { teacherId: input.teacherId, weekday: input.weekday },
+        },
+      ]);
+      return slot;
+    });
+  } catch (error) {
+    throw slotError(error);
+  }
+}
+
+export async function removeTimetableSlot(actor: SessionUser, slotId: string): Promise<void> {
+  await withTransaction(async (client) => {
+    const teacherId = await deleteSlot(client, actor.schoolId, slotId);
+    if (!teacherId) throw new NotFoundError();
+    await writeAudit(client, actor.schoolId, [
+      { actorId: actor.id, action: 'timetable.slot_removed', entityType: 'timetable_slot', entityId: slotId, metadata: { teacherId } },
+    ]);
+  });
+}

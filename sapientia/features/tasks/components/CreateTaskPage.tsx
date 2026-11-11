@@ -3,9 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { FeasibilityNotice } from '@/features/capacity/components/FeasibilityNotice';
+import { ESTIMATE_MAX_MINUTES, ESTIMATE_MIN_MINUTES } from '@/features/capacity/constants/capacity.constants';
+import type { FeasibilityRequest } from '@/features/capacity/interfaces/capacity.interface';
 import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
 import { fetchDeliveryPreview, PREVIEW_KEY } from '@/features/delivery/services/delivery.client';
 import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
+import { fetchSchoolData, schoolDataKey } from '@/features/school-data/services/school-data.client';
 import { fetchStaffDirectory, STAFF_DIRECTORY_KEY } from '@/features/users/services/users.client';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
@@ -27,6 +31,7 @@ const PREVIEW_REFRESH_MS = 60_000;
 /**
  * Senders and administrators: title, assignees and due date first (plan Sprint 3); details are optional. Outside working
  * hours the form says when the task will arrive and offers the urgent override, which needs a reason (plan Sprint 4).
+ * With a time estimate it also warns when an assignee does not have the time by the due date (plan Phase 2).
  */
 export function CreateTaskPage() {
   const text = useMessages(TASKS_MESSAGES);
@@ -42,12 +47,16 @@ export function CreateTaskPage() {
   const [description, setDescription] = useState('');
   const [urgent, setUrgent] = useState(false);
   const [urgentReason, setUrgentReason] = useState('');
+  const [taskTypeId, setTaskTypeId] = useState('');
+  const [minutes, setMinutes] = useState('');
+  const taskTypes = useQuery({ queryKey: schoolDataKey('task-types'), queryFn: () => fetchSchoolData('task-types') });
   const preview = useQuery({ queryKey: PREVIEW_KEY, queryFn: fetchDeliveryPreview, refetchInterval: PREVIEW_REFRESH_MS });
   const held = preview.data?.held ?? false;
 
   const create = useMutation({
     mutationFn: () => createTask({
       title, dueOn, assigneeIds, description: description || undefined,
+      taskTypeId: taskTypeId || undefined, estimatedMinutes: minutes === '' ? undefined : Number(minutes),
       ...(held && urgent ? { urgent: true, urgentReason } : {}),
     }, idempotencyKey),
     onSuccess: async (task) => {
@@ -61,6 +70,19 @@ export function CreateTaskPage() {
     setAssigneeIds((current) => (checked ? [...current, id] : current.filter((existing) => existing !== id)));
   const needle = filter.trim().toLowerCase();
   const visible = (staff.data ?? []).filter((person) => !needle || person.name.toLowerCase().includes(needle));
+
+  // Choosing a type fills in its usual estimate, which the sender can still change for this task.
+  const chooseTaskType = (id: string) => {
+    setTaskTypeId(id);
+    const estimate = taskTypes.data?.find((type) => type.id === id)?.estimatedMinutes;
+    if (estimate) setMinutes(String(estimate));
+  };
+  const estimate = Number(minutes);
+  const canCheck = assigneeIds.length > 0 && dueOn !== '' && minutes !== ''
+    && Number.isInteger(estimate) && estimate >= ESTIMATE_MIN_MINUTES && estimate <= ESTIMATE_MAX_MINUTES;
+  const feasibilityRequest: FeasibilityRequest | null = canCheck
+    ? { assigneeIds, dueOn, estimatedMinutes: estimate, urgent: held && urgent }
+    : null;
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -117,6 +139,27 @@ export function CreateTaskPage() {
             aria-invalid={Boolean(fields.dueOn)} aria-describedby="task-due-error" />
           <div id="task-due-error" className={calm.fieldError}>{fieldText(fields.dueOn, text, lang)}</div>
         </div>
+
+        <div className={calm.field}>
+          <label className={calm.label} htmlFor="task-type">{text.taskType} <span className={calm.muted}>({text.optional})</span></label>
+          <select id="task-type" className={calm.select} value={taskTypeId} onChange={(event) => chooseTaskType(event.target.value)}
+            aria-invalid={Boolean(fields.taskTypeId)} aria-describedby="task-type-error">
+            <option value="">{text.noTaskType}</option>
+            {(taskTypes.data ?? []).map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+          </select>
+          <div id="task-type-error" className={calm.fieldError}>{fieldText(fields.taskTypeId, text, lang)}</div>
+        </div>
+
+        <div className={calm.field}>
+          <label className={calm.label} htmlFor="task-minutes">{text.estimate} <span className={calm.muted}>({text.optional})</span></label>
+          <input id="task-minutes" type="number" inputMode="numeric" className={calm.input} value={minutes}
+            min={ESTIMATE_MIN_MINUTES} max={ESTIMATE_MAX_MINUTES} step={5} onChange={(event) => setMinutes(event.target.value)}
+            aria-invalid={Boolean(fields.estimatedMinutes)} aria-describedby="task-minutes-help task-minutes-error" />
+          <div id="task-minutes-help" className={calm.help}>{text.estimateHelp}</div>
+          <div id="task-minutes-error" className={calm.fieldError}>{fieldText(fields.estimatedMinutes, text, lang)}</div>
+        </div>
+
+        <FeasibilityNotice request={feasibilityRequest} onUseDate={setDueOn} />
 
         <div className={calm.field}>
           <label className={calm.label} htmlFor="task-description">{text.description} <span className={calm.muted}>({text.optional})</span></label>

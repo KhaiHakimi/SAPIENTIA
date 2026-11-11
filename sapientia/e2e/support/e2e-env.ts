@@ -21,6 +21,7 @@ export const ACCOUNTS = {
   sender: { email: 'pk.pentadbiran@guru.sapientia.test', name: 'Puan Salmah Idris' },
   aminah: { email: 'cikgu.aminah@guru.sapientia.test', name: 'Cikgu Aminah Yusof' },
   ravi: { email: 'cikgu.ravi@guru.sapientia.test', name: 'Cikgu Ravi Shankar' },
+  meiling: { email: 'cikgu.meiling@guru.sapientia.test', name: 'Cikgu Tan Mei Ling' },
 } as const;
 
 export function e2eDatabaseUrl(): string {

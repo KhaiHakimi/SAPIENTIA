@@ -78,8 +78,8 @@ export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardPro
         <Row href="#party" icon={<Icon name="squire" />}>{text.party}</Row>
       </nav>
       <div className={styles.tools}>
-        <button className={`${styles.toolButton} px`} type="button" aria-label={text.switchLanguage} onClick={toggleLang}>
-          BM | EN
+        <button className={`${styles.toolButton} px`} type="button" onClick={toggleLang}>
+          BM | EN <span className="sr-only">{text.switchLanguage}</span>
         </button>
         <button className={`${styles.toolButton} px`} type="button" onClick={toggleTheme}>
           {text.theme}

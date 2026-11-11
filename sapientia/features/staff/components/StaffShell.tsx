@@ -95,8 +95,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
           <span className={styles.who}>
             {user.name} <span className={calm.badge}>{text.roles[user.role]}</span>
           </span>
-          <button type="button" className={`${calm.button} ${calm.small}`} aria-label={text.switchLanguage} onClick={toggleLang}>
-            BM | EN
+          <button type="button" className={`${calm.button} ${calm.small}`} onClick={toggleLang}>
+            BM | EN <span className="sr-only">{text.switchLanguage}</span>
           </button>
           <button type="button" className={`${calm.button} ${calm.small}`} onClick={toggleTheme}>
             {text.theme}

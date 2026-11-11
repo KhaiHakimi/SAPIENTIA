@@ -68,7 +68,7 @@ export function AcceptInvitePage() {
   return (
     <div className={`${styles.page} ${cinzel.variable} ${inter.variable}`}>
       <div className={styles.tools}>
-        <button type="button" aria-label={text.switchLanguage} onClick={toggleLang}>BM | EN</button>
+        <button type="button" onClick={toggleLang}>BM | EN <span className="sr-only">{text.switchLanguage}</span></button>
         <button type="button" onClick={toggleTheme}>{text.theme}</button>
       </div>
       <main className={styles.pane}>

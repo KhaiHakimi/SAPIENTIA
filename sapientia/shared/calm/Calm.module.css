@@ -21,7 +21,7 @@
 .help { margin-top: .25em; font-size: .85em; color: var(--muted); }
 .fieldError { min-height: 1.2em; margin-top: .25em; font-size: .85em; color: var(--danger); }
 .input, .select, .textarea {
-  width: 100%; padding: .55em .7em; border: 1px solid var(--bd); border-radius: .35em;
+  width: 100%; padding: .55em .7em; border: 1px solid var(--field-bd); border-radius: .35em;
   background: var(--panel-2); color: var(--text); font: inherit;
 }
 .textarea { min-height: 6em; resize: vertical; }
@@ -33,7 +33,7 @@
 
 .button {
   display: inline-flex; align-items: center; justify-content: center; gap: .4em; min-height: 2.6em; padding: .5em 1em;
-  border: 1px solid var(--bd); border-radius: .35em; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--field-bd); border-radius: .35em; background: var(--panel-2); color: var(--text);
   font: 600 .95em/1.2 var(--font); cursor: pointer; text-decoration: none;
 }
 .button:hover:not(:disabled) { border-color: var(--accent); }

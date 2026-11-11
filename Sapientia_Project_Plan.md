@@ -175,10 +175,10 @@ Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the spri
 - [x] Notifications sent only by the worker after the conditional update succeeds (notify job queued in the delivering transaction; `notification_sends` stops repeats)
 - [x] External calls have timeouts and retry with exponential backoff (`shared/server/external-call.service.ts`, then pg-boss job retries)
 - [x] PWA manifest (`app/manifest.ts`), icons, service worker, install prompt (Notifications page)
-- [ ] Bahasa Melayu by default, English available; check every string is in the i18n files
-- [ ] Accessibility pass to WCAG 2.2 AA: contrast, labels, keyboard use, status shown by text as well as colour
-- [ ] Playwright journeys: invite and sign in; create a task at night and see it held; teacher completes it
-- [ ] OWASP Top 10 checklist review (Section 8 of this plan, Security)
+- [x] Bahasa Melayu by default, English available; check every string is in the i18n files (audit test for the server's reason codes; no hard-coded text found in the screens)
+- [x] Accessibility pass to WCAG 2.2 AA: contrast, labels, keyboard use, status shown by text as well as colour (token contrast test and axe scan automated; form-control edges and the language button's name fixed; a manual keyboard and screen-reader pass is still worth doing before the demo)
+- [x] Playwright journeys: invite and sign in; create a task outside working hours and see it held; teacher completes it (desktop and phone-sized; "outside working hours" is made by marking today a holiday, because a browser test cannot move the server's clock; the 10 pm Friday case is in the integration tests)
+- [x] OWASP Top 10 checklist review (Section 8 of this plan, Security): `docs/owasp-review.md`; Content-Security-Policy and HSTS added; six open items listed there
 - [ ] Choose demo hosting (D5); deploy staging; smoke test
 - [ ] Record a demo video using fictional data only
 

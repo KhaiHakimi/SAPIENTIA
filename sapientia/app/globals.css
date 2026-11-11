@@ -102,6 +102,8 @@ html[data-theme="light"] { color-scheme: light; }
    bullying screens: neutral colours, a plain system font, no scene, and the shop's skins and frames do not reach it. ===== */
 [data-theme-scope="calm"] {
   --bg: #12151b; --brick: transparent; --panel: #1b1f27; --panel-2: #242a34; --bd: #3a4150;
+  /* Form controls need a 3:1 edge against the card (WCAG 2.2, 1.4.11); --bd is for decorative card and table lines only. */
+  --field-bd: #6b7487;
   --text: #e6e9ef; --muted: #a0a8b6;
   --accent: #6fa3ef; --accent-text: #8ab4ff; --accent-ink: #0b1526;
   --ok: #4cc38a; --danger: #ef6a5e; --track: #0e1116; --focus: #8ab4ff;
@@ -111,7 +113,7 @@ html[data-theme="light"] { color-scheme: light; }
   --on-scene-text: var(--text); --on-scene-muted: var(--muted); --on-scene-shadow: none;
 }
 :root[data-theme="light"] [data-theme-scope="calm"] {
-  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f5; --bd: #c9d0db;
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eef1f5; --bd: #c9d0db; --field-bd: #7d8799;
   --text: #161b24; --muted: #545f70;
   --accent: #1a5fd1; --accent-text: #1a5fd1; --accent-ink: #ffffff;
   --ok: #17724a; --danger: #b3261e; --track: #dde2ea; --focus: #1a5fd1;

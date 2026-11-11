@@ -65,6 +65,7 @@ export function SentTasksPage({ heldOnly = false }: { heldOnly?: boolean }) {
                           : text.heldUntil(describeDeliveryTime(task.deliverAt, timeZone, lang))}
                       </span>
                       {task.urgent && <> <span className={`${calm.badge} ${calm.badgeDanger}`}>{text.urgentBadge}</span></>}
+                      {task.deadlineFlagged && <> <span className={`${calm.badge} ${calm.badgeDanger}`}>{text.flaggedBadge}</span></>}
                     </td>
                     <td>
                       <span className={`${calm.badge} ${task.doneCount === task.assigneeCount ? calm.badgeOk : ''}`}>

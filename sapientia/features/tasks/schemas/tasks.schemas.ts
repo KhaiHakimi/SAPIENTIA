@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
+import { estimatedMinutesSchema } from '@/features/school-data/schemas/school-data.schemas';
 import { ASSIGNEES_MAX, ASSIGNMENT_STATUSES, COMMENT_MAX, TASK_DESCRIPTION_MAX, TASK_TITLE_MAX } from '../constants/task.constants';
 
 const statusSchema = z.enum(ASSIGNMENT_STATUSES, { error: 'invalid_status' });
@@ -14,6 +15,9 @@ export const createTaskSchema = z.strictObject({
     .transform((ids) => [...new Set(ids)]),
   urgent: z.boolean({ error: 'invalid_boolean' }).optional().default(false),
   urgentReason: z.string().trim().max(URGENT_REASON_MAX, { error: 'too_long' }).optional(),
+  // Capacity (Phase 2): how long the task takes one person. A task type supplies its usual estimate; minutes override it.
+  taskTypeId: z.uuid({ error: 'invalid_task_type' }).optional(),
+  estimatedMinutes: estimatedMinutesSchema.optional(),
 }).transform(({ urgentReason, ...task }) => ({
   ...task,
   // A reason only means something with the override; without it, it is dropped rather than stored.

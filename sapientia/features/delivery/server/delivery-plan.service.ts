@@ -2,7 +2,7 @@ import 'server-only';
 import { DateTime } from 'luxon';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import type { Queryable } from '@/shared/server/database.service';
-import type { DeliveryPreview } from '../interfaces/working-calendar.interface';
+import type { DeliveryPreview, WorkingCalendar } from '../interfaces/working-calendar.interface';
 import { deliveryTime } from '../services/working-time.service';
 import { loadWorkingCalendar } from './school-calendar.repository';
 
@@ -15,6 +15,8 @@ export interface DeliveryPlan {
   /** The school's date today and on the delivery day, for checking the due date. */
   today: string;
   deliveryDay: string;
+  /** The calendar the plan was worked out from, for the capacity check that follows it. */
+  calendar: WorkingCalendar;
 }
 
 /** Decides when a task created now reaches its assignees. An urgent override delivers immediately, whatever the hour. */
@@ -30,6 +32,7 @@ export async function planDelivery(db: Queryable, schoolId: string, urgent: bool
     timeZone: calendar.timeZone,
     today: localDate(now),
     deliveryDay: localDate(deliverAt),
+    calendar,
   };
 }
 

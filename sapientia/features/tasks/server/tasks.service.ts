@@ -1,8 +1,10 @@
 import 'server-only';
 import { type AuditEntry, type AuditRow, listEntityAudit, writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
+import { assessAssignees } from '@/features/capacity/server/feasibility.service';
 import { planDelivery, type DeliveryPlan } from '@/features/delivery/server/delivery-plan.service';
 import { queueDeliveryNotice, scheduleDelivery } from '@/features/delivery/server/delivery-queue.service';
+import { findTaskTypeEstimate } from '@/features/school-data/server/school-data.repository';
 import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -33,10 +35,20 @@ function deliveryAudit(actorId: string, taskId: string, input: CreateTaskRequest
   return [entry('task.held', { deliverAt: plan.deliverAt.toISOString() })];
 }
 
+/** The sender's own minutes win; otherwise the task type's usual estimate; null when neither was given. */
+async function resolveEstimate(db: Queryable, schoolId: string, input: CreateTaskRequest): Promise<number | null> {
+  if (!input.taskTypeId) return input.estimatedMinutes ?? null;
+  const typical = await findTaskTypeEstimate(db, schoolId, input.taskTypeId);
+  if (typical === null) throw new ValidationError({ taskTypeId: 'invalid_task_type' });
+  return input.estimatedMinutes ?? typical;
+}
+
 /**
  * Creates a task for one or more staff in the sender's school (plan Sprints 3 and 4). Every assignee must be an active
  * account in that school. Outside working hours the task is held: saved now, with a delivery job in the same transaction,
  * and invisible to assignees until the next working morning. An urgent override delivers at once and records the reason.
+ * With an estimate, the capacity rules run for every assignee: a deadline someone has no time for is never refused, but
+ * the task is marked as flagged and the audit log records how many people it affects (plan Phase 2: warn, never block).
  * With an Idempotency-Key, a retry returns the first result.
  */
 export async function createTask(
@@ -51,10 +63,15 @@ export async function createTask(
       if (staff.length !== input.assigneeIds.length) throw new ValidationError({ assigneeIds: 'invalid_assignee' });
       const plan = await planDelivery(client, actor.schoolId, Boolean(input.urgent), clock);
       checkDueDate(input.dueOn, plan);
+      const estimatedMinutes = await resolveEstimate(client, actor.schoolId, input);
+      const shortOfTime = estimatedMinutes === null ? 0 : (await assessAssignees(client, actor.schoolId, {
+        staff, calendar: plan.calendar, from: plan.deliverAt, dueOn: input.dueOn, neededMinutes: estimatedMinutes,
+      })).filter((result) => !result.feasible).length;
 
       const now = clock.now();
       const taskId = await insertTask(client, actor.schoolId, {
         ...input, createdBy: actor.id, now, deliverAt: plan.deliverAt, deliveredAt: plan.deliveredAt, urgent: Boolean(input.urgent),
+        estimatedMinutes, deadlineFlagged: shortOfTime > 0,
       });
       await insertAssignments(client, actor.schoolId, taskId, input.assigneeIds, now);
       if (plan.deliveredAt) await queueDeliveryNotice(client, taskId);
@@ -65,6 +82,10 @@ export async function createTask(
           actorId: actor.id, action: 'task.assigned' as const, entityType: 'task' as const, entityId: taskId, metadata: { assigneeId },
         })),
         ...deliveryAudit(actor.id, taskId, input, plan),
+        ...(shortOfTime > 0 ? [{
+          actorId: actor.id, action: 'task.deadline_flagged' as const, entityType: 'task' as const, entityId: taskId,
+          metadata: { shortOfTime, estimatedMinutes },
+        }] : []),
       ]);
       return { status: 201, body: await loadDetail(client, actor, taskId) };
     };
@@ -88,6 +109,7 @@ export async function listAssignedTasks(
     createdBy: { id: row.created_by, name: row.creator_name },
     myStatus: row.my_status,
     urgent: row.urgent,
+    estimatedMinutes: row.estimated_minutes,
   }), (row) => encodeCursor(row.due_on, row.id));
 }
 
@@ -110,6 +132,7 @@ export async function listSentTasks(
     deliverAt: row.deliver_at.toISOString(),
     deliveredAt: row.delivered_at?.toISOString() ?? null,
     urgent: row.urgent,
+    deadlineFlagged: row.deadline_flagged,
   }), (row) => encodeCursor(row.created_at.toISOString(), row.id));
 }
 
@@ -140,6 +163,8 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
     deliveredAt: task.delivered_at?.toISOString() ?? null,
     urgent: task.urgent,
     urgentReason: task.urgent_reason,
+    estimatedMinutes: task.estimated_minutes,
+    deadlineFlagged: task.deadline_flagged,
     timeZone,
     isSender,
     myStatus: task.my_status,

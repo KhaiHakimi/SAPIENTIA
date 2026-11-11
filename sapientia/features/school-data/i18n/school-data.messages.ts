@@ -1,0 +1,91 @@
+import type { Lang } from '@/shared/interfaces/localized-text.interface';
+import type { SchoolDataMessages } from './school-data-messages.interface';
+
+export const SCHOOL_DATA_MESSAGES: Record<Lang, SchoolDataMessages> = {
+  ms: {
+    pageTitle: 'Data Sekolah',
+    pageIntro: 'Subjek, kelas dan jenis tugas sekolah ini. Jadual waktu dan semakan tarikh akhir menggunakannya.',
+    lists: {
+      'subjects': {
+        title: 'Subjek',
+        intro: 'Subjek yang diajar, untuk jadual waktu.',
+        nameLabel: 'Nama subjek',
+        namePlaceholder: 'cth. Matematik',
+        empty: 'Belum ada subjek.',
+      },
+      'classes': {
+        title: 'Kelas',
+        intro: 'Kelas di sekolah ini, untuk jadual waktu.',
+        nameLabel: 'Nama kelas',
+        namePlaceholder: 'cth. 4 Bestari',
+        empty: 'Belum ada kelas.',
+      },
+      'task-types': {
+        title: 'Jenis tugas',
+        intro: 'Tugas yang kerap diberi, dengan anggaran masa untuk seorang guru. Pengirim memilihnya semasa mencipta tugas.',
+        nameLabel: 'Nama jenis tugas',
+        namePlaceholder: 'cth. Kunci masuk markah',
+        empty: 'Belum ada jenis tugas.',
+      },
+    },
+    estimateLabel: 'Anggaran masa (minit)',
+    estimateHelp: 'Masa untuk seorang guru menyiapkannya, antara 5 dan 6000 minit.',
+    minutes: (count) => `${count} minit`,
+    add: 'Tambah',
+    adding: 'Menambah…',
+    remove: 'Buang',
+    removing: 'Membuang…',
+    removeLabel: (name) => `Buang ${name}`,
+    loading: 'Memuatkan…',
+    columns: { name: 'Nama', estimate: 'Anggaran', actions: 'Tindakan' },
+    fieldErrors: {
+      name_taken: 'Nama ini sudah ada dalam senarai.',
+      in_use: 'Masih digunakan dalam jadual waktu. Buang waktu itu dahulu.',
+      too_small: 'Sekurang-kurangnya 5 minit.',
+      too_large: 'Paling banyak 6000 minit.',
+    },
+  },
+  en: {
+    pageTitle: 'School Data',
+    pageIntro: 'This school\'s subjects, classes and task types. The timetable and the deadline check use them.',
+    lists: {
+      'subjects': {
+        title: 'Subjects',
+        intro: 'Subjects taught, for the timetable.',
+        nameLabel: 'Subject name',
+        namePlaceholder: 'e.g. Mathematics',
+        empty: 'No subjects yet.',
+      },
+      'classes': {
+        title: 'Classes',
+        intro: 'Classes in this school, for the timetable.',
+        nameLabel: 'Class name',
+        namePlaceholder: 'e.g. 4 Bestari',
+        empty: 'No classes yet.',
+      },
+      'task-types': {
+        title: 'Task types',
+        intro: 'Tasks that are given often, with the time one teacher needs. Senders choose one when creating a task.',
+        nameLabel: 'Task type name',
+        namePlaceholder: 'e.g. Key in exam marks',
+        empty: 'No task types yet.',
+      },
+    },
+    estimateLabel: 'Estimated time (minutes)',
+    estimateHelp: 'The time one teacher needs to finish it, from 5 to 6000 minutes.',
+    minutes: (count) => `${count} min`,
+    add: 'Add',
+    adding: 'Adding…',
+    remove: 'Remove',
+    removing: 'Removing…',
+    removeLabel: (name) => `Remove ${name}`,
+    loading: 'Loading…',
+    columns: { name: 'Name', estimate: 'Estimate', actions: 'Actions' },
+    fieldErrors: {
+      name_taken: 'This name is already on the list.',
+      in_use: 'Still used on a timetable. Remove that period first.',
+      too_small: 'At least 5 minutes.',
+      too_large: '6000 minutes at most.',
+    },
+  },
+};

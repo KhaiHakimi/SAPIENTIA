@@ -2,6 +2,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { formatDuration } from '@/features/capacity/services/duration-text';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDay } from '@/shared/i18n/format-date';
@@ -44,6 +45,9 @@ function BoardColumn({ status, text }: { status: AssignmentStatus; text: TasksMe
               {card.urgent && <span><span className={`${calm.badge} ${calm.badgeDanger}`}>{text.urgentBadge}</span></span>}
               <div className={calm.muted}>{text.due(formatDay(card.dueOn, lang))}</div>
               <div className={calm.muted}>{text.from(card.createdBy.name)}</div>
+              {card.estimatedMinutes !== null && (
+                <div className={calm.muted}>{text.estimateLine(formatDuration(card.estimatedMinutes, lang))}</div>
+              )}
               <StatusSelect taskId={card.id} status={card.myStatus} text={text} idPrefix="board" />
             </li>
           ))}

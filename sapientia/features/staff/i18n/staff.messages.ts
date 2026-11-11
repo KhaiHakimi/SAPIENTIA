@@ -6,8 +6,8 @@ export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
     skipToContent: 'Langkau ke kandungan',
     mainNav: 'Menu utama',
     nav: {
-      board: 'Papan Tugas', sent: 'Tugas Dihantar', held: 'Ditahan', newTask: 'Tugas Baharu', users: 'Pengguna',
-      settings: 'Waktu Bekerja', calendar: 'Kalendar', notifications: 'Pemberitahuan',
+      board: 'Papan Tugas', sent: 'Tugas Dihantar', held: 'Ditahan', newTask: 'Tugas Baharu', timetable: 'Jadual Waktu',
+      users: 'Pengguna', schoolData: 'Data Sekolah', settings: 'Waktu Bekerja', calendar: 'Kalendar', notifications: 'Pemberitahuan',
     },
     roles: { admin: 'Pentadbir', sender: 'Pengirim tugas', teacher: 'Guru' },
     switchLanguage: 'Tukar bahasa / Switch language',
@@ -22,8 +22,8 @@ export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
     skipToContent: 'Skip to content',
     mainNav: 'Main menu',
     nav: {
-      board: 'Task Board', sent: 'Sent Tasks', held: 'Held', newTask: 'New Task', users: 'Users',
-      settings: 'Working Hours', calendar: 'Calendar', notifications: 'Notifications',
+      board: 'Task Board', sent: 'Sent Tasks', held: 'Held', newTask: 'New Task', timetable: 'Timetable',
+      users: 'Users', schoolData: 'School Data', settings: 'Working Hours', calendar: 'Calendar', notifications: 'Notifications',
     },
     roles: { admin: 'Administrator', sender: 'Task sender', teacher: 'Teacher' },
     switchLanguage: 'Tukar bahasa / Switch language',

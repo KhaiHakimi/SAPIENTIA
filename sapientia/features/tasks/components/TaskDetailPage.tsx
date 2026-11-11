@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { formatDuration } from '@/features/capacity/services/duration-text';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDate, formatDay } from '@/shared/i18n/format-date';
@@ -84,6 +85,10 @@ export function TaskDetailPage({ id }: { id: string }) {
                   </span>
                 )}
                 {task.data.urgent && <span className={`${calm.badge} ${calm.badgeDanger}`}>{text.urgentBadge}</span>}
+                {task.data.estimatedMinutes !== null && <span>{text.estimateLine(formatDuration(task.data.estimatedMinutes, lang))}</span>}
+                {task.data.deadlineFlagged && (
+                  <span className={`${calm.badge} ${calm.badgeDanger}`} title={text.flaggedExplained}>{text.flaggedBadge}</span>
+                )}
               </div>
             </div>
           </div>

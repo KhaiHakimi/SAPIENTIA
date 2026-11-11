@@ -1,5 +1,6 @@
 /**
- * Development seed: two fictional schools and their staff. Every name is invented and every address uses the reserved .test
+ * Development seed: two fictional schools and their staff, and for the first school its subjects, classes, task types and
+ * a weekly timetable. Every name is invented and every address uses the reserved .test
  * domain, so nothing can reach a real person. Safe to run again: it updates the same rows.
  *
  * The shared password comes from SEED_PASSWORD in .env, never from this file. Run with `npm run db:seed`.
@@ -7,6 +8,7 @@
 import { hashPassword } from '@/features/auth/server/password.service';
 import { closePool, withTransaction } from '@/shared/server/database.service';
 import { PASSWORD_MIN_LENGTH } from '@/features/auth/constants/password.constants';
+import { seedCapacity } from './capacity-seed';
 
 interface SeedUser {
   email: string;
@@ -42,6 +44,9 @@ const SEED_SCHOOLS: SeedSchool[] = [
   },
 ];
 
+/** The school that also gets timetable data; the other stays empty so the cross-school refusals are easy to try by hand. */
+const CAPACITY_DEMO_SCHOOL = 'DEMO001';
+
 async function main(): Promise<void> {
   const password = process.env.SEED_PASSWORD ?? '';
   if (password.length < PASSWORD_MIN_LENGTH) {
@@ -65,6 +70,7 @@ async function main(): Promise<void> {
           [schoolId, user.email, user.name, user.role, passwordHash],
         );
       }
+      if (school.code === CAPACITY_DEMO_SCHOOL) await seedCapacity(client, schoolId);
     }
   });
   const count = SEED_SCHOOLS.reduce((total, school) => total + school.users.length, 0);

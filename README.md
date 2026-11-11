@@ -47,9 +47,10 @@ The defining feature is **held delivery**. A task created outside working hours 
 | `prototypes/login` | Sign-in screen prototype (Bahasa Melayu and English) | Static HTML, no real authentication |
 | `prototypes/landing` | Landing page prototype with several design directions | Static HTML |
 | `prototypes/student-dashboard` | Gamified student home (see below) | Static HTML, data kept in the browser only |
-| `sapientia/` | Next.js application skeleton | Created from the starter template, not yet built on |
+| `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable and deadline check are built and tested with fictional data. See `sapientia/README.md` |
+| `docs/` | OWASP review, Phase 2 stories and threat model | Written |
 
-There is no database, API or real sign-in yet.
+Nothing is deployed: the app runs locally against a Docker database. Student accounts are still browser-only demo data.
 
 ## The student dashboard prototype
 
@@ -110,9 +111,7 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 
 **Prototypes:** plain HTML, CSS and JavaScript (no build step). Pixel art is drawn from letter grids as SVG. All text uses the VT323 pixel font from Google Fonts, chosen because its digits and letters (5 and S, 0 and 8) are easy to tell apart.
 
-**Planned back end and web app** (decisions are in the plan and may change): Node.js LTS, Fastify, PostgreSQL 16 or later, pg-boss for scheduled jobs, React with Vite as an installable web app, Zod for validation, Luxon for time zones, Vitest and Playwright for tests. Argon2id password hashing, HttpOnly cookies and rate limiting are planned for sign-in.
-
-**Application skeleton in `sapientia/`:** Next.js, React and Tailwind CSS, created from the starter template.
+**Web app in `sapientia/`** (decisions D1 to D4 in the plan): Next.js 16 with TypeScript, PostgreSQL 16, pg-boss for scheduled jobs, Zod for validation, Luxon for time zones, Vitest and Playwright for tests. Sign-in uses Argon2id password hashing, HttpOnly cookies and rate limiting.
 
 ## Running it
 
@@ -124,15 +123,7 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 
 An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, pahlawan name and outfit colours, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
 
-**Application skeleton.**
-
-```bash
-cd sapientia
-npm install
-npm run dev
-```
-
-Then open http://localhost:3000.
+**Web app.** It needs Node 26 and Docker Desktop; the steps (database, migrations, seed, worker) are in `sapientia/README.md`.
 
 ## Roadmap
 
@@ -160,7 +151,7 @@ Each phase ends with a go/no-go gate. The next phase does not start until the ga
 
 ## Status and licence
 
-Early stage. The plan and prototypes are the current deliverables, and the first working milestone is the Phase 1 MVP.
+Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, and the first sprint of Phase 2 (capacity) is built. Nothing is deployed and all data is fictional.
 
 Licence: to be decided. Until a licence file is added, all rights are reserved by the author.
 

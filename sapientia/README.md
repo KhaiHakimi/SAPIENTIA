@@ -23,6 +23,7 @@ Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@g
 | `npm test` | Unit tests (Vitest), no database needed |
 | `npm run db:migrate:test` | Migrates the test database (`TEST_DATABASE_URL`) |
 | `npm run test:integration` | `*.integration.test.ts` against the test database: it is emptied between tests, so never point it at real data |
+| `npm run test:e2e` | Playwright: the three MVP journeys and an accessibility scan (axe, WCAG 2.2 AA) of the sign-in and staff screens, on a desktop window and a phone-sized screen. Starts its own server on port 3100 against the test database, which it empties and seeds first. Uses the installed Microsoft Edge; stop `npm run dev` first (Next.js allows one dev server per folder) |
 | `npm run lint` | ESLint: Next.js rules plus the Google style rules |
 | `npm run typecheck` | Generates route types, then `tsc --noEmit` |
 | `npm run build` | Production build |
@@ -32,7 +33,7 @@ Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@g
 | `npm run db:migrate:create -- <name>` | New SQL migration in `migrations/`. Never edit one that has been released; add another |
 | `npm run db:down` | Stops the database (data is kept in the `db-data` volume) |
 
-CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations (up, down, up), integration tests and the build on every pull request, plus `npm audit --audit-level=high`.
+CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations (up, down, up), integration tests and the build on every pull request, plus `npm audit --audit-level=high` and the end-to-end journeys (in Chromium; that job is new and has not yet run on GitHub).
 
 ## How it fits together
 
@@ -44,6 +45,9 @@ CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations
 - **App install**: `app/manifest.ts` and `public/sw.js` (shows push notices, caches nothing). The Notifications page has the install button where the browser offers one, and the Add to Home Screen steps on iPhone and iPad.
 - **Audit log**: `audit_logs` records ids and states only, never names or text. A database trigger blocks UPDATE and DELETE.
 - **Time**: services take a `Clock`; route handlers pass `appClock()`, which integration tests can set to "10 pm on a Friday" with `setTestClock`. Times are stored in UTC and read in the school's time zone (Luxon).
+- **Security headers**: `next.config.ts` sends a Content-Security-Policy that allows only the app's own origin, plus HSTS outside development. The Sprint 5 OWASP review, with what is still open, is in `../docs/owasp-review.md`.
+- **Accessibility**: staff screens are checked against WCAG 2.2 AA by `shared/theme/calm-contrast.test.ts` (colour tokens) and `e2e/accessibility.spec.ts` (axe). Keyboard order and wording still need a person to check.
+- **Languages**: Bahasa Melayu by default, English by the BM | EN button. `shared/api/api-error.messages.test.ts` fails if a reason code the server can send has no text in either language.
 - **Theme scopes** (plan D8): `(magic)` routes (sign-in, accept invite, student board) and `(calm)` routes (all staff screens, `shared/calm/Calm.module.css`).
 
 ## Where things are
@@ -89,6 +93,7 @@ migrations/                      SQL migrations (node-pg-migrate)
 seeds/dev-seed.ts                fictional schools and staff
 worker/index.ts                  the background worker
 scripts/install-queues.ts        pg-boss schema and queues (run by db:migrate)
+e2e/                             Playwright journeys and accessibility scan (npm run test:e2e)
 docker/initdb/                   creates the test database on a fresh volume
 public/                          character art, scenes, logo
 ```

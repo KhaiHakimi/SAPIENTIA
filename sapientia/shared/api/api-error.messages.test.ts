@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { DELIVERY_MESSAGES } from '@/features/delivery/i18n/delivery.messages';
 import { EXTENSIONS_MESSAGES } from '@/features/extensions/i18n/extensions.messages';
+import { HOURS_MESSAGES } from '@/features/hours/i18n/hours.messages';
+import { LESSONS_MESSAGES } from '@/features/lessons/i18n/lessons.messages';
 import { RELIEF_MESSAGES } from '@/features/relief/i18n/relief.messages';
 import { SCHOOL_DATA_MESSAGES } from '@/features/school-data/i18n/school-data.messages';
 import { TASKS_MESSAGES } from '@/features/tasks/i18n/tasks.messages';
@@ -36,7 +38,8 @@ function serverReasonCodes(): string[] {
 }
 
 const featureFieldTexts = [
-  DELIVERY_MESSAGES, TASKS_MESSAGES, SCHOOL_DATA_MESSAGES, TIMETABLE_MESSAGES, EXTENSIONS_MESSAGES, RELIEF_MESSAGES,
+  DELIVERY_MESSAGES, TASKS_MESSAGES, SCHOOL_DATA_MESSAGES, TIMETABLE_MESSAGES, EXTENSIONS_MESSAGES, RELIEF_MESSAGES, LESSONS_MESSAGES,
+  HOURS_MESSAGES,
 ];
 
 describe('API error messages', () => {

@@ -5,7 +5,7 @@ import type { NewTimetableSlot, TimetableSlot } from '../interfaces/timetable.in
 
 /** Every function takes schoolId first and filters on it. */
 
-interface SlotRow {
+export interface SlotRow {
   id: string;
   teacher_id: string;
   weekday: number;
@@ -18,12 +18,13 @@ interface SlotRow {
   label: string | null;
 }
 
-const SLOT_COLUMNS = `s.id, s.teacher_id, s.weekday, to_char(s.start_time, 'HH24:MI') AS start_time, to_char(s.end_time, 'HH24:MI') AS end_time,
+/** Shared with the lesson records, which list the same periods. */
+export const SLOT_COLUMNS = `s.id, s.teacher_id, s.weekday, to_char(s.start_time, 'HH24:MI') AS start_time, to_char(s.end_time, 'HH24:MI') AS end_time,
   s.class_id, c.name AS class_name, s.subject_id, j.name AS subject_name, s.label`;
-const SLOT_JOINS = `LEFT JOIN classes c ON c.id = s.class_id AND c.school_id = s.school_id
+export const SLOT_JOINS = `LEFT JOIN classes c ON c.id = s.class_id AND c.school_id = s.school_id
   LEFT JOIN subjects j ON j.id = s.subject_id AND j.school_id = s.school_id`;
 
-const toSlot = (row: SlotRow): TimetableSlot => ({
+export const toSlot = (row: SlotRow): TimetableSlot => ({
   id: row.id,
   weekday: row.weekday as IsoWeekday,
   startTime: row.start_time,

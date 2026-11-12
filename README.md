@@ -47,8 +47,8 @@ The defining feature is **held delivery**. A task created outside working hours 
 | `prototypes/login` | Sign-in screen prototype (Bahasa Melayu and English) | Static HTML, no real authentication |
 | `prototypes/landing` | Landing page prototype with several design directions | Static HTML |
 | `prototypes/student-dashboard` | Gamified student home (see below) | Static HTML, data kept in the browser only |
-| `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable, deadline check, extension requests, the workload view and relief suggestions are built and tested with fictional data. See `sapientia/README.md` |
-| `docs/` | OWASP review, Phase 2 stories and threat model | Written |
+| `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable, deadline check, extension requests, the workload view, relief suggestions, lesson records and the private hours log are built and tested with fictional data. See `sapientia/README.md` |
+| `docs/` | OWASP review; stories and threat models for Phases 2 and 3 | Written |
 
 Nothing is deployed: the app runs locally against a Docker database. Student accounts are still browser-only demo data.
 
@@ -151,7 +151,7 @@ Each phase ends with a go/no-go gate. The next phase does not start until the ga
 
 ## Status and licence
 
-Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, and the three sprints of Phase 2 (capacity) are built; its gate (G4) has not been decided. Nothing is deployed and all data is fictional.
+Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, Phase 2 (capacity) is built and its gate (G4) passed, and the first sprint of Phase 3 (evidence) is built. Nothing is deployed and all data is fictional.
 
 Licence: to be decided. Until a licence file is added, all rights are reserved by the author.
 

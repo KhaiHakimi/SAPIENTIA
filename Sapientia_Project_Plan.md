@@ -222,7 +222,7 @@ Sprint 8 was built on 12 November 2026:
 - [x] Optional completion question on a finished task; counts per task type for administrators, from three answers up
 - [x] Web: Relief (own relief classes for everyone, arranging for administrators); refusal tests; Playwright journeys; the new screen in the accessibility scan
 - [x] Notifications for relief, assigned or cancelled (added 12 November 2026, at the relief's delivery time)
-- [ ] Gate G4: the evidence is in `docs/phase-2-capacity.md`; the go or no-go decision has not been made
+- [x] Gate G4: passed on 12 November 2026, when the project owner asked for the work to continue into Phase 3. The evidence is in `docs/phase-2-capacity.md`; teacher interviews (G0) are still outstanding
 
 Scope for the phase:
 - Tables: `task_types`, `classes`, `subjects`, `timetable_slots`, `extension_requests`, `relief_assignments`
@@ -236,6 +236,17 @@ Scope for the phase:
 - **Risk to watch:** the "committed work as a single total" simplification. Keep it, and record in the README that it is deliberate.
 
 ### Phase 3: Evidence (S9 to S10, 22 February to 19 March 2027)
+User stories, the threat model and the sprint split are in `docs/phase-3-evidence.md`. No blank report templates were gathered in Phase 0, so the monthly report will use a generic format. Sprint 9 was built ahead of its dates on 12 November 2026:
+- [x] Tables `lesson_records` (a copy of the period's time, class and teacher, so records outlive timetable changes), `private_hours_log` and `private_hours_shares` (new migration `evidence`)
+- [x] One-tap lesson record for each period that has started, up to 30 days back; a reason when not held; optional https e-RPH link; the relief teacher records a covered class
+- [x] Private hours log: entries, a monthly total, sharing the total only (as a snapshot) and withdrawing it
+- [x] Owner-only access proved three ways: refusal tests on every endpoint, the owner always taken from the session, and a test that fails if any file but the hours repository names the log's tables or if any statement there skips the owner filter
+- [x] Web: Lesson Records and Private Hours Log for every role; Playwright journeys; both screens in the accessibility scan
+- [ ] Not built in Sprint 9: a photo on a lesson record (with file uploads in Sprint 10)
+
+Sprint 10 (not started): monthly report with PDF and Excel export, wellbeing indicators, material bank, file uploads, gate G5.
+
+Scope for the phase:
 - Tables: `lesson_records`, `materials`, `private_hours_log`
 - One-tap lesson record ("held" or "not held" plus reason); optional e-RPH link or photo. Do not rebuild e-RPH.
 - Monthly principal report: classes held against scheduled, reasons, relief covered, tasks completed, flagged deadlines, overrides. Export PDF and Excel. Design the layout from the real templates gathered in Phase 0.

@@ -1,6 +1,6 @@
 # Sapientia web app
 
-Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery, notifications, the timetable, the deadline check, extension requests and relief run against the database (plan Sprints 2 to 8). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
+Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery, notifications, the timetable, the deadline check, extension requests, relief, lesson records and the private hours log run against the database (plan Sprints 2 to 9). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
 
 ## Run
 
@@ -48,6 +48,8 @@ CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations
 - **App install**: `app/manifest.ts` and `public/sw.js` (shows push notices, caches nothing). The Notifications page has the install button where the browser offers one, and the Add to Home Screen steps on iPhone and iPad.
 - **Audit log**: `audit_logs` records ids and states only, never names or text. A database trigger blocks UPDATE and DELETE.
 - **Relief** (plan Sprint 8): an administrator picks an absent teacher and a date, and for each of that teacher's periods asks `GET /api/relief/suggestions` for up to three people who are free then (no lesson, duty or other relief in the period, and not away themselves), ordered by fewest relief classes this month and then least committed work that week. The ordering is a pure function in `features/relief/services/relief-ranking.service.ts`. The administrator chooses (`POST /api/relief`) and can cancel (`DELETE /api/relief/:id`); the database refuses a second relief for a period and a relief teacher in two places at once. Relief follows held delivery: the relief teacher sees it under `GET /api/relief/mine` from its `deliver_at`, never outside working hours. A relief class counts as teaching time on its date in the deadline check.
+- **Lesson records** (plan Sprint 9): `GET /api/lessons?onDate=` lists the caller's periods that day, their own and the colleagues' they cover, and `PUT /api/lessons/records` marks one held or not held (a reason is required when not held; an e-RPH link must be https). Only the period's teacher records it, or the relief teacher once relief is delivered to them; anyone else gets 404. A period can be recorded once it has started, on its own weekday, a working day, up to 30 days back. Each record copies the period's time, class and teacher, so deleting the period keeps the record. The audit log has who, which period, which date and held or not; never the note or the link.
+- **Private hours log** (plan Sprint 9): under `/api/me/hours` only, so the owner is always the signed-in person. Entries (date, minutes, kind, optional note) are never in the audit log and never readable by anyone else. A teacher may share a month's total (`PUT /api/me/hours/share`), stored as the figure at that moment, and withdraw it. `features/hours/server/hours.repository.ts` is the only code that names the log's tables; `private-hours-isolation.test.ts` fails if that changes or if a statement there skips the owner filter.
 - **Completion question** (plan Sprint 8): on their own finished task an assignee may say it took under 1 hour, 1 to 3 hours or over 3 hours (`PUT /api/tasks/:id/assignments/me/time-taken`; null takes it back). Nobody else can read an individual answer. Administrators see counts per task type on School Data (`GET /api/task-type-feedback`), only for types with at least three answers.
 - **Time**: services take a `Clock`; route handlers pass `appClock()`, which integration tests can set to "10 pm on a Friday" with `setTestClock`. Times are stored in UTC and read in the school's time zone (Luxon).
 - **Security headers**: `next.config.ts` sends a Content-Security-Policy that allows only the app's own origin, plus HSTS outside development. The Sprint 5 OWASP review, with what is still open, is in `../docs/owasp-review.md`.
@@ -76,8 +78,8 @@ Code is grouped **by feature**. Every feature folder uses the same sub-folders, 
 app/
   layout.tsx, globals.css        root layout, design tokens (magic and calm scopes), colour skins, card frames
   (magic)/                       login, accept-invite, student (magic-academy theme)
-  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], timetable, relief, users, school-data, settings, calendar, notifications
-  api/                           JSON API (auth, me, me/notifications, me/push-subscriptions, users, staff, tasks, tasks/feasibility, tasks/[id]/extension-requests, tasks/[id]/extension-suggestion, staff/workload, relief, task-type-feedback, timetable, school-data, school/settings, calendar/events, delivery/preview)
+  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], timetable, relief, lessons, hours, users, school-data, settings, calendar, notifications
+  api/                           JSON API (auth, me, me/notifications, me/hours, me/push-subscriptions, users, staff, tasks, tasks/feasibility, tasks/[id]/extension-requests, tasks/[id]/extension-suggestion, staff/workload, relief, lessons, task-type-feedback, timetable, school-data, school/settings, calendar/events, delivery/preview)
   health/route.ts                GET /health: 200 when the database answers, 503 when not
 features/
   auth/                          sign-in page, sessions, passwords, invites, throttling
@@ -88,6 +90,8 @@ features/
   capacity/                      free-time and feasibility rules, the dry-run check, the warning on the new-task form
   extensions/                    requests for more time: the pre-filled form, the sender's answer, the exchange on the task
   relief/                        covering an absent teacher's periods: suggestions, assigning, each person's own relief classes
+  lessons/                       one-tap lesson records for each person's own periods and the relief classes they cover
+  hours/                         the private hours log, readable only by its owner, and the shared monthly total
   timetable/                     each teacher's weekly periods
   school-data/                   subjects, classes and task types
   notifications/                 email and push senders, the notify job, each person's settings, the Notifications page
@@ -129,6 +133,8 @@ In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok
 - Capacity is a deliberate simplification: committed work is one total, not a schedule. An unfinished task counts in full once its due date falls inside the period being checked, and not at all before that. Only tasks with an estimate count, so the check is only as good as the estimates. A task's flag is worked out once, when it is sent, and does not change if the timetable changes later.
 - Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers). The board still sorts by the task's own due date, while each card shows the assignee's date. The figures on a request are a snapshot from when it was made.
 - Relief: there is no absence register: a teacher counts as away on a date only once relief is arranged for one of their own periods. Only staff with at least one timetable period are suggested. There is no urgent override for relief arranged outside working hours.
+- Lesson records: the reasons and the 30-day window are judgements, not from teacher interviews. A period nobody records stays unrecorded; nobody records the periods of a teacher who is absent with no relief. No photo yet (file uploads come in Sprint 10).
+- Private hours log: a shared total is not shown to anyone yet; the monthly report in Sprint 10 will show it to administrators.
 - Completion question: the three-answer minimum before counts are shown is a judgement to revisit for small schools. A task type's estimate can only be changed by removing the type and adding it again.
 - The timetable has no terms or alternating weeks: one week repeats all year. School holidays count only if they are in the Calendar.
 - A teacher's timetable can be read by that teacher and by administrators only. Senders see free-time totals through the deadline check, never the timetable itself.

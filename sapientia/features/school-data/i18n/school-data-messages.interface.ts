@@ -1,4 +1,6 @@
+import type { TimeTaken } from '@/features/tasks/interfaces/task.interface';
 import type { SchoolDataKind } from '../interfaces/school-data.interface';
+import type { FeedbackVerdict } from '../services/time-feedback';
 
 export interface SchoolDataListMessages {
   title: string;
@@ -22,5 +24,14 @@ export interface SchoolDataMessages {
   removeLabel: (name: string) => string;
   loading: string;
   columns: { name: string; estimate: string; actions: string };
+  /** Answers to the completion question, counted per task type. */
+  feedback: {
+    title: string;
+    intro: string;
+    empty: (minAnswers: number) => string;
+    columns: { type: string; verdict: string };
+    options: Record<TimeTaken, string>;
+    verdicts: Record<FeedbackVerdict, string>;
+  };
   fieldErrors: Record<string, string>;
 }

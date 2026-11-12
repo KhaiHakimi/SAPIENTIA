@@ -1,7 +1,13 @@
 import { apiFetch } from '@/shared/api/api-client';
-import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind } from '../interfaces/school-data.interface';
+import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind, TaskTypeFeedback } from '../interfaces/school-data.interface';
 
 export const schoolDataKey = (kind: SchoolDataKind) => ['school-data', kind] as const;
+
+export const TASK_TYPE_FEEDBACK_KEY = ['school-data', 'task-type-feedback'] as const;
+
+export async function fetchTaskTypeFeedback(): Promise<TaskTypeFeedback[]> {
+  return (await apiFetch<{ items: TaskTypeFeedback[] }>('/api/task-type-feedback')).items;
+}
 
 export async function fetchSchoolData(kind: SchoolDataKind): Promise<SchoolDataItem[]> {
   return (await apiFetch<{ items: SchoolDataItem[] }>(`/api/school-data/${kind}`)).items;

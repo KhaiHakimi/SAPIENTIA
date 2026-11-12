@@ -16,6 +16,8 @@
 .activity { list-style: none; margin: 0; padding: 0; display: grid; gap: .4em; font-size: .9em; }
 .activity time { color: var(--muted); margin-right: .5em; }
 
+.choices { display: flex; flex-wrap: wrap; gap: .5em; margin-bottom: .4em; }
+
 /* Assignee picker */
 .picker { max-height: 16em; overflow-y: auto; border: 1px solid var(--bd); border-radius: .35em; padding: .5em .75em; background: var(--panel-2); }
 .titleCell a { font-weight: 600; color: var(--text); }

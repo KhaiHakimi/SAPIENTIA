@@ -60,6 +60,12 @@ export const TASKS_MESSAGES: Record<Lang, TasksMessages> = {
     urgentBecause: (reason) => `Dihantar segera kerana: ${reason}`,
     myStatus: 'Status saya',
     statusSaved: 'Status disimpan.',
+    timeTaken: {
+      question: 'Berapa lama tugas ini mengambil masa?',
+      help: 'Jawapan anda hanya dikira bersama jawapan orang lain untuk membaiki anggaran masa jenis tugas ini. Ia tidak ditunjukkan di sebelah nama anda.',
+      options: { 'under_1h': 'Kurang 1 jam', '1_to_3h': '1 hingga 3 jam', 'over_3h': 'Lebih 3 jam' },
+      saved: 'Jawapan disimpan.',
+    },
     overall: 'Kemajuan keseluruhan',
     assigneesTitle: 'Penerima',
     completedAt: (when) => `Selesai ${when}`,
@@ -93,6 +99,8 @@ export const TASKS_MESSAGES: Record<Lang, TasksMessages> = {
       too_small: 'Sekurang-kurangnya 5 minit.',
       too_large: 'Paling banyak 6000 minit.',
       invalid_number: 'Masukkan bilangan minit, tanpa perpuluhan.',
+      invalid_time_taken: 'Pilih salah satu daripada tiga jawapan.',
+      not_done: 'Soalan ini hanya untuk tugas yang sudah selesai.',
     },
   },
   en: {
@@ -153,6 +161,12 @@ export const TASKS_MESSAGES: Record<Lang, TasksMessages> = {
     urgentBecause: (reason) => `Sent urgently because: ${reason}`,
     myStatus: 'My status',
     statusSaved: 'Status saved.',
+    timeTaken: {
+      question: 'How long did this task take?',
+      help: 'Your answer is only counted with other people\'s, to correct the time estimate for this kind of task. It is not shown beside your name.',
+      options: { 'under_1h': 'Under 1 hour', '1_to_3h': '1 to 3 hours', 'over_3h': 'Over 3 hours' },
+      saved: 'Answer saved.',
+    },
     overall: 'Overall progress',
     assigneesTitle: 'Assigned to',
     completedAt: (when) => `Done ${when}`,
@@ -186,6 +200,8 @@ export const TASKS_MESSAGES: Record<Lang, TasksMessages> = {
       too_small: 'At least 5 minutes.',
       too_large: '6000 minutes at most.',
       invalid_number: 'Enter a whole number of minutes.',
+      invalid_time_taken: 'Choose one of the three answers.',
+      not_done: 'This question is only for a finished task.',
     },
   },
 };

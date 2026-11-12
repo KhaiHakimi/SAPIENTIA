@@ -201,7 +201,8 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await countered.json()) as ExtensionRequest).toMatchObject({ status: 'countered', requestedDueOn: THURSDAY, decidedDueOn: TUESDAY });
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
 
-      // The next request starts from the date that was granted.
+      // A minute later (the exchange is listed in the order it happened): the next request starts from the date granted.
+      setTestClock(fixedClock('2026-11-02T07:31:00+08:00'));
       const second = await askedFor(task.id, WEDNESDAY);
       expect(second).toMatchObject({ currentDueOn: TUESDAY, status: 'pending' });
       // Proposing exactly what was asked for is an approval.

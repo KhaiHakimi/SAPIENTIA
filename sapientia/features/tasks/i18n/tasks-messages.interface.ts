@@ -1,4 +1,4 @@
-import type { AssignmentStatus } from '../interfaces/task.interface';
+import type { AssignmentStatus, TimeTaken } from '../interfaces/task.interface';
 
 export interface TasksMessages {
   statuses: Record<AssignmentStatus, string>;
@@ -64,6 +64,8 @@ export interface TasksMessages {
   urgentBecause: (reason: string) => string;
   myStatus: string;
   statusSaved: string;
+  /** The optional completion question, shown once the caller's own task is done. */
+  timeTaken: { question: string; help: string; options: Record<TimeTaken, string>; saved: string };
   overall: string;
   assigneesTitle: string;
   completedAt: (when: string) => string;

@@ -214,8 +214,15 @@ Sprint 7 was built on 12 November 2026:
 - [x] Workload view: estimated unfinished work due this week beside each name on the new-task form (`GET /api/staff/workload`, totals only)
 - [x] Refusal tests for every new endpoint; a Playwright journey with an accessibility scan of the request and answer screens
 - [ ] Not built: notifying the sender of a request and the teacher of the answer
-- [ ] Sprint 8: relief (`relief_assignments`), completion question, gate G4
-- [ ] Sprint 8: relief (`relief_assignments`), completion question, gate G4
+
+Sprint 8 was built on 12 November 2026:
+- [x] Table `relief_assignments` (one relief per period per date; a relief teacher cannot be in two places at once) and the completion answer on `task_assignments` (in the same unreleased migration)
+- [x] Relief suggestions as a pure, unit-tested ranking: free in the period, fewest relief classes this month, least committed work this week, top three; an administrator decides
+- [x] Relief follows held delivery; a relief class counts as teaching time in the deadline check
+- [x] Optional completion question on a finished task; counts per task type for administrators, from three answers up
+- [x] Web: Relief (own relief classes for everyone, arranging for administrators); refusal tests; Playwright journeys; the new screen in the accessibility scan
+- [ ] Not built: notifications for relief (assigned or cancelled)
+- [ ] Gate G4: the evidence is in `docs/phase-2-capacity.md`; the go or no-go decision has not been made
 
 Scope for the phase:
 - Tables: `task_types`, `classes`, `subjects`, `timetable_slots`, `extension_requests`, `relief_assignments`

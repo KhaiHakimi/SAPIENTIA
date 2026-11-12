@@ -1,6 +1,6 @@
 # Sapientia web app
 
-Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery, notifications, the timetable, the deadline check and extension requests run against the database (plan Sprints 2 to 7). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
+Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery, notifications, the timetable, the deadline check, extension requests and relief run against the database (plan Sprints 2 to 8). The student board from `../prototypes/student-dashboard` still uses fictional sample data in the browser until student accounts exist (Phase 4). All people in the seed data are fictional.
 
 ## Run
 
@@ -23,7 +23,7 @@ Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@g
 | `npm test` | Unit tests (Vitest), no database needed |
 | `npm run db:migrate:test` | Migrates the test database (`TEST_DATABASE_URL`) |
 | `npm run test:integration` | `*.integration.test.ts` against the test database: it is emptied between tests, so never point it at real data |
-| `npm run test:e2e` | Playwright: the MVP, capacity and extension journeys and an accessibility scan (axe, WCAG 2.2 AA) of the sign-in and staff screens, on a desktop window and a phone-sized screen. Builds the app and starts it on port 3100 against the test database, which it empties and seeds first (about five minutes in all). Uses the installed Microsoft Edge |
+| `npm run test:e2e` | Playwright: the MVP, capacity, extension, relief and completion-question journeys and an accessibility scan (axe, WCAG 2.2 AA) of the sign-in and staff screens, on a desktop window and a phone-sized screen. Builds the app and starts it on port 3100 against the test database, which it empties and seeds first (about five minutes in all). Uses the installed Microsoft Edge |
 | `npm run lint` | ESLint: Next.js rules plus the Google style rules |
 | `npm run typecheck` | Generates route types, then `tsc --noEmit` |
 | `npm run build` | Production build |
@@ -46,6 +46,8 @@ CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations
 - **Notifications**: whenever a task is delivered (at once, by its job, or by the sweep) a `notify-task-delivered` job is queued in the same transaction, so a held task is never announced early and only the worker sends. It emails each active assignee who has email on, and sends Web Push to each device they turned it on for. Every send has a timeout and up to three tries with backoff; a temporary failure makes pg-boss retry the job later (over about an hour), and `notification_sends` records what went out so a retry sends only what is missing. A device the push service reports gone is removed. Push addresses must be on a known push service (`PUSH_SERVICE_HOSTS`), so the worker cannot be pointed at other servers. Email is bilingual (BM first); push is in BM. A channel without its `.env` settings is off. Signing out turns push off for that device.
 - **App install**: `app/manifest.ts` and `public/sw.js` (shows push notices, caches nothing). The Notifications page has the install button where the browser offers one, and the Add to Home Screen steps on iPhone and iPad.
 - **Audit log**: `audit_logs` records ids and states only, never names or text. A database trigger blocks UPDATE and DELETE.
+- **Relief** (plan Sprint 8): an administrator picks an absent teacher and a date, and for each of that teacher's periods asks `GET /api/relief/suggestions` for up to three people who are free then (no lesson, duty or other relief in the period, and not away themselves), ordered by fewest relief classes this month and then least committed work that week. The ordering is a pure function in `features/relief/services/relief-ranking.service.ts`. The administrator chooses (`POST /api/relief`) and can cancel (`DELETE /api/relief/:id`); the database refuses a second relief for a period and a relief teacher in two places at once. Relief follows held delivery: the relief teacher sees it under `GET /api/relief/mine` from its `deliver_at`, never outside working hours. A relief class counts as teaching time on its date in the deadline check.
+- **Completion question** (plan Sprint 8): on their own finished task an assignee may say it took under 1 hour, 1 to 3 hours or over 3 hours (`PUT /api/tasks/:id/assignments/me/time-taken`; null takes it back). Nobody else can read an individual answer. Administrators see counts per task type on School Data (`GET /api/task-type-feedback`), only for types with at least three answers.
 - **Time**: services take a `Clock`; route handlers pass `appClock()`, which integration tests can set to "10 pm on a Friday" with `setTestClock`. Times are stored in UTC and read in the school's time zone (Luxon).
 - **Security headers**: `next.config.ts` sends a Content-Security-Policy that allows only the app's own origin, plus HSTS outside development. The Sprint 5 OWASP review, with what is still open, is in `../docs/owasp-review.md`.
 - **Accessibility**: staff screens are checked against WCAG 2.2 AA by `shared/theme/calm-contrast.test.ts` (colour tokens) and `e2e/accessibility.spec.ts` (axe). Keyboard order and wording still need a person to check.
@@ -73,8 +75,8 @@ Code is grouped **by feature**. Every feature folder uses the same sub-folders, 
 app/
   layout.tsx, globals.css        root layout, design tokens (magic and calm scopes), colour skins, card frames
   (magic)/                       login, accept-invite, student (magic-academy theme)
-  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], timetable, users, school-data, settings, calendar, notifications
-  api/                           JSON API (auth, me, me/notifications, me/push-subscriptions, users, staff, tasks, tasks/feasibility, tasks/[id]/extension-requests, tasks/[id]/extension-suggestion, staff/workload, timetable, school-data, school/settings, calendar/events, delivery/preview)
+  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], timetable, relief, users, school-data, settings, calendar, notifications
+  api/                           JSON API (auth, me, me/notifications, me/push-subscriptions, users, staff, tasks, tasks/feasibility, tasks/[id]/extension-requests, tasks/[id]/extension-suggestion, staff/workload, relief, task-type-feedback, timetable, school-data, school/settings, calendar/events, delivery/preview)
   health/route.ts                GET /health: 200 when the database answers, 503 when not
 features/
   auth/                          sign-in page, sessions, passwords, invites, throttling
@@ -84,6 +86,7 @@ features/
   delivery/                      working-time rules, school settings and calendar, delivery queue and service
   capacity/                      free-time and feasibility rules, the dry-run check, the warning on the new-task form
   extensions/                    requests for more time: the pre-filled form, the sender's answer, the exchange on the task
+  relief/                        covering an absent teacher's periods: suggestions, assigning, each person's own relief classes
   timetable/                     each teacher's weekly periods
   school-data/                   subjects, classes and task types
   notifications/                 email and push senders, the notify job, each person's settings, the Notifications page
@@ -124,6 +127,8 @@ In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok
 
 - Capacity is a deliberate simplification: committed work is one total, not a schedule. An unfinished task counts in full once its due date falls inside the period being checked, and not at all before that. Only tasks with an estimate count, so the check is only as good as the estimates. A task's flag is worked out once, when it is sent, and does not change if the timetable changes later.
 - Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers), and neither side is notified; the sender finds requests by the marker on the sent list. The board still sorts by the task's own due date, while each card shows the assignee's date. The figures on a request are a snapshot from when it was made.
+- Relief: no notification is sent when relief is assigned or cancelled; the teacher finds it on the Relief page. There is no absence register: a teacher counts as away on a date only once relief is arranged for one of their own periods. Only staff with at least one timetable period are suggested. There is no urgent override for relief arranged outside working hours.
+- Completion question: the three-answer minimum before counts are shown is a judgement to revisit for small schools. A task type's estimate can only be changed by removing the type and adding it again.
 - The timetable has no terms or alternating weeks: one week repeats all year. School holidays count only if they are in the Calendar.
 - A teacher's timetable can be read by that teacher and by administrators only. Senders see free-time totals through the deadline check, never the timetable itself.
 

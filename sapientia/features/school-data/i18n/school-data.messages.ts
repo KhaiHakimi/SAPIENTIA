@@ -37,6 +37,19 @@ export const SCHOOL_DATA_MESSAGES: Record<Lang, SchoolDataMessages> = {
     removing: 'Membuang…',
     removeLabel: (name) => `Buang ${name}`,
     loading: 'Memuatkan…',
+    feedback: {
+      title: 'Masa sebenar mengikut jenis tugas',
+      intro: 'Apabila tugas selesai, guru boleh menjawab berapa lama ia mengambil masa. Di sini hanya kiraan jawapan bagi setiap jenis tugas, tanpa nama. Untuk menukar anggaran, buang jenis tugas itu dan tambah semula dengan anggaran baharu.',
+      empty: (minAnswers) => `Belum cukup jawapan. Kiraan dipaparkan apabila sekurang-kurangnya ${minAnswers} orang telah menjawab untuk satu jenis tugas.`,
+      columns: { type: 'Jenis tugas', verdict: 'Berbanding anggaran' },
+      options: { 'under_1h': 'Kurang 1 jam', '1_to_3h': '1 hingga 3 jam', 'over_3h': 'Lebih 3 jam' },
+      verdicts: {
+        longer: 'Kebanyakan mengambil masa lebih lama daripada anggaran',
+        shorter: 'Kebanyakan lebih cepat daripada anggaran',
+        matches: 'Kebanyakan sepadan dengan anggaran',
+        mixed: 'Jawapan bercampur',
+      },
+    },
     columns: { name: 'Nama', estimate: 'Anggaran', actions: 'Tindakan' },
     fieldErrors: {
       name_taken: 'Nama ini sudah ada dalam senarai.',
@@ -80,6 +93,19 @@ export const SCHOOL_DATA_MESSAGES: Record<Lang, SchoolDataMessages> = {
     removing: 'Removing…',
     removeLabel: (name) => `Remove ${name}`,
     loading: 'Loading…',
+    feedback: {
+      title: 'Actual time by task type',
+      intro: 'When a task is done, teachers may say how long it took. This shows only the count of answers for each task type, with no names. To change an estimate, remove the task type and add it again with the new estimate.',
+      empty: (minAnswers) => `Not enough answers yet. Counts appear once at least ${minAnswers} people have answered for a task type.`,
+      columns: { type: 'Task type', verdict: 'Against the estimate' },
+      options: { 'under_1h': 'Under 1 hour', '1_to_3h': '1 to 3 hours', 'over_3h': 'Over 3 hours' },
+      verdicts: {
+        longer: 'Most took longer than the estimate',
+        shorter: 'Most were quicker than the estimate',
+        matches: 'Most match the estimate',
+        mixed: 'Answers are mixed',
+      },
+    },
     columns: { name: 'Name', estimate: 'Estimate', actions: 'Actions' },
     fieldErrors: {
       name_taken: 'This name is already on the list.',

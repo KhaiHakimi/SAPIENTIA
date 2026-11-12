@@ -1,7 +1,10 @@
-import type { AssignmentStatus } from '../interfaces/task.interface';
+import type { AssignmentStatus, TimeTaken } from '../interfaces/task.interface';
 
 /** Board column order. */
 export const ASSIGNMENT_STATUSES = ['todo', 'in_progress', 'waiting', 'done'] as const satisfies readonly AssignmentStatus[];
+
+/** Shortest first. */
+export const TIME_TAKEN_OPTIONS = ['under_1h', '1_to_3h', 'over_3h'] as const satisfies readonly TimeTaken[];
 
 export const TASK_TITLE_MAX = 200;
 export const TASK_DESCRIPTION_MAX = 5000;

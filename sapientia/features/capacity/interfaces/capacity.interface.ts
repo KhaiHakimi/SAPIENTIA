@@ -7,6 +7,13 @@ export interface WeeklySlot {
   end: string;
 }
 
+/** A busy period on one date only, such as a relief class: "HH:mm" times on a YYYY-MM-DD day, school-local. */
+export interface DatedSlot {
+  date: string;
+  start: string;
+  end: string;
+}
+
 /** Work a teacher already has: an open task's estimate and the day it is due (YYYY-MM-DD). */
 export interface Commitment {
   dueOn: string;
@@ -16,6 +23,8 @@ export interface Commitment {
 export interface FeasibilityInput {
   calendar: WorkingCalendar;
   slots: readonly WeeklySlot[];
+  /** Relief classes and other one-off periods; counted with the timetable, and an overlap is counted once. */
+  datedSlots?: readonly DatedSlot[];
   commitments: readonly Commitment[];
   /** When the task reaches the teacher: a held task starts counting from its delivery time. */
   from: Date;

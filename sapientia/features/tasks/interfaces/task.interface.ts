@@ -2,6 +2,9 @@ import type { ExtensionRequest } from '@/features/extensions/interfaces/extensio
 
 export type AssignmentStatus = 'todo' | 'in_progress' | 'waiting' | 'done';
 
+/** The optional answer to "how long did this take?" once a task is done: three broad bands, not a timesheet. */
+export type TimeTaken = 'under_1h' | '1_to_3h' | 'over_3h';
+
 export interface PersonRef {
   id: string;
   name: string;
@@ -85,6 +88,8 @@ export interface TaskDetail {
   myStatus: AssignmentStatus | null;
   /** The caller's own due date when they are an assignee; later than dueOn after an extension. */
   myDueOn: string | null;
+  /** The caller's own answer to the completion question; null when not asked or not answered. */
+  myTimeTaken: TimeTaken | null;
   /** Requests for more time and their answers: all of them for the sender, only their own for an assignee. */
   extensions: ExtensionRequest[];
   assigneeCount: number;

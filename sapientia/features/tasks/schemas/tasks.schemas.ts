@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
 import { estimatedMinutesSchema } from '@/features/school-data/schemas/school-data.schemas';
-import { ASSIGNEES_MAX, ASSIGNMENT_STATUSES, COMMENT_MAX, TASK_DESCRIPTION_MAX, TASK_TITLE_MAX } from '../constants/task.constants';
+import {
+  ASSIGNEES_MAX, ASSIGNMENT_STATUSES, COMMENT_MAX, TASK_DESCRIPTION_MAX, TASK_TITLE_MAX, TIME_TAKEN_OPTIONS,
+} from '../constants/task.constants';
 
 const statusSchema = z.enum(ASSIGNMENT_STATUSES, { error: 'invalid_status' });
 
@@ -30,6 +32,9 @@ export const tasksQuerySchema = z.object({
 });
 
 export const updateMyAssignmentSchema = z.strictObject({ status: statusSchema });
+
+/** PUT /api/tasks/:id/assignments/me/time-taken: one of the three bands, or null to take the answer back. */
+export const timeTakenSchema = z.strictObject({ timeTaken: z.enum(TIME_TAKEN_OPTIONS, { error: 'invalid_time_taken' }).nullable() });
 
 export const addCommentSchema = z.strictObject({
   body: z.string({ error: 'required' }).trim().min(1, { error: 'required' }).max(COMMENT_MAX, { error: 'too_long' }),

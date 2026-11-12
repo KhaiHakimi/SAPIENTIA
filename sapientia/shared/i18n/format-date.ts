@@ -13,6 +13,12 @@ export function formatDay(isoDay: string, lang: Lang, options: { weekday?: boole
   }).format(new Date(`${isoDay}T00:00:00Z`));
 }
 
+/** Today's date (YYYY-MM-DD) in a time zone: the school's "today", whatever zone the browser is in. */
+export function todayInZone(timeZone: string): string {
+  // The en-CA locale writes dates as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
 /** "19 September 2026, 7:30 PG" style: day, full month name, year, and the time when asked. */
 export function formatDate(iso: string, lang: Lang, options: { withTime?: boolean; timeZone?: string } = {}): string {
   return new Intl.DateTimeFormat(LOCALES[lang], {

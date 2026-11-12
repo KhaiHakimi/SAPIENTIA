@@ -2,6 +2,7 @@
 -- Sprint 6 (Phase 2, capacity): the school's subjects and classes, each teacher's weekly timetable, task types with a time
 -- estimate, and the estimate and flagged-deadline marker on tasks.
 -- Sprint 7 (folded in before release): extension requests and a per-assignee due date.
+-- Sprint 8 (folded in before release): relief assignments and the optional completion question.
 
 CREATE TABLE subjects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -122,7 +123,48 @@ CREATE TABLE extension_requests (
 CREATE UNIQUE INDEX extension_requests_one_pending ON extension_requests (task_id, requested_by) WHERE status = 'pending';
 CREATE INDEX extension_requests_task ON extension_requests (school_id, task_id, created_at);
 
+-- So a relief can point at a period of its own school only.
+ALTER TABLE timetable_slots ADD CONSTRAINT timetable_slots_school_id_id_unique UNIQUE (school_id, id);
+
+-- One teacher covering one period of an absent colleague on one date. The times are copied from the period so that the
+-- database itself can refuse a relief teacher being in two places at once on that date. Held delivery applies (plan Phase
+-- 2): the relief teacher sees the duty from deliver_at, which is never outside working hours.
+CREATE TABLE relief_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL,
+  slot_id uuid NOT NULL,
+  on_date date NOT NULL,
+  absent_teacher_id uuid NOT NULL,
+  relief_teacher_id uuid NOT NULL,
+  start_time time NOT NULL,
+  end_time time NOT NULL,
+  deliver_at timestamptz NOT NULL,
+  created_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT relief_assignments_times CHECK (start_time < end_time),
+  CONSTRAINT relief_assignments_not_self CHECK (relief_teacher_id <> absent_teacher_id),
+  CONSTRAINT relief_assignments_one_per_period UNIQUE (slot_id, on_date),
+  CONSTRAINT relief_assignments_no_overlap
+    EXCLUDE USING gist (relief_teacher_id WITH =, on_date WITH =, time_range(start_time, end_time) WITH &&),
+  FOREIGN KEY (school_id, slot_id) REFERENCES timetable_slots (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, absent_teacher_id) REFERENCES users (school_id, id),
+  FOREIGN KEY (school_id, relief_teacher_id) REFERENCES users (school_id, id),
+  FOREIGN KEY (school_id, created_by) REFERENCES users (school_id, id)
+);
+CREATE INDEX relief_assignments_relief_teacher ON relief_assignments (school_id, relief_teacher_id, on_date);
+CREATE INDEX relief_assignments_absent_teacher ON relief_assignments (school_id, absent_teacher_id, on_date);
+
+-- The optional answer to "how long did this take?" when a task is done, in three broad bands (plan Phase 2). It is only
+-- ever read as a count per task type, to correct that type's estimate.
+CREATE TYPE time_taken AS ENUM ('under_1h', '1_to_3h', 'over_3h');
+ALTER TABLE task_assignments
+  ADD COLUMN time_taken time_taken,
+  ADD CONSTRAINT task_assignments_time_taken_when_done CHECK (time_taken IS NULL OR status = 'done');
+
 -- Down Migration
+ALTER TABLE task_assignments DROP CONSTRAINT task_assignments_time_taken_when_done, DROP COLUMN time_taken;
+DROP TYPE time_taken;
+DROP TABLE relief_assignments;
 DROP TABLE extension_requests;
 DROP TYPE extension_status;
 ALTER TABLE task_assignments DROP COLUMN due_on;

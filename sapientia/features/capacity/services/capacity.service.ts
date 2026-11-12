@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import type { WorkingCalendar } from '@/features/delivery/interfaces/working-calendar.interface';
 import { isWorkingDay } from '@/features/delivery/services/working-time.service';
 import { FEASIBILITY_LOOKAHEAD_DAYS } from '../constants/capacity.constants';
-import type { Feasibility, FeasibilityInput, WeeklySlot } from '../interfaces/capacity.interface';
+import type { DatedSlot, Feasibility, FeasibilityInput, WeeklySlot } from '../interfaces/capacity.interface';
 
 /**
  * Capacity rules (plan Phase 2). Pure functions of a calendar, a weekly timetable and a list of commitments: no clock, no
@@ -22,10 +22,16 @@ const toMinutes = (hhmm: string): number => {
   return hour * 60 + minute;
 };
 
-/** Minutes of the weekday's periods that fall inside [from, to), counting overlapping periods once. */
-function teachingWithin(slots: readonly WeeklySlot[], weekday: number, from: number, to: number): number {
-  const periods = slots
-    .filter((slot) => slot.weekday === weekday)
+/** A teacher's fixed time: the weekly timetable, and periods on particular dates such as relief classes. */
+interface BusyTime {
+  slots: readonly WeeklySlot[];
+  datedSlots: readonly DatedSlot[];
+}
+
+/** Minutes of the day's periods that fall inside [from, to), counting overlapping periods once. */
+function teachingWithin(busy: BusyTime, day: DateTime, from: number, to: number): number {
+  const isoDate = day.toISODate();
+  const periods = [...busy.slots.filter((slot) => slot.weekday === day.weekday), ...busy.datedSlots.filter((slot) => slot.date === isoDate)]
     .map((slot) => [Math.max(toMinutes(slot.start), from), Math.min(toMinutes(slot.end), to)] as const)
     .filter(([start, end]) => end > start)
     .sort((a, b) => a[0] - b[0]);
@@ -40,12 +46,12 @@ function teachingWithin(slots: readonly WeeklySlot[], weekday: number, from: num
 }
 
 /** Working and teaching minutes on one school day, from `notBefore` (minutes after midnight) to the end of work. */
-function minutesOnDay(day: DateTime, calendar: WorkingCalendar, slots: readonly WeeklySlot[], notBefore = 0): DayMinutes {
+function minutesOnDay(day: DateTime, calendar: WorkingCalendar, busy: BusyTime, notBefore = 0): DayMinutes {
   if (!isWorkingDay(day.toISODate() ?? '', calendar)) return { working: 0, teaching: 0 };
   const start = Math.max(toMinutes(calendar.workStart), notBefore);
   const end = toMinutes(calendar.workEnd);
   if (end <= start) return { working: 0, teaching: 0 };
-  return { working: end - start, teaching: teachingWithin(slots, day.weekday, start, end) };
+  return { working: end - start, teaching: teachingWithin(busy, day, start, end) };
 }
 
 /** The last day (Sunday) of the week the instant falls in at the school, as YYYY-MM-DD. */
@@ -54,15 +60,21 @@ export function weekEndDay(instant: Date, timeZone: string): string {
 }
 
 /**
- * Working minutes with no timetable period, from an instant to the end of work on a day (YYYY-MM-DD, school-local).
- * Zero when the day is before the instant.
+ * Working minutes with no timetable period or dated period, from an instant to the end of work on a day (YYYY-MM-DD,
+ * school-local). Zero when the day is before the instant.
  */
-export function freeMinutes(calendar: WorkingCalendar, slots: readonly WeeklySlot[], from: Date, untilDay: string): number {
+export function freeMinutes(
+  calendar: WorkingCalendar,
+  slots: readonly WeeklySlot[],
+  from: Date,
+  untilDay: string,
+  datedSlots: readonly DatedSlot[] = [],
+): number {
   const start = DateTime.fromJSDate(from, { zone: calendar.timeZone });
   const last = DateTime.fromISO(untilDay, { zone: calendar.timeZone });
   let total = 0;
   for (let day = start.startOf('day'); day <= last; day = day.plus({ days: 1 })) {
-    const { working, teaching } = minutesOnDay(day, calendar, slots, day.hasSame(start, 'day') ? start.hour * 60 + start.minute : 0);
+    const { working, teaching } = minutesOnDay(day, calendar, { slots, datedSlots }, day.hasSame(start, 'day') ? start.hour * 60 + start.minute : 0);
     total += working - teaching;
   }
   return total;
@@ -73,7 +85,8 @@ export function freeMinutes(calendar: WorkingCalendar, slots: readonly WeeklySlo
  * already have? Also finds the earliest day by which they could, for the warning and the extension request.
  */
 export function checkFeasibility(input: FeasibilityInput): Feasibility {
-  const { calendar, slots, commitments, neededMinutes } = input;
+  const { calendar, commitments, neededMinutes } = input;
+  const busy: BusyTime = { slots: input.slots, datedSlots: input.datedSlots ?? [] };
   const start = DateTime.fromJSDate(input.from, { zone: calendar.timeZone });
   const firstDay = start.startOf('day');
   const dueDay = DateTime.fromISO(input.dueOn, { zone: calendar.timeZone });
@@ -87,7 +100,7 @@ export function checkFeasibility(input: FeasibilityInput): Feasibility {
   let earliestDueOn: string | null = null;
   for (let day = firstDay; day <= lastDay; day = day.plus({ days: 1 })) {
     const isoDate = day.toISODate() ?? '';
-    const minutes = minutesOnDay(day, calendar, slots, day.equals(firstDay) ? start.hour * 60 + start.minute : 0);
+    const minutes = minutesOnDay(day, calendar, busy, day.equals(firstDay) ? start.hour * 60 + start.minute : 0);
     working += minutes.working;
     teaching += minutes.teaching;
     const fits = working - teaching - committedBy(isoDate) >= neededMinutes;

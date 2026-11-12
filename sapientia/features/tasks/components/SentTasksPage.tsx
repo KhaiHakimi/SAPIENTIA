@@ -2,6 +2,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { EXTENSIONS_MESSAGES } from '@/features/extensions/i18n/extensions.messages';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDate, formatDay } from '@/shared/i18n/format-date';
@@ -15,6 +16,7 @@ import styles from '../styles/Tasks.module.css';
 /** Senders: what they sent and how far along it is, newest first. heldOnly lists those still waiting for working hours. */
 export function SentTasksPage({ heldOnly = false }: { heldOnly?: boolean }) {
   const text = useMessages(TASKS_MESSAGES);
+  const extensionText = useMessages(EXTENSIONS_MESSAGES);
   const { lang } = useLanguage();
   const { timeZone } = useStaffUser();
   const sent = useInfiniteQuery({
@@ -66,6 +68,9 @@ export function SentTasksPage({ heldOnly = false }: { heldOnly?: boolean }) {
                       </span>
                       {task.urgent && <> <span className={`${calm.badge} ${calm.badgeDanger}`}>{text.urgentBadge}</span></>}
                       {task.deadlineFlagged && <> <span className={`${calm.badge} ${calm.badgeDanger}`}>{text.flaggedBadge}</span></>}
+                      {task.pendingExtensions > 0 && (
+                        <> <span className={`${calm.badge} ${calm.badgeAccent}`}>{extensionText.pendingCount(task.pendingExtensions)}</span></>
+                      )}
                     </td>
                     <td>
                       <span className={`${calm.badge} ${task.doneCount === task.assigneeCount ? calm.badgeOk : ''}`}>

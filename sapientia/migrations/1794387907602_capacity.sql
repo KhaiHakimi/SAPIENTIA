@@ -1,6 +1,7 @@
 -- Up Migration
 -- Sprint 6 (Phase 2, capacity): the school's subjects and classes, each teacher's weekly timetable, task types with a time
 -- estimate, and the estimate and flagged-deadline marker on tasks.
+-- Sprint 7 (folded in before release): extension requests and a per-assignee due date.
 
 CREATE TABLE subjects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,7 +78,54 @@ ALTER TABLE tasks
   ADD CONSTRAINT tasks_flag_needs_estimate CHECK (NOT deadline_flagged OR estimated_minutes IS NOT NULL),
   ADD CONSTRAINT tasks_task_type_fk FOREIGN KEY (school_id, task_type_id) REFERENCES task_types (school_id, id);
 
+-- An extension gives one assignee more time without moving the date for everyone else: null means the task's own due date.
+ALTER TABLE task_assignments ADD COLUMN due_on date;
+
+-- approved: the sender accepted the date asked for. countered: the sender set a different date instead.
+CREATE TYPE extension_status AS ENUM ('pending', 'approved', 'countered');
+
+-- The exchange is kept on the task (plan Phase 2): who asked for what, and what was decided. Rows are never edited after
+-- the decision; a teacher who needs longer still asks again.
+CREATE TABLE extension_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL,
+  task_id uuid NOT NULL,
+  requested_by uuid NOT NULL,
+  -- The assignee's due date when they asked, so the exchange still reads correctly after the date has moved.
+  current_due_on date NOT NULL,
+  requested_due_on date NOT NULL,
+  reason text,
+  -- What the capacity check said when they asked: the task's estimate and the free working time left before the due date.
+  -- Totals only, so the sender sees why without seeing the teacher's other work. Null when the task has no estimate.
+  needed_minutes integer,
+  free_minutes integer,
+  status extension_status NOT NULL DEFAULT 'pending',
+  decided_by uuid,
+  decided_at timestamptz,
+  -- The date granted: the requested date when approved, the sender's own when countered.
+  decided_due_on date,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT extension_requests_later CHECK (requested_due_on > current_due_on),
+  CONSTRAINT extension_requests_reason_length CHECK (reason IS NULL OR char_length(btrim(reason)) BETWEEN 1 AND 500),
+  CONSTRAINT extension_requests_figures CHECK (
+    (needed_minutes IS NULL AND free_minutes IS NULL) OR (needed_minutes > 0 AND free_minutes >= 0)
+  ),
+  CONSTRAINT extension_requests_decision CHECK (
+    (status = 'pending' AND decided_by IS NULL AND decided_at IS NULL AND decided_due_on IS NULL)
+    OR (status <> 'pending' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND decided_due_on IS NOT NULL)
+  ),
+  FOREIGN KEY (school_id, task_id) REFERENCES tasks (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (task_id, requested_by) REFERENCES task_assignments (task_id, user_id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, decided_by) REFERENCES users (school_id, id)
+);
+-- One open request per person per task: a second tap cannot queue a duplicate.
+CREATE UNIQUE INDEX extension_requests_one_pending ON extension_requests (task_id, requested_by) WHERE status = 'pending';
+CREATE INDEX extension_requests_task ON extension_requests (school_id, task_id, created_at);
+
 -- Down Migration
+DROP TABLE extension_requests;
+DROP TYPE extension_status;
+ALTER TABLE task_assignments DROP COLUMN due_on;
 ALTER TABLE tasks
   DROP CONSTRAINT tasks_task_type_fk,
   DROP CONSTRAINT tasks_flag_needs_estimate,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkingCalendar } from '@/features/delivery/interfaces/working-calendar.interface';
 import type { Commitment, WeeklySlot } from '../interfaces/capacity.interface';
-import { checkFeasibility, freeMinutes } from './capacity.service';
+import { checkFeasibility, freeMinutes, weekEndDay } from './capacity.service';
 
 /** 07:30 to 17:00 is 570 working minutes a day. 2 November 2026 is a Monday. */
 const DAY = 570;
@@ -69,6 +69,15 @@ describe('freeMinutes', () => {
 
   it('is zero when the day is already over', () => {
     expect(freeMinutes(calendar(), [], at('2026-11-03T08:00'), MONDAY)).toBe(0);
+  });
+});
+
+describe('weekEndDay', () => {
+  it('is the Sunday of the school\'s week, whatever the server\'s own time zone', () => {
+    expect(weekEndDay(MONDAY_START, 'Asia/Kuala_Lumpur')).toBe('2026-11-08');
+    expect(weekEndDay(at('2026-11-08T23:30'), 'Asia/Kuala_Lumpur')).toBe('2026-11-08');
+    // 00:30 on Monday at the school is still Sunday in UTC.
+    expect(weekEndDay(at('2026-11-09T00:30'), 'Asia/Kuala_Lumpur')).toBe('2026-11-15');
   });
 });
 

@@ -8,9 +8,12 @@ import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ValidationError } from '@/shared/server/app-errors';
 import { getPool, type Queryable } from '@/shared/server/database.service';
-import type { AssigneeFeasibility, Commitment, FeasibilityRequest, FeasibilityResponse, WeeklySlot } from '../interfaces/capacity.interface';
+import type {
+  AssigneeFeasibility, Commitment, FeasibilityRequest, FeasibilityResponse, WeeklySlot, Workload,
+} from '../interfaces/capacity.interface';
 import { checkFeasibility } from '../services/capacity.service';
-import { listCommitments } from './capacity.repository';
+import { weekEndDay } from '../services/capacity.service';
+import { listCommitments, sumCommittedMinutes } from './capacity.repository';
 
 export interface AssessInput {
   staff: readonly StaffMember[];
@@ -19,6 +22,8 @@ export interface AssessInput {
   from: Date;
   dueOn: string;
   neededMinutes: number;
+  /** A task to leave out of the commitments: the one being asked about, when it already exists. */
+  exceptTaskId?: string;
 }
 
 function groupBy<Row, Value>(rows: readonly Row[], keyOf: (row: Row) => string, valueOf: (row: Row) => Value): Map<string, Value[]> {
@@ -43,7 +48,7 @@ export async function assessAssignees(db: Queryable, schoolId: string, input: As
     (row): WeeklySlot => ({ weekday: row.weekday as IsoWeekday, start: row.start_time, end: row.end_time }),
   );
   const commitments = groupBy(
-    await listCommitments(db, schoolId, ids),
+    await listCommitments(db, schoolId, ids, input.exceptTaskId ?? null),
     (row) => row.user_id,
     (row): Commitment => ({ dueOn: row.due_on, minutes: row.minutes }),
   );
@@ -58,6 +63,16 @@ export async function assessAssignees(db: Queryable, schoolId: string, input: As
       neededMinutes: input.neededMinutes,
     }),
   }));
+}
+
+/**
+ * The workload shown when assigning (plan Phase 2): each person's estimated, unfinished work due by the end of this school
+ * week, overdue work included. Totals only, for senders and administrators; there is no list of what the work is.
+ */
+export async function getWeekWorkload(actor: SessionUser, clock: Clock): Promise<Workload> {
+  const weekEndsOn = weekEndDay(clock.now(), actor.timeZone);
+  const rows = await sumCommittedMinutes(getPool(), actor.schoolId, weekEndsOn);
+  return { weekEndsOn, items: rows.map((row) => ({ userId: row.user_id, committedMinutes: row.minutes })) };
 }
 
 /**

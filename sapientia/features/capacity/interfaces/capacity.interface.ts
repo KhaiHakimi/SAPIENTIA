@@ -54,3 +54,10 @@ export interface FeasibilityRequest {
 export interface FeasibilityResponse {
   items: AssigneeFeasibility[];
 }
+
+/** GET /api/staff/workload: estimated, unfinished work due by the end of this week, per person. People with none are left out. */
+export interface Workload {
+  /** The Sunday that ends the current week (YYYY-MM-DD, school-local). */
+  weekEndsOn: string;
+  items: { userId: string; committedMinutes: number }[];
+}

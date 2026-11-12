@@ -1,25 +1,18 @@
-import { AxeBuilder } from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { violationsOn } from './support/accessibility';
 import { ACCOUNTS } from './support/e2e-env';
 import { signIn } from './support/staff-actions';
 
 /**
  * Accessibility pass to WCAG 2.2 AA (plan Sprint 5): axe scans the sign-in page and every staff screen, in the dark and the
  * light theme. axe finds what a machine can (contrast, names, labels, roles, structure); keyboard order and wording still
- * need a person, so this is a floor, not the whole pass.
+ * need a person, so this is a floor, not the whole pass. Screens that need data first (a task page with an extension
+ * request) are scanned inside their own journeys.
  */
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
 const STAFF_SCREENS = [
   '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/users', '/staff/school-data',
   '/staff/settings', '/staff/calendar', '/staff/notifications',
 ];
-
-/** One line per failing element, so a failure says what to fix without opening the trace. */
-async function violationsOn(page: Page): Promise<string[]> {
-  const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-  return violations.flatMap((violation) => violation.nodes.map((node) => `${violation.id}: ${node.target.join(' ')}`));
-}
 
 for (const theme of ['dark', 'light']) {
   test.describe(`${theme} theme`, () => {

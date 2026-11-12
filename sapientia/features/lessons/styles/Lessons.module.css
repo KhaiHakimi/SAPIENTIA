@@ -1,0 +1,9 @@
+/* One block per period of the day, with the "not held" form and the e-RPH link opening inside it. */
+.periods { list-style: none; margin: 0; padding: 0; display: grid; gap: .75em; }
+.period { display: grid; gap: .5em; padding: .7em .8em; background: var(--panel-2); border: 1px solid var(--bd); border-radius: .4em; }
+.periodHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; }
+.periodHead p { margin: 0; }
+.choices { display: flex; flex-wrap: wrap; gap: .5em; }
+.form { display: grid; gap: .25em; }
+.actions { display: flex; flex-wrap: wrap; gap: .5em; }
+.dateField { max-width: 16em; }

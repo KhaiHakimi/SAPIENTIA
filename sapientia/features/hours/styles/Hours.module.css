@@ -1,0 +1,4 @@
+.form { display: grid; gap: .25em; }
+.fields { display: grid; gap: 0 1em; grid-template-columns: repeat(auto-fit, minmax(9em, 1fr)); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
+.monthField { max-width: 16em; }

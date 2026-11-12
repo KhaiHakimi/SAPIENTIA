@@ -22,12 +22,15 @@ export type AuditAction =
   | 'school_data.added'
   | 'school_data.removed'
   | 'timetable.slot_added'
-  | 'timetable.slot_removed';
+  | 'timetable.slot_removed'
+  | 'lesson.recorded'
+  | 'hours.shared'
+  | 'hours.unshared';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
-  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment';
+  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

@@ -37,3 +37,16 @@ Trade-off: scripts keep `'unsafe-inline'`. A nonce-based policy needs every page
 6. Demo student accounts are a browser-only gate with passwords in the page source. They must be replaced before any student data is real (Phase 4).
 
 Run the same table again at the end of each sprint for the new code (plan Section 8).
+
+## Sprint 9: lesson records and the private hours log
+
+Checked on 12 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | Lesson records: only the period's teacher, or the delivered relief teacher, may record (404 otherwise; tests for a colleague, another school and no sign-in). Hours log: routes under `/api/me/hours` take the owner from the session; repository statements all filter on school and owner; a source test fails if any other file names the tables. |
+| A03 | Injection | Pass | Parameterised SQL; strict Zod objects (an extra `userId` field is refused); the e-RPH link must parse as an https URL, so `javascript:` and `data:` are refused (tested), and the database checks the prefix again. Links open with `rel="noopener noreferrer"`. |
+| A04 | Insecure design | Pass | Records cannot be made for the future or more than 30 days back; every record and change is audited. Hours entries are not audited, because the audit log is not private; shares are audited with the month only. No feature measures teachers' activity (plan hard rule). |
+| A09 | Logging and monitoring failures | Pass | Notes and links are not logged or audited. |
+
+Nothing new is open from this sprint.

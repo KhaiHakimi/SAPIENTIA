@@ -1,16 +1,19 @@
 /**
  * Background worker (plan D1, Sprint 4): a separate long-running process beside the web app. It delivers held tasks when
- * their job comes due and sweeps every minute for anything due whose job went missing. Run with `npm run worker`.
+ * their job comes due, sweeps every minute for anything due whose job went missing, and sends the notifications (Sprint 5;
+ * extension and relief messages from Phase 2). Run with `npm run worker`.
  */
 import { PgBoss } from 'pg-boss';
 import {
-  DELIVER_DUE_QUEUE, DELIVER_TASK_QUEUE, type DeliverTaskJob, NOTIFY_TASK_QUEUE, type NotifyTaskJob,
+  DELIVER_DUE_QUEUE, DELIVER_TASK_QUEUE, type DeliverTaskJob, NOTIFY_EVENT_QUEUE, NOTIFY_TASK_QUEUE, type NotifyTaskJob,
 } from '@/features/delivery/constants/queue.constants';
 import { closeQueue, ensureQueues } from '@/features/delivery/server/delivery-queue.service';
 import { deliverDueTasks, deliverTask } from '@/features/delivery/server/delivery.service';
 import type { NotificationSenders } from '@/features/notifications/interfaces/notification.interface';
 import { createEmailSender } from '@/features/notifications/server/email.sender';
 import { readAppOrigin, readEmailConfig, readPushConfig } from '@/features/notifications/server/notification-config.service';
+import { eventNoticeJobSchema } from '@/features/notifications/schemas/event-notice.schemas';
+import { notifyEvent } from '@/features/notifications/server/notify-event.service';
 import { notifyTaskDelivered } from '@/features/notifications/server/notify-task.service';
 import { createPushSender } from '@/features/notifications/server/push.sender';
 import { systemClock } from '@/shared/server/clock.service';
@@ -40,6 +43,19 @@ async function main(): Promise<void> {
   await boss.work<NotifyTaskJob>(NOTIFY_TASK_QUEUE, async (jobs) => {
     for (const job of jobs) {
       const result = await notifyTaskDelivered(job.data.taskId, systemClock, senders, appOrigin);
+      if (result.failed > 0) throw new Error(`${result.failed} notification(s) not sent yet; retrying later.`);
+    }
+  });
+  // Extension requests and answers, relief given and taken back. A job of the wrong shape is logged and dropped: retrying
+  // it would never help.
+  await boss.work<unknown>(NOTIFY_EVENT_QUEUE, async (jobs) => {
+    for (const job of jobs) {
+      const parsed = eventNoticeJobSchema.safeParse(job.data);
+      if (!parsed.success) {
+        logger.error('worker.bad_event_job', { jobId: job.id });
+        continue;
+      }
+      const result = await notifyEvent(parsed.data, systemClock, senders, appOrigin);
       if (result.failed > 0) throw new Error(`${result.failed} notification(s) not sent yet; retrying later.`);
     }
   });

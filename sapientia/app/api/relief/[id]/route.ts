@@ -7,9 +7,10 @@ import { appClock } from '@/shared/server/clock.service';
 
 /** DELETE /api/relief/:id: cancels a relief. Administrators only. */
 export const DELETE = withApi(async (request, context: RouteContext<'/api/relief/[id]'>) => {
-  const actor = await requireUser(request, appClock(), ['admin']);
+  const clock = appClock();
+  const actor = await requireUser(request, clock, ['admin']);
   const id = reliefIdSchema.safeParse((await context.params).id);
   if (!id.success) throw new NotFoundError();
-  await cancelRelief(actor, id.data);
+  await cancelRelief(actor, id.data, clock);
   return new Response(null, { status: 204 });
 });

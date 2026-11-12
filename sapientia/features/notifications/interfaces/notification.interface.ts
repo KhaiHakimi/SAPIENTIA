@@ -75,6 +75,20 @@ export interface PushConfig {
   subject: string;
 }
 
+export type NotificationChannel = 'email' | 'push';
+
+/** One message ready for one person. The email is addressed when it is sent; push is the same for every device. */
+export interface OutgoingMessage {
+  email: (to: string) => EmailMessage;
+  push: PushPayload;
+}
+
+/** What already went out for one notice ("<user id>|<channel>|<target>"), and how to record one more send. */
+export interface SendLedger {
+  sentKeys: ReadonlySet<string>;
+  record(userId: string, channel: NotificationChannel, target: string): Promise<void>;
+}
+
 export interface NotifyResult {
   sent: number;
   /** Temporary failures; the job is retried later and sends only these. */

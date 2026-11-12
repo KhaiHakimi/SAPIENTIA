@@ -4,10 +4,10 @@ import type { NotificationsMessages } from './notifications-messages.interface';
 export const NOTIFICATIONS_MESSAGES: Record<Lang, NotificationsMessages> = {
   ms: {
     title: 'Pemberitahuan',
-    intro: 'Pilih cara anda diberitahu apabila tugas sampai kepada anda. Tugas yang ditahan hanya diberitahu apabila ia dihantar.',
+    intro: 'Pilih cara anda diberitahu tentang tugas baharu, permohonan lanjutan dan kelas ganti. Di luar waktu bekerja, pemberitahuan menunggu hingga waktu bekerja bermula, kecuali tugas segera.',
     loading: 'Memuatkan…',
     emailHeading: 'E-mel',
-    emailLabel: 'Hantar e-mel apabila saya menerima tugas baharu',
+    emailLabel: 'Hantar e-mel tentang tugas baharu, permohonan lanjutan dan kelas ganti',
     emailHelp: 'Dihantar ke alamat e-mel akaun anda.',
     emailSaved: (on) => (on ? 'Pemberitahuan e-mel dihidupkan.' : 'Pemberitahuan e-mel dimatikan.'),
     pushHeading: 'Pemberitahuan pada peranti ini',
@@ -31,10 +31,10 @@ export const NOTIFICATIONS_MESSAGES: Record<Lang, NotificationsMessages> = {
   },
   en: {
     title: 'Notifications',
-    intro: 'Choose how you hear about tasks that reach you. A held task is only announced once it is delivered.',
+    intro: 'Choose how you hear about new tasks, extension requests and relief classes. Outside working hours, messages wait for the next working start, except urgent tasks.',
     loading: 'Loading…',
     emailHeading: 'Email',
-    emailLabel: 'Email me when I receive a new task',
+    emailLabel: 'Email me about new tasks, extension requests and relief classes',
     emailHelp: 'Sent to your account\'s email address.',
     emailSaved: (on) => (on ? 'Email notifications are on.' : 'Email notifications are off.'),
     pushHeading: 'Notifications on this device',

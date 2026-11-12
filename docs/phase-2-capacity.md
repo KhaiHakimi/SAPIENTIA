@@ -137,12 +137,18 @@ Added for Sprint 8 (relief and the completion question):
 | The completion question becomes a timesheet, or is used to judge a teacher | Management, sender | It is optional and has three broad bands. An answer is readable only by the person who gave it; everyone else gets counts per task type, and only from three answers up. It is not in the audit log. |
 | Cross-school access | Staff of another school | Every query takes the school first; composite foreign keys tie a relief to a period and people of its own school. Refusal tests cover each endpoint. |
 
+Added on 12 November 2026 (notifications for extensions and relief, which Sprints 7 and 8 left out):
+
+| What could go wrong | Who | How the design prevents it |
+|---------------------|-----|----------------------------|
+| A message about a request or a relief class arrives at night | Teacher, sender | Each message is a job queued in the transaction that saves the event, due at the next working moment; relief is told at the relief's own delivery time. There is no urgent override for these messages. |
+| A private reason or figure leaves the system by email | Teacher | Messages carry names, the task title, dates and times only: never the reason for a request, the capacity figures, or any reason for an absence. A job holds ids only, except a cancelled relief's teacher ids, date and times. |
+| A message that no longer applies is sent | Everyone | The event is read again when the job runs: a request already answered, or a relief cancelled before its teacher was told, sends nothing. A relief cancelled before delivery is never mentioned to the relief teacher. |
+| The same message twice after a crash or retry | Everyone | `event_notice_sends` records each send under the event's key; a retried job sends only what is missing. |
+
 Open questions for later sprints:
 
-- Relief has no notification: the teacher sees it on the Relief page once it is delivered. An email or push at delivery time would use the Sprint 5 notification job.
-- The relief teacher is not told when a relief is cancelled; it simply leaves their list.
 - "Away that day" is inferred from relief already arranged for a teacher's own periods. A teacher who is absent with no relief arranged yet can still be suggested for a colleague's class.
-- The teacher who asks is not notified of the answer, and the sender is not notified of a request (they see a marker on the sent list). Notifications for both would follow held delivery: nothing outside working hours.
 - The three-answer threshold for task-type feedback is a judgement, not a rule from the plan. Raise it if schools are small enough that three answers still point at people.
 - "Committed work as a single total" (plan risk): a task counts in full once its due date falls inside the period checked, and not before. It is deliberate and simple; revisit if teachers say the warnings are wrong.
 

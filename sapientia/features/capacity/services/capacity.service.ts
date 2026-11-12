@@ -48,6 +48,11 @@ function minutesOnDay(day: DateTime, calendar: WorkingCalendar, slots: readonly 
   return { working: end - start, teaching: teachingWithin(slots, day.weekday, start, end) };
 }
 
+/** The last day (Sunday) of the week the instant falls in at the school, as YYYY-MM-DD. */
+export function weekEndDay(instant: Date, timeZone: string): string {
+  return DateTime.fromJSDate(instant, { zone: timeZone }).endOf('week').toISODate() ?? '';
+}
+
 /**
  * Working minutes with no timetable period, from an instant to the end of work on a day (YYYY-MM-DD, school-local).
  * Zero when the day is before the instant.

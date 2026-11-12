@@ -6,6 +6,8 @@ import { useState, type FormEvent } from 'react';
 import { FeasibilityNotice } from '@/features/capacity/components/FeasibilityNotice';
 import { ESTIMATE_MAX_MINUTES, ESTIMATE_MIN_MINUTES } from '@/features/capacity/constants/capacity.constants';
 import type { FeasibilityRequest } from '@/features/capacity/interfaces/capacity.interface';
+import { fetchWorkload, WORKLOAD_KEY } from '@/features/capacity/services/capacity.client';
+import { formatDuration } from '@/features/capacity/services/duration-text';
 import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
 import { fetchDeliveryPreview, PREVIEW_KEY } from '@/features/delivery/services/delivery.client';
 import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
@@ -14,6 +16,7 @@ import { fetchStaffDirectory, STAFF_DIRECTORY_KEY } from '@/features/users/servi
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
+import { formatDay } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import type { Lang } from '@/shared/interfaces/localized-text.interface';
 import { TASK_DESCRIPTION_MAX, TASK_TITLE_MAX } from '../constants/task.constants';
@@ -31,7 +34,8 @@ const PREVIEW_REFRESH_MS = 60_000;
 /**
  * Senders and administrators: title, assignees and due date first (plan Sprint 3); details are optional. Outside working
  * hours the form says when the task will arrive and offers the urgent override, which needs a reason (plan Sprint 4).
- * With a time estimate it also warns when an assignee does not have the time by the due date (plan Phase 2).
+ * With a time estimate it also warns when an assignee does not have the time by the due date, and each name carries the
+ * work that person already has this week, so the sender can spread tasks before choosing (plan Phase 2).
  */
 export function CreateTaskPage() {
   const text = useMessages(TASKS_MESSAGES);
@@ -39,6 +43,9 @@ export function CreateTaskPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const staff = useQuery({ queryKey: STAFF_DIRECTORY_KEY, queryFn: fetchStaffDirectory });
+  // Extra information only: if it cannot be fetched, the names are listed without it and the form still works.
+  const workload = useQuery({ queryKey: WORKLOAD_KEY, queryFn: fetchWorkload });
+  const committedMinutes = new Map(workload.data?.items.map((item) => [item.userId, item.committedMinutes]));
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [title, setTitle] = useState('');
   const [dueOn, setDueOn] = useState('');
@@ -111,7 +118,9 @@ export function CreateTaskPage() {
 
         <fieldset className={calm.fieldset} aria-describedby="task-assignees-help task-assignees-error">
           <legend>{text.assignees} <span className={calm.muted}>({text.selectedCount(assigneeIds.length)})</span></legend>
-          <div id="task-assignees-help" className={calm.help}>{text.assigneesHelp}</div>
+          <div id="task-assignees-help" className={calm.help}>
+            {text.assigneesHelp}{workload.data && <> {text.workloadHelp(formatDay(workload.data.weekEndsOn, lang, { weekday: true }))}</>}
+          </div>
           <label className={calm.label} htmlFor="task-filter">{text.filterStaff}</label>
           <input id="task-filter" type="search" className={calm.input} value={filter} onChange={(event) => setFilter(event.target.value)} />
           <div className={styles.picker}>
@@ -125,7 +134,12 @@ export function CreateTaskPage() {
               visible.map((person) => (
                 <label key={person.id} className={calm.checkbox}>
                   <input type="checkbox" checked={assigneeIds.includes(person.id)} onChange={(event) => toggle(person.id, event.target.checked)} />
-                  <span>{person.name}</span>
+                  <span>
+                    {person.name}
+                    {committedMinutes.has(person.id) && (
+                      <span className={calm.muted}> · {text.workload(formatDuration(committedMinutes.get(person.id) ?? 0, lang))}</span>
+                    )}
+                  </span>
                 </label>
               ))
             )}

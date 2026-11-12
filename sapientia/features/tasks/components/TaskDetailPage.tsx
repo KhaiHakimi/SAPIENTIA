@@ -3,11 +3,13 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { formatDuration } from '@/features/capacity/services/duration-text';
+import { ExtensionPanel } from '@/features/extensions/components/ExtensionPanel';
+import { EXTENSIONS_MESSAGES } from '@/features/extensions/i18n/extensions.messages';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDate, formatDay } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
-import type { TaskDetail } from '../interfaces/task.interface';
+import type { TaskAssignee, TaskDetail } from '../interfaces/task.interface';
 import type { TasksMessages } from '../i18n/tasks-messages.interface';
 import { TASKS_MESSAGES } from '../i18n/tasks.messages';
 import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
@@ -19,7 +21,13 @@ import { StatusSelect } from './StatusSelect';
 
 function SenderPanels({ task, text }: { task: TaskDetail; text: TasksMessages }) {
   const { lang } = useLanguage();
+  const extensionText = useMessages(EXTENSIONS_MESSAGES);
   const assignees = task.assignees ?? [];
+  // When they finished, and their own later due date if they were given more time.
+  const notesFor = (person: TaskAssignee) => [
+    person.completedAt ? text.completedAt(formatDate(person.completedAt, lang, { withTime: true })) : '',
+    person.dueOn === task.dueOn ? '' : extensionText.extendedTo(formatDay(person.dueOn, lang)),
+  ].filter(Boolean).join(' · ');
   return (
     <>
       <section className={calm.card} aria-labelledby="assignees-title">
@@ -33,7 +41,7 @@ function SenderPanels({ task, text }: { task: TaskDetail; text: TasksMessages })
                   <td>
                     <span className={`${calm.badge} ${person.status === 'done' ? calm.badgeOk : ''}`}>{text.statuses[person.status]}</span>
                   </td>
-                  <td className={calm.muted}>{person.completedAt ? text.completedAt(formatDate(person.completedAt, lang, { withTime: true })) : ''}</td>
+                  <td className={calm.muted}>{notesFor(person)}</td>
                 </tr>
               ))}
             </tbody>
@@ -58,6 +66,7 @@ function SenderPanels({ task, text }: { task: TaskDetail; text: TasksMessages })
 /** One task: what, when, my status, comments; the sender also sees each assignee and the history. */
 export function TaskDetailPage({ id }: { id: string }) {
   const text = useMessages(TASKS_MESSAGES);
+  const extensionText = useMessages(EXTENSIONS_MESSAGES);
   const { lang } = useLanguage();
   const task = useQuery({ queryKey: taskKey(id), queryFn: () => fetchTask(id) });
 
@@ -75,6 +84,11 @@ export function TaskDetailPage({ id }: { id: string }) {
               <h1>{task.data.title}</h1>
               <div className={styles.meta}>
                 <span>{text.due(formatDay(task.data.dueOn, lang, { weekday: true }))}</span>
+                {task.data.myDueOn !== null && task.data.myDueOn !== task.data.dueOn && (
+                  <span className={`${calm.badge} ${calm.badgeAccent}`}>
+                    {extensionText.myDue(formatDay(task.data.myDueOn, lang, { weekday: true }))}
+                  </span>
+                )}
                 <span>{text.sentBy(task.data.createdBy.name, formatDate(task.data.createdAt, lang, { withTime: true }))}</span>
                 <span>{text.overall}: {text.progress(task.data.doneCount, task.data.assigneeCount)}</span>
                 {task.data.isSender && (
@@ -101,6 +115,7 @@ export function TaskDetailPage({ id }: { id: string }) {
                   <StatusSelect taskId={task.data.id} status={task.data.myStatus} text={text} idPrefix="detail" />
                 )}
               </section>
+              <ExtensionPanel task={task.data} />
               <CommentThread taskId={task.data.id} comments={task.data.comments} text={text} />
             </div>
             {task.data.isSender && <div><SenderPanels task={task.data} text={text} /></div>}

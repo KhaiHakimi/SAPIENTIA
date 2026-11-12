@@ -1,4 +1,5 @@
 import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
+import { formatDay } from '@/shared/i18n/format-date';
 import type { Lang } from '@/shared/interfaces/localized-text.interface';
 import type { TaskActivity, TaskAssignee } from '../interfaces/task.interface';
 import type { TasksMessages } from '../i18n/tasks-messages.interface';
@@ -40,6 +41,17 @@ export function describeActivity(
       return typeof metadata.shortOfTime === 'number'
         ? text.activity.flagged(actor, metadata.shortOfTime)
         : text.activity.other(actor, entry.action);
+    case 'extension.requested':
+      return typeof metadata.requestedDueOn === 'string'
+        ? text.activity.extensionRequested(actor, formatDay(metadata.requestedDueOn, where.lang))
+        : text.activity.other(actor, entry.action);
+    case 'extension.approved':
+    case 'extension.countered': {
+      if (typeof metadata.dueOn !== 'string') return text.activity.other(actor, entry.action);
+      const assignee = assignees.find((person) => person.id === metadata.assigneeId)?.name ?? text.someone;
+      const describe = entry.action === 'extension.approved' ? text.activity.extensionApproved : text.activity.extensionCountered;
+      return describe(actor, assignee, formatDay(metadata.dueOn, where.lang));
+    }
     default:
       return text.activity.other(actor, entry.action);
   }

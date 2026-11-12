@@ -1,3 +1,5 @@
+import type { ExtensionRequest } from '@/features/extensions/interfaces/extension.interface';
+
 export type AssignmentStatus = 'todo' | 'in_progress' | 'waiting' | 'done';
 
 export interface PersonRef {
@@ -9,6 +11,7 @@ export interface PersonRef {
 export interface AssignedTask {
   id: string;
   title: string;
+  /** The assignee's own due date: the task's, or a later one after an extension. */
   dueOn: string;
   createdBy: PersonRef;
   myStatus: AssignmentStatus;
@@ -31,11 +34,15 @@ export interface SentTask {
   urgent: boolean;
   /** The sender was warned that at least one assignee does not have the time by the due date, and sent it anyway. */
   deadlineFlagged: boolean;
+  /** Requests for more time on this task that are waiting for the sender's answer. */
+  pendingExtensions: number;
 }
 
 export interface TaskAssignee extends PersonRef {
   status: AssignmentStatus;
   completedAt: string | null;
+  /** This person's due date: the task's, or a later one after an extension. */
+  dueOn: string;
 }
 
 export interface TaskComment {
@@ -76,6 +83,10 @@ export interface TaskDetail {
   timeZone: string;
   isSender: boolean;
   myStatus: AssignmentStatus | null;
+  /** The caller's own due date when they are an assignee; later than dueOn after an extension. */
+  myDueOn: string | null;
+  /** Requests for more time and their answers: all of them for the sender, only their own for an assignee. */
+  extensions: ExtensionRequest[];
   assigneeCount: number;
   doneCount: number;
   assignees: TaskAssignee[] | null;

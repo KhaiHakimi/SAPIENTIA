@@ -206,7 +206,15 @@ User stories, the threat model and the sprint split are in `docs/phase-2-capacit
 - [x] `POST /api/tasks/feasibility` (dry run); warning on the new-task form with the earliest realistic date; sending anyway sets the marker and writes the audit log
 - [x] Web: School Data (subjects, classes, task types), Timetable (own week for everyone, editing for administrators)
 - [x] Refusal tests for every new endpoint; Playwright journeys; both new screens in the accessibility scan
-- [ ] Sprint 7: extension requests (`extension_requests`), workload view when assigning
+
+Sprint 7 was built on 12 November 2026:
+- [x] Table `extension_requests` and a per-assignee due date on `task_assignments` (in the Sprint 6 migration, which has not been released)
+- [x] Request pre-filled from the teacher's own capacity figures and the earliest realistic date; one open request per person per task
+- [x] The sender approves or sets another date; only that teacher's due date moves; the exchange is listed on the task and in the audit log
+- [x] Workload view: estimated unfinished work due this week beside each name on the new-task form (`GET /api/staff/workload`, totals only)
+- [x] Refusal tests for every new endpoint; a Playwright journey with an accessibility scan of the request and answer screens
+- [ ] Not built: notifying the sender of a request and the teacher of the answer
+- [ ] Sprint 8: relief (`relief_assignments`), completion question, gate G4
 - [ ] Sprint 8: relief (`relief_assignments`), completion question, gate G4
 
 Scope for the phase:

@@ -4,6 +4,8 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import { assessAssignees } from '@/features/capacity/server/feasibility.service';
 import { planDelivery, type DeliveryPlan } from '@/features/delivery/server/delivery-plan.service';
 import { queueDeliveryNotice, scheduleDelivery } from '@/features/delivery/server/delivery-queue.service';
+import { EXTENSIONS_SHOWN_MAX } from '@/features/extensions/constants/extension.constants';
+import { listExtensions } from '@/features/extensions/server/extensions.repository';
 import { findTaskTypeEstimate } from '@/features/school-data/server/school-data.repository';
 import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
@@ -105,7 +107,7 @@ export async function listAssignedTasks(
   return toPage(rows, limit, (row) => ({
     id: row.id,
     title: row.title,
-    dueOn: row.due_on,
+    dueOn: row.my_due_on,
     createdBy: { id: row.created_by, name: row.creator_name },
     myStatus: row.my_status,
     urgent: row.urgent,
@@ -133,6 +135,7 @@ export async function listSentTasks(
     deliveredAt: row.delivered_at?.toISOString() ?? null,
     urgent: row.urgent,
     deadlineFlagged: row.deadline_flagged,
+    pendingExtensions: row.pending_extensions,
   }), (row) => encodeCursor(row.created_at.toISOString(), row.id));
 }
 
@@ -152,6 +155,8 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
   const comments = await listComments(db, actor.schoolId, taskId, COMMENTS_SHOWN_MAX);
   const assignees = isSender ? await listAssignees(db, actor.schoolId, taskId) : null;
   const activity = isSender ? await listEntityAudit(db, actor.schoolId, 'task', taskId) : null;
+  // The sender sees every request; an assignee only their own.
+  const extensions = await listExtensions(db, actor.schoolId, taskId, isSender ? null : actor.id, EXTENSIONS_SHOWN_MAX);
   return {
     id: task.id,
     title: task.title,
@@ -168,6 +173,8 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
     timeZone,
     isSender,
     myStatus: task.my_status,
+    myDueOn: task.my_due_on,
+    extensions,
     assigneeCount: counts.total,
     doneCount: counts.done,
     assignees: assignees?.map(toAssignee) ?? null,
@@ -184,6 +191,7 @@ const toAssignee = (row: AssigneeRow): TaskAssignee => ({
   name: row.name,
   status: row.status,
   completedAt: row.completed_at?.toISOString() ?? null,
+  dueOn: row.due_on,
 });
 
 const toActivity = (row: AuditRow): TaskActivity => ({

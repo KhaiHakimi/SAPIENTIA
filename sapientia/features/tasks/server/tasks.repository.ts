@@ -22,6 +22,8 @@ export interface TaskRow {
 
 export interface VisibleTaskRow extends TaskRow {
   my_status: AssignmentStatus | null;
+  /** The caller's own due date (later than the task's after an extension); null when they are not an assignee. */
+  my_due_on: string | null;
 }
 
 // due_on is read as text: a pg Date would shift the calendar day by the server's time zone.
@@ -65,7 +67,8 @@ export async function insertAssignments(db: Queryable, schoolId: string, taskId:
  */
 export async function findVisibleTask(db: Queryable, schoolId: string, taskId: string, userId: string): Promise<VisibleTaskRow | null> {
   const { rows } = await db.query<VisibleTaskRow>(
-    `SELECT ${TASK_COLUMNS}, a.status AS my_status
+    `SELECT ${TASK_COLUMNS}, a.status AS my_status,
+            CASE WHEN a.user_id IS NULL THEN NULL ELSE COALESCE(a.due_on, t.due_on)::text END AS my_due_on
        FROM tasks t
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
        LEFT JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id AND a.user_id = $3
@@ -85,9 +88,10 @@ export async function countAssignments(db: Queryable, schoolId: string, taskId: 
 }
 
 export async function listAssignees(db: Queryable, schoolId: string, taskId: string) {
-  const { rows } = await db.query<{ id: string; name: string; status: AssignmentStatus; completed_at: Date | null }>(
-    `SELECT u.id, u.name, a.status, a.completed_at
+  const { rows } = await db.query<{ id: string; name: string; status: AssignmentStatus; completed_at: Date | null; due_on: string }>(
+    `SELECT u.id, u.name, a.status, a.completed_at, COALESCE(a.due_on, t.due_on)::text AS due_on
        FROM task_assignments a JOIN users u ON u.id = a.user_id AND u.school_id = a.school_id
+       JOIN tasks t ON t.id = a.task_id AND t.school_id = a.school_id
       WHERE a.school_id = $1 AND a.task_id = $2
       ORDER BY u.name, u.id`,
     [schoolId, taskId],
@@ -95,7 +99,10 @@ export async function listAssignees(db: Queryable, schoolId: string, taskId: str
   return rows;
 }
 
-/** Board column for one assignee, soonest due first. Held tasks are not there until delivered. */
+/**
+ * Board column for one assignee. Held tasks are not there until delivered. Ordered by the task's due date; my_due_on is
+ * the assignee's own date, which is later after an extension.
+ */
 export async function listAssigned(
   db: Queryable,
   schoolId: string,
@@ -104,8 +111,8 @@ export async function listAssigned(
   limit: number,
   after: { dueOn: string; id: string } | null,
 ) {
-  const { rows } = await db.query<TaskRow & { my_status: AssignmentStatus }>(
-    `SELECT ${TASK_COLUMNS}, a.status AS my_status
+  const { rows } = await db.query<TaskRow & { my_status: AssignmentStatus; my_due_on: string }>(
+    `SELECT ${TASK_COLUMNS}, a.status AS my_status, COALESCE(a.due_on, t.due_on)::text AS my_due_on
        FROM task_assignments a
        JOIN tasks t ON t.id = a.task_id AND t.school_id = a.school_id
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
@@ -126,10 +133,12 @@ export async function listSent(
   after: { createdAt: string; id: string } | null,
   heldOnly = false,
 ) {
-  const { rows } = await db.query<TaskRow & { assignee_count: number; done_count: number }>(
+  const { rows } = await db.query<TaskRow & { assignee_count: number; done_count: number; pending_extensions: number }>(
     `SELECT ${TASK_COLUMNS},
             (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id) AS assignee_count,
-            (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id AND a.status = 'done') AS done_count
+            (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id AND a.status = 'done') AS done_count,
+            (SELECT count(*)::int FROM extension_requests e
+              WHERE e.task_id = t.id AND e.school_id = t.school_id AND e.status = 'pending') AS pending_extensions
        FROM tasks t JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
       WHERE t.school_id = $1 AND t.created_by = $2 AND (NOT $6 OR t.delivered_at IS NULL)
         AND ($3::timestamptz IS NULL OR (t.created_at, t.id) < ($3::timestamptz, $4::uuid))

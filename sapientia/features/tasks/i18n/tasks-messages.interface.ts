@@ -35,6 +35,9 @@ export interface TasksMessages {
   filterStaff: string;
   noStaffMatch: string;
   selectedCount: (count: number) => string;
+  /** Beside a name in the assignee list: that person's estimated unfinished work due by the end of this week. */
+  workload: (duration: string) => string;
+  workloadHelp: (weekEnd: string) => string;
   description: string;
   descriptionHelp: string;
   optional: string;
@@ -79,6 +82,9 @@ export interface TasksMessages {
     urgent: (actor: string) => string;
     delivered: string;
     flagged: (actor: string, count: number) => string;
+    extensionRequested: (actor: string, day: string) => string;
+    extensionApproved: (actor: string, assignee: string, day: string) => string;
+    extensionCountered: (actor: string, assignee: string, day: string) => string;
     other: (actor: string, action: string) => string;
   };
   someone: string;

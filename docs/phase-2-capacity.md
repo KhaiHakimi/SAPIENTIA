@@ -9,7 +9,7 @@ These stories were written from the plan, not from the Phase 0 teacher interview
 | Sprint | Scope | Status |
 |--------|-------|--------|
 | S6 | Subjects, classes, task types; weekly timetable; free-time and feasibility rules; `POST /api/tasks/feasibility`; warning on the create form; flagged-deadline marker | Built 11 November 2026 |
-| S7 | Extension requests (teacher asks, sender approves or proposes a date, recorded on the task); workload view when assigning | Not started |
+| S7 | Extension requests (teacher asks, sender approves or proposes a date, recorded on the task); workload view when assigning | Built 12 November 2026 |
 | S8 | Relief assignments and suggestions; optional completion question; gate G4 review | Not started |
 
 ## User stories: Sprint 6
@@ -37,6 +37,35 @@ These stories were written from the plan, not from the Phase 0 teacher interview
 - Given the warning is showing, when I send the task anyway, then it is created, marked "tight deadline", and the audit log records how many assignees were short of time.
 - Given the warning offers a date, when I choose it, then the due date changes and the warning clears.
 
+## User stories: Sprint 7
+
+**S7-1. Ask for more time.** As a teacher, I want to ask for a later due date in one step, with the reason already worked out, so that asking is quicker than apologising.
+
+- Given a delivered task of mine that is not done, when I choose "Ask for more time", then the form opens with my own figures for this task (time needed, free working time before the due date, timetable and other work as totals) and the earliest realistic date already filled in.
+- Given the task has no estimate, then the form says no date can be suggested and I choose one myself.
+- I may change the date to any day later than my current due date, and add a reason of up to 500 characters; the reason is optional.
+- Given I already have a request waiting for an answer on this task, then I cannot send another.
+- Given the task is held, done, or not mine, then I cannot ask, and the server answers 404.
+
+**S7-2. Answer a request.** As the sender, I want to approve the date or set another, so that the teacher has an answer and a date.
+
+- Given a request on a task I sent, when I open the task, then I see who asked, the dates, the figures as they were when the teacher asked, and the reason if one was given. My sent list marks tasks with requests waiting.
+- When I approve, the teacher's due date becomes the date asked for. When I set a different date later than their current one, their due date becomes that date.
+- Only that teacher's due date moves. The task's own date and the other assignees' dates stay as they were.
+- There is no "refuse" answer: the plan gives two answers, approve or propose a date. A sender who cannot give more time says so in a comment and leaves the request open. Review this with teachers and senders.
+- Given a request has been answered, then it cannot be answered again; a teacher who needs longer asks again.
+
+**S7-3. A record of the exchange.** As either party, I want the request and its answer to stay on the task, so that nobody has to remember what was agreed.
+
+- Each request and answer is listed on the task, oldest first, and in the sender's history. An assignee sees only their own requests.
+- The audit log records who asked, who answered and the dates. It does not record the reason.
+
+**S7-4. Workload when assigning.** As a sender, I want to see how much work each person already has this week while I choose assignees, so that I can spread tasks fairly.
+
+- Given the new-task form, then beside each name I see that person's estimated, unfinished work due by the end of this week (Sunday), overdue work included. People with none show nothing.
+- Only senders and administrators can read it. It is a total of minutes: no titles, senders or dates.
+- An extension moves the work with it: work extended into next week leaves this week's total and the capacity check for earlier dates.
+
 ## Threat model: Phase 2
 
 New data: timetables (where a teacher is, hour by hour, every week), time estimates, and derived free and committed time per teacher.
@@ -51,8 +80,21 @@ New data: timetables (where a teacher is, hour by hour, every week), time estima
 | Two administrators double-book a teacher at the same moment | Administrator | A database exclusion constraint refuses overlapping periods, whatever the application does. |
 | Flooding the lists or the timetable | Compromised administrator account | Caps on list size and periods per teacher; bodies are size-limited and validated; names are length-limited in the database. |
 
+Added for Sprint 7 (extension requests and the workload view):
+
+| What could go wrong | Who | How the design prevents it |
+|---------------------|-----|----------------------------|
+| A request shows the sender what else the teacher is working on | Sender | The request carries two totals only (time needed, free time before the due date). The fuller breakdown is shown to the teacher alone, about themselves. |
+| A teacher inflates the figures to justify a request | Assignee | The figures are worked out on the server when the request is saved; the browser sends only a date and an optional reason. |
+| A colleague reads another teacher's request or reason | Assignee | An assignee is given only their own requests. The reason is never written to the audit log. |
+| Someone other than the sender grants an extension, or a teacher grants their own | Staff | Only the task's creator can answer; everyone else, including other administrators, gets 404. A request can be answered only through its own task. |
+| Two answers to one request both apply | Sender (two tabs) | One conditional update decides the request and moves the date; a second answer finds it no longer pending and gets 409. |
+| Request spam | Assignee | One open request per person per task (a unique index); the reason is length-limited in the database. |
+| The workload view becomes a league table of teachers | Management | It exists only on the new-task form, for this week, as a figure beside each name the sender is choosing from. Nothing is stored, sorted, exported or shown to teachers about each other. |
+| Extension counts are used against a teacher | Management | There is no per-teacher count or report of requests. The plan's Phase 5 indicator is school-level only. |
+
 Open questions for later sprints:
 
-- S7 exposes more: an extension request shows the teacher's conflicts to the sender. Show totals, as here, not other tasks' titles.
+- The teacher who asks is not notified of the answer, and the sender is not notified of a request (they see a marker on the sent list). Notifications for both would follow held delivery: nothing outside working hours.
 - S8 relief suggestions rank teachers by relief already done. Keep the ranking inside the suggestion and never show it as a league table.
 - "Committed work as a single total" (plan risk): a task counts in full once its due date falls inside the period checked, and not before. It is deliberate and simple; revisit if teachers say the warnings are wrong.

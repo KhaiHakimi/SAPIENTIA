@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { DELIVERY_MESSAGES } from '@/features/delivery/i18n/delivery.messages';
+import { EXTENSIONS_MESSAGES } from '@/features/extensions/i18n/extensions.messages';
 import { SCHOOL_DATA_MESSAGES } from '@/features/school-data/i18n/school-data.messages';
 import { TASKS_MESSAGES } from '@/features/tasks/i18n/tasks.messages';
 import { TIMETABLE_MESSAGES } from '@/features/timetable/i18n/timetable.messages';
@@ -33,7 +34,7 @@ function serverReasonCodes(): string[] {
   return [...codes].sort();
 }
 
-const featureFieldTexts = [DELIVERY_MESSAGES, TASKS_MESSAGES, SCHOOL_DATA_MESSAGES, TIMETABLE_MESSAGES];
+const featureFieldTexts = [DELIVERY_MESSAGES, TASKS_MESSAGES, SCHOOL_DATA_MESSAGES, TIMETABLE_MESSAGES, EXTENSIONS_MESSAGES];
 
 describe('API error messages', () => {
   it('has the same codes and field reasons in Bahasa Melayu and English', () => {

@@ -10,7 +10,7 @@ import { signIn } from './support/staff-actions';
  * request) are scanned inside their own journeys.
  */
 const STAFF_SCREENS = [
-  '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/users', '/staff/school-data',
+  '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/relief', '/staff/users', '/staff/school-data',
   '/staff/settings', '/staff/calendar', '/staff/notifications',
 ];
 

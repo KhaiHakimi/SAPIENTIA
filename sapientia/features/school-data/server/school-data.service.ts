@@ -5,8 +5,9 @@ import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SCHOOL_DATA_ITEMS_MAX } from '../constants/school-data.constants';
-import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind } from '../interfaces/school-data.interface';
-import { insertItem, listItems, removeItem } from './school-data.repository';
+import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind, TaskTypeFeedback } from '../interfaces/school-data.interface';
+import { FEEDBACK_MIN_ANSWERS } from '../services/time-feedback';
+import { insertItem, listItems, listTimeTakenByTaskType, removeItem } from './school-data.repository';
 
 const UNIQUE_VIOLATION = '23505';
 const FOREIGN_KEY_VIOLATION = '23503';
@@ -15,6 +16,14 @@ const errorCode = (error: unknown) => (error as { code?: string }).code;
 /** Any signed-in staff member may read the lists: they are names of subjects, classes and kinds of task, nothing personal. */
 export function listSchoolData(actor: SessionUser, kind: SchoolDataKind): Promise<SchoolDataItem[]> {
   return listItems(getPool(), actor.schoolId, kind, SCHOOL_DATA_ITEMS_MAX);
+}
+
+/**
+ * What the completion question has gathered (plan Phase 2), for administrators correcting task-type estimates: counts per
+ * task type, and only for types with enough answers that no count points at a person.
+ */
+export function listTaskTypeFeedback(actor: SessionUser): Promise<TaskTypeFeedback[]> {
+  return listTimeTakenByTaskType(getPool(), actor.schoolId, FEEDBACK_MIN_ANSWERS, SCHOOL_DATA_ITEMS_MAX);
 }
 
 /** Administrators add to a list. The audit entry records which list, never the name. */

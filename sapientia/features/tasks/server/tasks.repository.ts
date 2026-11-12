@@ -1,6 +1,6 @@
 import 'server-only';
 import type { Queryable } from '@/shared/server/database.service';
-import type { AssignmentStatus } from '../interfaces/task.interface';
+import type { AssignmentStatus, TimeTaken } from '../interfaces/task.interface';
 
 /** Every function takes schoolId first and filters on it: no query here can reach another school's rows (plan Sprint 3). */
 
@@ -24,6 +24,7 @@ export interface VisibleTaskRow extends TaskRow {
   my_status: AssignmentStatus | null;
   /** The caller's own due date (later than the task's after an extension); null when they are not an assignee. */
   my_due_on: string | null;
+  my_time_taken: TimeTaken | null;
 }
 
 // due_on is read as text: a pg Date would shift the calendar day by the server's time zone.
@@ -68,7 +69,8 @@ export async function insertAssignments(db: Queryable, schoolId: string, taskId:
 export async function findVisibleTask(db: Queryable, schoolId: string, taskId: string, userId: string): Promise<VisibleTaskRow | null> {
   const { rows } = await db.query<VisibleTaskRow>(
     `SELECT ${TASK_COLUMNS}, a.status AS my_status,
-            CASE WHEN a.user_id IS NULL THEN NULL ELSE COALESCE(a.due_on, t.due_on)::text END AS my_due_on
+            CASE WHEN a.user_id IS NULL THEN NULL ELSE COALESCE(a.due_on, t.due_on)::text END AS my_due_on,
+            a.time_taken AS my_time_taken
        FROM tasks t
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
        LEFT JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id AND a.user_id = $3
@@ -160,7 +162,9 @@ export async function updateOwnAssignment(
   const { rows } = await db.query<{ previous: AssignmentStatus }>(
     `UPDATE task_assignments a
         SET status = $4::assignment_status, status_changed_at = $5,
-            completed_at = CASE WHEN $4::assignment_status = 'done' THEN $5::timestamptz ELSE NULL END
+            completed_at = CASE WHEN $4::assignment_status = 'done' THEN $5::timestamptz ELSE NULL END,
+            -- The answer belongs to a finished task: reopening it takes the answer away.
+            time_taken = CASE WHEN $4::assignment_status = 'done' THEN a.time_taken ELSE NULL END
        FROM (
          SELECT ta.status FROM task_assignments ta JOIN tasks t ON t.id = ta.task_id AND t.school_id = ta.school_id
           WHERE ta.school_id = $1 AND ta.task_id = $2 AND ta.user_id = $3 AND t.delivered_at IS NOT NULL FOR UPDATE OF ta
@@ -170,6 +174,24 @@ export async function updateOwnAssignment(
     [schoolId, taskId, userId, status, now],
   );
   return rows[0]?.previous ?? null;
+}
+
+/** Saves the caller's answer on their own finished, delivered task. False when there is no such finished assignment. */
+export async function updateOwnTimeTaken(
+  db: Queryable,
+  schoolId: string,
+  taskId: string,
+  userId: string,
+  timeTaken: TimeTaken | null,
+): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `UPDATE task_assignments a SET time_taken = $4::time_taken
+       FROM tasks t
+      WHERE t.id = a.task_id AND t.school_id = a.school_id AND t.delivered_at IS NOT NULL
+        AND a.school_id = $1 AND a.task_id = $2 AND a.user_id = $3 AND a.status = 'done'`,
+    [schoolId, taskId, userId, timeTaken],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
 export async function insertComment(

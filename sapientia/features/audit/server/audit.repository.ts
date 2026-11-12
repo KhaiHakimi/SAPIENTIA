@@ -17,6 +17,8 @@ export type AuditAction =
   | 'extension.requested'
   | 'extension.approved'
   | 'extension.countered'
+  | 'relief.assigned'
+  | 'relief.cancelled'
   | 'school_data.added'
   | 'school_data.removed'
   | 'timetable.slot_added'
@@ -25,7 +27,7 @@ export type AuditAction =
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
-  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot';
+  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

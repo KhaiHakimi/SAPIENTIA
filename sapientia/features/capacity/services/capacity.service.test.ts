@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkingCalendar } from '@/features/delivery/interfaces/working-calendar.interface';
-import type { Commitment, WeeklySlot } from '../interfaces/capacity.interface';
+import type { Commitment, DatedSlot, WeeklySlot } from '../interfaces/capacity.interface';
 import { checkFeasibility, freeMinutes, weekEndDay } from './capacity.service';
 
 /** 07:30 to 17:00 is 570 working minutes a day. 2 November 2026 is a Monday. */
@@ -70,6 +70,22 @@ describe('freeMinutes', () => {
   it('is zero when the day is already over', () => {
     expect(freeMinutes(calendar(), [], at('2026-11-03T08:00'), MONDAY)).toBe(0);
   });
+
+  it('takes a relief class out of its own date only, counting an overlap with the timetable once', () => {
+    const slots: WeeklySlot[] = [{ weekday: 1, start: '08:00', end: '09:00' }];
+    const relief: DatedSlot[] = [
+      { date: MONDAY, start: '08:30', end: '09:30' },
+      { date: MONDAY, start: '14:00', end: '15:00' },
+      // The following Monday: not this week's concern.
+      { date: '2026-11-09', start: '10:00', end: '11:00' },
+    ];
+    // Monday: 08:00 to 09:30 (the lesson and the relief that overlaps it) and 14:00 to 15:00.
+    expect(freeMinutes(calendar(), slots, MONDAY_START, MONDAY, relief)).toBe(DAY - 90 - 60);
+    expect(freeMinutes(calendar(), slots, MONDAY_START, '2026-11-03', relief)).toBe(2 * DAY - 90 - 60);
+    // A relief class on a holiday or outside working hours changes nothing.
+    const offHours: DatedSlot[] = [{ date: MONDAY, start: '17:00', end: '18:00' }, { date: '2026-11-07', start: '09:00', end: '10:00' }];
+    expect(freeMinutes(calendar(), [], MONDAY_START, '2026-11-08', offHours)).toBe(5 * DAY);
+  });
 });
 
 describe('weekEndDay', () => {
@@ -94,6 +110,14 @@ describe('checkFeasibility', () => {
       feasible: true, neededMinutes: 120, freeMinutes: DAY - 120, workingMinutes: DAY, teachingMinutes: 120, committedMinutes: 0,
       earliestDueOn: MONDAY,
     });
+  });
+
+  it('counts relief classes as teaching, and moves the earliest date accordingly', () => {
+    const datedSlots: DatedSlot[] = [{ date: MONDAY, start: '08:00', end: '10:00' }];
+    const result = checkFeasibility({
+      calendar: calendar(), slots: [], datedSlots, commitments: [], from: MONDAY_START, dueOn: MONDAY, neededMinutes: DAY - 60,
+    });
+    expect(result).toMatchObject({ feasible: false, teachingMinutes: 120, freeMinutes: DAY - 120, earliestDueOn: '2026-11-03' });
   });
 
   it('passes when the estimate is exactly the free time', () => {

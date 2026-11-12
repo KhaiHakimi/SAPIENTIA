@@ -16,11 +16,11 @@ import { runIdempotent, type StoredResponse } from '@/shared/server/idempotency.
 import { decodeCursor, encodeCursor, toPage } from '@/shared/server/pagination';
 import { COMMENTS_SHOWN_MAX } from '../constants/task.constants';
 import type {
-  AssignedTask, AssignmentStatus, CreateTaskRequest, SentTask, TaskActivity, TaskAssignee, TaskComment, TaskDetail,
+  AssignedTask, AssignmentStatus, CreateTaskRequest, SentTask, TaskActivity, TaskAssignee, TaskComment, TaskDetail, TimeTaken,
 } from '../interfaces/task.interface';
 import {
   countAssignments, findVisibleTask, insertAssignments, insertComment, insertTask, listAssigned, listAssignees, listComments,
-  listSent, updateOwnAssignment,
+  listSent, updateOwnAssignment, updateOwnTimeTaken,
 } from './tasks.repository';
 
 /** The due date cannot be before today, nor before the day the task actually reaches the assignees. */
@@ -174,6 +174,7 @@ async function loadDetail(db: Queryable, actor: SessionUser, taskId: string): Pr
     isSender,
     myStatus: task.my_status,
     myDueOn: task.my_due_on,
+    myTimeTaken: task.my_time_taken,
     extensions,
     assigneeCount: counts.total,
     doneCount: counts.done,
@@ -229,6 +230,23 @@ export async function setMyStatus(
     }
     return { status };
   });
+}
+
+/**
+ * The optional completion question (plan Phase 2): an assignee says roughly how long their finished task took, or takes
+ * the answer back. It is never shown beside their name: it is only counted per task type, to correct that type's estimate.
+ * Not an assignee: 404. Not finished yet: a field error. No audit entry, because nothing about the task changes.
+ */
+export async function setMyTimeTaken(
+  actor: SessionUser,
+  taskId: string,
+  timeTaken: TimeTaken | null,
+): Promise<{ timeTaken: TimeTaken | null }> {
+  const db = getPool();
+  if (await updateOwnTimeTaken(db, actor.schoolId, taskId, actor.id, timeTaken)) return { timeTaken };
+  const task = await findVisibleTask(db, actor.schoolId, taskId, actor.id);
+  if (!task || task.my_status === null) throw new NotFoundError();
+  throw new ValidationError({ timeTaken: 'not_done' });
 }
 
 /** The sender and the assignees may comment; the audit entry records that a comment exists, never its text. */

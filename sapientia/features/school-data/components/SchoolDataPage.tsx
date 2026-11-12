@@ -5,6 +5,7 @@ import { useMessages } from '@/shared/i18n/useLanguage';
 import { SCHOOL_DATA_KINDS } from '../constants/school-data.constants';
 import { SCHOOL_DATA_MESSAGES } from '../i18n/school-data.messages';
 import { SchoolDataList } from './SchoolDataList';
+import { TaskTypeFeedbackCard } from './TaskTypeFeedbackCard';
 
 /** Administrators: the school's subjects, classes and task types (plan Phase 2), which the timetable and capacity check use. */
 export function SchoolDataPage() {
@@ -20,6 +21,7 @@ export function SchoolDataPage() {
       <div className={calm.grid2}>
         {SCHOOL_DATA_KINDS.map((kind) => <SchoolDataList key={kind} kind={kind} text={text} />)}
       </div>
+      <TaskTypeFeedbackCard text={text} />
     </>
   );
 }

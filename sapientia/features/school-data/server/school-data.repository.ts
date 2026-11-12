@@ -1,6 +1,6 @@
 import 'server-only';
 import type { Queryable } from '@/shared/server/database.service';
-import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind } from '../interfaces/school-data.interface';
+import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind, TaskTypeFeedback } from '../interfaces/school-data.interface';
 
 /**
  * Subjects, classes and task types are the same shape (a named row per school), so one repository serves all three. The
@@ -51,6 +51,38 @@ export async function removeItem(db: Queryable, schoolId: string, kind: SchoolDa
     ? await db.query(`UPDATE ${table} SET archived_at = $3 WHERE school_id = $1 AND id = $2 AND archived_at IS NULL`, [schoolId, id, now])
     : await db.query(`DELETE FROM ${table} WHERE school_id = $1 AND id = $2`, [schoolId, id]);
   return (rowCount ?? 0) > 0;
+}
+
+/**
+ * Answers to the completion question, counted per active task type. Types with fewer than minAnswers are left out, so a
+ * count can never be traced to the one or two people who gave it. No user id leaves this function.
+ */
+export async function listTimeTakenByTaskType(
+  db: Queryable,
+  schoolId: string,
+  minAnswers: number,
+  limit: number,
+): Promise<TaskTypeFeedback[]> {
+  const { rows } = await db.query<{ id: string; name: string; estimated_minutes: number; under: number; middle: number; over: number }>(
+    `SELECT y.id, y.name, y.estimated_minutes,
+            count(*) FILTER (WHERE a.time_taken = 'under_1h')::int AS under,
+            count(*) FILTER (WHERE a.time_taken = '1_to_3h')::int AS middle,
+            count(*) FILTER (WHERE a.time_taken = 'over_3h')::int AS over
+       FROM task_types y
+       JOIN tasks t ON t.task_type_id = y.id AND t.school_id = y.school_id
+       JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id
+      WHERE y.school_id = $1 AND y.archived_at IS NULL AND a.time_taken IS NOT NULL
+      GROUP BY y.id, y.name, y.estimated_minutes
+     HAVING count(*) >= $2
+      ORDER BY lower(y.name), y.id LIMIT $3`,
+    [schoolId, minAnswers, limit],
+  );
+  return rows.map((row) => ({
+    taskTypeId: row.id,
+    name: row.name,
+    estimatedMinutes: row.estimated_minutes,
+    answers: { 'under_1h': row.under, '1_to_3h': row.middle, 'over_3h': row.over },
+  }));
 }
 
 /** The estimate of an active task type in this school, or null if there is no such type. */

@@ -1,7 +1,9 @@
 import 'server-only';
+import { DateTime } from 'luxon';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import type { IsoWeekday, WorkingCalendar } from '@/features/delivery/interfaces/working-calendar.interface';
 import { planDelivery } from '@/features/delivery/server/delivery-plan.service';
+import { listReliefTimes } from '@/features/relief/server/relief.repository';
 import { listSlotTimes } from '@/features/timetable/server/timetable.repository';
 import type { StaffMember } from '@/features/users/interfaces/staff-user.interface';
 import { listActiveStaff } from '@/features/users/server/users.repository';
@@ -9,7 +11,7 @@ import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ValidationError } from '@/shared/server/app-errors';
 import { getPool, type Queryable } from '@/shared/server/database.service';
 import type {
-  AssigneeFeasibility, Commitment, FeasibilityRequest, FeasibilityResponse, WeeklySlot, Workload,
+  AssigneeFeasibility, Commitment, DatedSlot, FeasibilityRequest, FeasibilityResponse, WeeklySlot, Workload,
 } from '../interfaces/capacity.interface';
 import { checkFeasibility } from '../services/capacity.service';
 import { weekEndDay } from '../services/capacity.service';
@@ -37,8 +39,8 @@ function groupBy<Row, Value>(rows: readonly Row[], keyOf: (row: Row) => string, 
 }
 
 /**
- * Runs the capacity rules for each assignee. Two queries whatever the number of people: everyone's timetable, then
- * everyone's open commitments.
+ * Runs the capacity rules for each assignee. Three queries whatever the number of people: everyone's timetable, the
+ * relief classes they cover from the start day on, and everyone's open commitments.
  */
 export async function assessAssignees(db: Queryable, schoolId: string, input: AssessInput): Promise<AssigneeFeasibility[]> {
   const ids = input.staff.map((person) => person.id);
@@ -46,6 +48,12 @@ export async function assessAssignees(db: Queryable, schoolId: string, input: As
     await listSlotTimes(db, schoolId, ids),
     (row) => row.teacher_id,
     (row): WeeklySlot => ({ weekday: row.weekday as IsoWeekday, start: row.start_time, end: row.end_time }),
+  );
+  const fromDay = DateTime.fromJSDate(input.from, { zone: input.calendar.timeZone }).toISODate() ?? '';
+  const relief = groupBy(
+    await listReliefTimes(db, schoolId, ids, fromDay),
+    (row) => row.teacher_id,
+    (row): DatedSlot => ({ date: row.on_date, start: row.start_time, end: row.end_time }),
   );
   const commitments = groupBy(
     await listCommitments(db, schoolId, ids, input.exceptTaskId ?? null),
@@ -57,6 +65,7 @@ export async function assessAssignees(db: Queryable, schoolId: string, input: As
     ...checkFeasibility({
       calendar: input.calendar,
       slots: slots.get(person.id) ?? [],
+      datedSlots: relief.get(person.id) ?? [],
       commitments: commitments.get(person.id) ?? [],
       from: input.from,
       dueOn: input.dueOn,

@@ -1,7 +1,7 @@
 import { apiFetch } from '@/shared/api/api-client';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type {
-  AssignedTask, AssignmentStatus, CreateTaskRequest, SentTask, TaskComment, TaskDetail,
+  AssignedTask, AssignmentStatus, CreateTaskRequest, SentTask, TaskComment, TaskDetail, TimeTaken,
 } from '../interfaces/task.interface';
 
 export const TASKS_KEY = ['tasks'] as const;
@@ -31,6 +31,11 @@ export function createTask(input: CreateTaskRequest, idempotencyKey: string): Pr
 
 export function setMyStatus(id: string, status: AssignmentStatus): Promise<{ status: AssignmentStatus }> {
   return apiFetch(`/api/tasks/${encodeURIComponent(id)}/assignments/me`, { method: 'PATCH', body: { status } });
+}
+
+/** The optional completion question; null takes the answer back. */
+export function setMyTimeTaken(id: string, timeTaken: TimeTaken | null): Promise<{ timeTaken: TimeTaken | null }> {
+  return apiFetch(`/api/tasks/${encodeURIComponent(id)}/assignments/me/time-taken`, { method: 'PUT', body: { timeTaken } });
 }
 
 export function addComment(id: string, body: string): Promise<TaskComment> {

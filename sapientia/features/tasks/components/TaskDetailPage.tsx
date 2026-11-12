@@ -18,6 +18,7 @@ import { fetchTask, taskKey } from '../services/tasks.client';
 import styles from '../styles/Tasks.module.css';
 import { CommentThread } from './CommentThread';
 import { StatusSelect } from './StatusSelect';
+import { TimeTakenQuestion } from './TimeTakenQuestion';
 
 function SenderPanels({ task, text }: { task: TaskDetail; text: TasksMessages }) {
   const { lang } = useLanguage();
@@ -113,6 +114,9 @@ export function TaskDetailPage({ id }: { id: string }) {
                 <p className={task.data.description ? styles.description : calm.muted}>{task.data.description ?? text.noDescription}</p>
                 {task.data.myStatus && (
                   <StatusSelect taskId={task.data.id} status={task.data.myStatus} text={text} idPrefix="detail" />
+                )}
+                {task.data.myStatus === 'done' && (
+                  <TimeTakenQuestion taskId={task.data.id} answer={task.data.myTimeTaken} text={text} />
                 )}
               </section>
               <ExtensionPanel task={task.data} />

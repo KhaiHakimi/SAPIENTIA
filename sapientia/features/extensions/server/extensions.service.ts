@@ -5,6 +5,7 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import type { Feasibility } from '@/features/capacity/interfaces/capacity.interface';
 import { assessAssignees } from '@/features/capacity/server/feasibility.service';
 import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.repository';
+import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import { findVisibleTask } from '@/features/tasks/server/tasks.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
@@ -54,7 +55,8 @@ export async function suggestExtension(actor: SessionUser, taskId: string, clock
 /**
  * An assignee asks for a later date on their own, delivered, unfinished task. Anyone else gets 404. One request can be
  * open at a time. The request keeps the capacity figures worked out here, on the server, so the sender sees why in totals
- * the teacher cannot alter. The audit entry records the dates, never the reason.
+ * the teacher cannot alter. The audit entry records the dates, never the reason. The sender is told by email and push at
+ * the next working moment.
  */
 export async function requestExtension(
   actor: SessionUser,
@@ -83,6 +85,7 @@ export async function requestExtension(
         actorId: actor.id, action: 'extension.requested', entityType: 'task', entityId: taskId,
         metadata: { requestId: id, requestedDueOn: input.requestedDueOn },
       }]);
+      await queueEventNotice(client, { kind: 'extension.requested', schoolId: actor.schoolId, extensionId: id }, clock);
       return (await findExtension(client, actor.schoolId, taskId, id)) as ExtensionRequest;
     });
   } catch (error) {
@@ -96,6 +99,7 @@ export async function requestExtension(
 /**
  * The task's sender answers a request: accept the date asked for, or give another later date. Either way the assignee's
  * due date moves and the exchange stays on the task. Anyone but the sender gets 404; a request already answered gets 409.
+ * The teacher is told at the next working moment.
  */
 export async function answerExtension(
   actor: SessionUser,
@@ -121,6 +125,7 @@ export async function answerExtension(
       actorId: actor.id, action: dueOn === null ? 'extension.approved' : 'extension.countered', entityType: 'task', entityId: taskId,
       metadata: { requestId, assigneeId: decided.requested_by, dueOn: decided.decided_due_on },
     }]);
+    await queueEventNotice(client, { kind: 'extension.answered', schoolId: actor.schoolId, extensionId: requestId }, clock);
     return (await findExtension(client, actor.schoolId, taskId, requestId)) as ExtensionRequest;
   });
 }

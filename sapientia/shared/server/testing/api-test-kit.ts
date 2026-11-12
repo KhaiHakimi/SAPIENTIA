@@ -11,7 +11,7 @@ export const TEST_PASSWORD = 'correct-horse-battery';
 
 /** Every application table, children first. pg-boss keeps its own schema and is cleared separately when needed. */
 const APP_TABLES = [
-  'relief_assignments', 'extension_requests', 'timetable_slots', 'task_types', 'classes', 'subjects',
+  'event_notice_sends', 'relief_assignments', 'extension_requests', 'timetable_slots', 'task_types', 'classes', 'subjects',
   'notification_sends', 'push_subscriptions', 'calendar_events', 'school_settings', 'idempotency_keys', 'audit_logs', 'task_comments', 'task_assignments', 'tasks',
   'auth_throttle', 'invites', 'sessions', 'users', 'schools',
 ];
@@ -22,7 +22,7 @@ export async function resetDatabase(extraTables: readonly string[] = []): Promis
 
 /** Removes queued delivery and notify jobs, so a test can count the ones it created. */
 export async function clearQueuedJobs(): Promise<void> {
-  await getPool().query(`DELETE FROM pgboss.job WHERE name IN ('deliver-task', 'notify-task-delivered')`);
+  await getPool().query(`DELETE FROM pgboss.job WHERE name IN ('deliver-task', 'notify-task-delivered', 'notify-event')`);
 }
 
 let passwordHash: Promise<string> | undefined;

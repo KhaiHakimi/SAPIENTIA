@@ -1,6 +1,6 @@
 import 'server-only';
 import type { Queryable } from '@/shared/server/database.service';
-import type { PushSubscriptionInput } from '../interfaces/notification.interface';
+import type { NotificationChannel, PushSubscriptionInput } from '../interfaces/notification.interface';
 
 /** Every function takes schoolId first and filters on it, like the other repositories (plan Sprint 3). */
 
@@ -102,7 +102,7 @@ export async function listSentKeys(db: Queryable, schoolId: string, taskId: stri
 export async function recordSent(
   db: Queryable,
   schoolId: string,
-  sent: { taskId: string; userId: string; channel: 'email' | 'push'; target: string; at: Date },
+  sent: { taskId: string; userId: string; channel: NotificationChannel; target: string; at: Date },
 ): Promise<void> {
   await db.query(
     `INSERT INTO notification_sends (school_id, task_id, user_id, channel, target, sent_at) VALUES ($1, $2, $3, $4, $5, $6)

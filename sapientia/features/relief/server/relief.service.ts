@@ -7,6 +7,7 @@ import type { WorkingCalendar } from '@/features/delivery/interfaces/working-cal
 import { planDelivery } from '@/features/delivery/server/delivery-plan.service';
 import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.repository';
 import { isWorkingDay } from '@/features/delivery/services/working-time.service';
+import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import { SLOTS_PER_TEACHER_MAX } from '@/features/timetable/constants/timetable.constants';
 import { listSlots } from '@/features/timetable/server/timetable.repository';
 import type { StaffMember } from '@/features/users/interfaces/staff-user.interface';
@@ -140,6 +141,8 @@ export async function assignRelief(actor: SessionUser, input: NewRelief, clock: 
         actorId: actor.id, action: 'relief.assigned', entityType: 'relief_assignment', entityId: id,
         metadata: { slotId: slot.id, onDate: input.onDate, absentTeacherId: slot.teacher_id, reliefTeacherId: input.reliefTeacherId },
       }]);
+      // Told when the duty is delivered to them, by the same held-delivery time.
+      await queueEventNotice(client, { kind: 'relief.assigned', schoolId: actor.schoolId, reliefId: id }, clock, plan.deliverAt);
       return { id, deliverAt: plan.deliverAt.toISOString(), held: plan.deliveredAt === null };
     });
   } catch (error) {
@@ -150,8 +153,11 @@ export async function assignRelief(actor: SessionUser, input: NewRelief, clock: 
   }
 }
 
-/** An administrator cancels a relief; the period is uncovered again and can be given to someone else. */
-export async function cancelRelief(actor: SessionUser, reliefId: string): Promise<void> {
+/**
+ * An administrator cancels a relief; the period is uncovered again and can be given to someone else. A relief teacher who
+ * had already been told is told it is cancelled, at the next working moment. One still held never knew, so hears nothing.
+ */
+export async function cancelRelief(actor: SessionUser, reliefId: string, clock: Clock): Promise<void> {
   await withTransaction(async (client) => {
     const removed = await deleteRelief(client, actor.schoolId, reliefId);
     if (!removed) throw new NotFoundError();
@@ -159,6 +165,12 @@ export async function cancelRelief(actor: SessionUser, reliefId: string): Promis
       actorId: actor.id, action: 'relief.cancelled', entityType: 'relief_assignment', entityId: reliefId,
       metadata: { slotId: removed.slot_id, onDate: removed.on_date, reliefTeacherId: removed.relief_teacher_id },
     }]);
+    if (removed.deliver_at.getTime() <= clock.now().getTime()) {
+      await queueEventNotice(client, {
+        kind: 'relief.cancelled', schoolId: actor.schoolId, reliefId, reliefTeacherId: removed.relief_teacher_id,
+        absentTeacherId: removed.absent_teacher_id, onDate: removed.on_date, startTime: removed.start_time, endTime: removed.end_time,
+      }, clock);
+    }
   });
 }
 

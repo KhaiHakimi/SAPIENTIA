@@ -161,7 +161,23 @@ ALTER TABLE task_assignments
   ADD COLUMN time_taken time_taken,
   ADD CONSTRAINT task_assignments_time_taken_when_done CHECK (time_taken IS NULL OR status = 'done');
 
+-- What has gone out about extension requests and relief, as notification_sends does for tasks: a retried job sends only
+-- what is still missing. notice_key names the event and its row ('relief.assigned:<id>'); it is not a foreign key because
+-- a cancelled relief is deleted, and its cancellation notice must still be recorded.
+CREATE TABLE event_notice_sends (
+  school_id uuid NOT NULL,
+  notice_key text NOT NULL,
+  user_id uuid NOT NULL,
+  channel notification_channel NOT NULL,
+  target text NOT NULL,
+  sent_at timestamptz NOT NULL,
+  PRIMARY KEY (notice_key, user_id, channel, target),
+  CONSTRAINT event_notice_sends_key_length CHECK (char_length(notice_key) BETWEEN 1 AND 100),
+  FOREIGN KEY (school_id, user_id) REFERENCES users (school_id, id) ON DELETE CASCADE
+);
+
 -- Down Migration
+DROP TABLE event_notice_sends;
 ALTER TABLE task_assignments DROP CONSTRAINT task_assignments_time_taken_when_done, DROP COLUMN time_taken;
 DROP TYPE time_taken;
 DROP TABLE relief_assignments;

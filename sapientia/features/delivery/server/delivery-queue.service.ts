@@ -2,9 +2,11 @@ import 'server-only';
 import { PgBoss } from 'pg-boss';
 import type { PoolClient } from 'pg';
 import { readDatabaseUrl } from '@/shared/server/database.service';
+import type { EventNoticeJob } from '@/features/notifications/interfaces/event-notice.interface';
 import { logger } from '@/shared/server/logger.service';
 import {
-  DELIVER_DUE_CRON, DELIVER_DUE_QUEUE, DELIVER_TASK_QUEUE, type DeliverTaskJob, NOTIFY_TASK_QUEUE, type NotifyTaskJob,
+  DELIVER_DUE_CRON, DELIVER_DUE_QUEUE, DELIVER_TASK_QUEUE, type DeliverTaskJob, NOTIFY_EVENT_QUEUE, NOTIFY_TASK_QUEUE,
+  type NotifyTaskJob,
 } from '../constants/queue.constants';
 
 /**
@@ -46,6 +48,15 @@ export async function queueDeliveryNotice(client: PoolClient, taskId: string): P
   await boss.send(NOTIFY_TASK_QUEUE, job, { singletonKey: taskId, db: inTransaction(client) });
 }
 
+/**
+ * Queues a message about an extension request or relief inside the transaction that saves the event, to run no earlier
+ * than startAfter. singletonKey is the notice key, so one event queues one job.
+ */
+export async function queueEventNoticeJob(client: PoolClient, job: EventNoticeJob, noticeKey: string, startAfter: Date): Promise<void> {
+  const boss = await senderBoss();
+  await boss.send(NOTIFY_EVENT_QUEUE, job, { startAfter, singletonKey: noticeKey, db: inTransaction(client) });
+}
+
 const inTransaction = (client: PoolClient) => ({ executeSql: (text: string, values?: unknown[]) => client.query(text, values) });
 
 /** Creates the pg-boss schema and queues. Run by `npm run db:migrate` and at worker start; safe to run again. */
@@ -69,6 +80,9 @@ export async function ensureQueues(boss: PgBoss): Promise<void> {
   // Email or push services can be down for a while: retry over roughly an hour (1, 2, 4 ... 32 minutes).
   if (!existing.has(NOTIFY_TASK_QUEUE)) {
     await boss.createQueue(NOTIFY_TASK_QUEUE, { policy: 'short', retryLimit: 6, retryDelay: 60, retryBackoff: true });
+  }
+  if (!existing.has(NOTIFY_EVENT_QUEUE)) {
+    await boss.createQueue(NOTIFY_EVENT_QUEUE, { policy: 'short', retryLimit: 6, retryDelay: 60, retryBackoff: true });
   }
   await boss.schedule(DELIVER_DUE_QUEUE, DELIVER_DUE_CRON);
 }

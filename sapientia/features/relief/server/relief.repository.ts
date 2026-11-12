@@ -84,11 +84,21 @@ export async function insertRelief(db: Queryable, schoolId: string, relief: NewR
   return rows[0].id;
 }
 
-/** Removes the relief; returns what it was for the audit log, or null if there is none in this school. */
+/** Removes the relief; returns what it was for the audit log and the cancellation notice, or null if there is none in this school. */
 export async function deleteRelief(db: Queryable, schoolId: string, reliefId: string) {
-  const { rows } = await db.query<{ slot_id: string; on_date: string; relief_teacher_id: string }>(
+  interface RemovedRow {
+    slot_id: string;
+    on_date: string;
+    relief_teacher_id: string;
+    absent_teacher_id: string;
+    start_time: string;
+    end_time: string;
+    deliver_at: Date;
+  }
+  const { rows } = await db.query<RemovedRow>(
     `DELETE FROM relief_assignments WHERE school_id = $1 AND id = $2
-     RETURNING slot_id, on_date::text AS on_date, relief_teacher_id`,
+     RETURNING slot_id, on_date::text AS on_date, relief_teacher_id, absent_teacher_id,
+               to_char(start_time, 'HH24:MI') AS start_time, to_char(end_time, 'HH24:MI') AS end_time, deliver_at`,
     [schoolId, reliefId],
   );
   return rows[0] ?? null;

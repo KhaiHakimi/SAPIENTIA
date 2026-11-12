@@ -127,7 +127,7 @@ In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok
 ## Notes and known limits
 
 - Capacity is a deliberate simplification: committed work is one total, not a schedule. An unfinished task counts in full once its due date falls inside the period being checked, and not at all before that. Only tasks with an estimate count, so the check is only as good as the estimates. A task's flag is worked out once, when it is sent, and does not change if the timetable changes later.
-- Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers),. The board still sorts by the task's own due date, while each card shows the assignee's date. The figures on a request are a snapshot from when it was made.
+- Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers). The board still sorts by the task's own due date, while each card shows the assignee's date. The figures on a request are a snapshot from when it was made.
 - Relief: there is no absence register: a teacher counts as away on a date only once relief is arranged for one of their own periods. Only staff with at least one timetable period are suggested. There is no urgent override for relief arranged outside working hours.
 - Completion question: the three-answer minimum before counts are shown is a judgement to revisit for small schools. A task type's estimate can only be changed by removing the type and adding it again.
 - The timetable has no terms or alternating weeks: one week repeats all year. School holidays count only if they are in the Calendar.

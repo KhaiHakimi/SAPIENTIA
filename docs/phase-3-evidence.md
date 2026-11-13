@@ -7,7 +7,7 @@ User stories, acceptance criteria and the threat model for plan Phase 3 (Sprints
 | Sprint | Scope | State |
 |--------|-------|-------|
 | S9 | Lesson records (one tap, reason when not held, optional e-RPH link); private hours log with an optional shared monthly total | Built 12 November 2026 |
-| S10 | Monthly principal report with PDF and Excel export; school-level wellbeing indicators; shared material bank; file uploads (photo on a lesson record, files in the bank); gate G5 | Not started |
+| S10 | Monthly principal report with PDF and Excel export; school-level wellbeing indicators; shared material bank; file uploads (photo on a lesson record, files in the bank); gate G5 | Part 1 built 13 November 2026: report, exports, wellbeing indicators. Part 2 not started: uploads, material bank, gate G5 |
 
 No blank report templates were obtained in Phase 0, so the monthly report in Sprint 10 uses a generic format (plan Section 12, item 6). The README will say so.
 
@@ -50,6 +50,35 @@ No blank report templates were obtained in Phase 0, so the monthly report in Spr
 | The private hours log is read by anyone but its owner | Administrator, colleague, another school | Every query on the log takes the owner's id from the session, never from the request. Only the hours feature's repository touches the table, and a test fails if any other file does. Refusal tests cover every endpoint. Entries are not in the audit log. |
 | A shared total is used to compare or rank teachers | Management | Sharing is opt-in per month and can be withdrawn. Sprint 10 shows shared totals beside names only to administrators, in the monthly report, with no ranking. |
 | Notes contain personal or health details | Teacher | Notes are optional, limited to 200 characters, and the page says they are private. The log is for the teacher alone. |
+
+## User stories: Sprint 10, part 1
+
+**S10-1. A monthly report for the principal.** As an administrator, I want one page that sums up a month, so that I can report on the school without collecting figures by hand.
+
+- I choose a month that has started (last month by default). A finished month is counted in full; the current month up to yesterday.
+- Lessons: scheduled against held, not held (with the reasons) and not recorded, by subject; relief arranged and recorded as held.
+- Tasks: delivered, due in the month (by each assignee's own date) and whether they were done on time, late or not yet; deadlines sent despite a warning; urgent sends with the reason given; requests for more time and their answers.
+- The hours totals staff chose to share, by name, in alphabetical order. Never an entry, and never a ranking.
+
+**S10-2. Save it as PDF or Excel.** As an administrator, I want the report as a file, so that I can print it or send it on.
+
+- The PDF and the Excel file say exactly what the page says, in Bahasa Melayu or English.
+- Each export is in the audit log: who, which month, which format.
+
+**S10-3. Wellbeing at school level.** As an administrator, I want a few indicators of how stretched staff are, without singling anyone out.
+
+- Average free working time per teacher per working day (working hours less lessons, duties and relief), average estimated task work per teacher, deadlines sent with a warning, and requests for more time.
+- Averages only, and withheld when fewer than five people teach, because the average of two or three known people points at them.
+
+## Threat model: Sprint 10, part 1
+
+| What could go wrong | Who | How the design prevents it |
+|---------------------|-----|----------------------------|
+| The report becomes a league table of teachers | Management | No figure is per teacher except the shared hours totals, which the teacher chose to share and which are listed by name, not ranked. |
+| A small school's "average" describes one person | Management | Wellbeing averages are withheld below five teaching staff. |
+| The report leaks private notes | Administrator | The report reads no note from lesson records or the hours log; the only school-wide hours query reads shared totals (tests check both). |
+| A file carries a formula that runs when opened | Sender | Text is written to Excel as text, never as a formula. |
+| An exported file is passed on without a trace | Administrator | Each export is audited with the month and format. |
 
 ## Open questions
 

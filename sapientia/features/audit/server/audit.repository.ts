@@ -25,7 +25,8 @@ export type AuditAction =
   | 'timetable.slot_removed'
   | 'lesson.recorded'
   | 'hours.shared'
-  | 'hours.unshared';
+  | 'hours.unshared'
+  | 'report.exported';
 
 export interface AuditEntry {
   actorId: string | null;

@@ -47,6 +47,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Do not advertise the framework (OWASP A05: less for an attacker to fingerprint).
   poweredByHeader: false,
+  // pdfkit reads its built-in font metrics from its own folder at run time, so it must be loaded from node_modules, not bundled.
+  serverExternalPackages: ['pdfkit'],
   // No Tailwind loader: styling is CSS Modules plus app/globals.css. A "*.css" loader rule would also catch *.module.css and
   // turn every module into global CSS, so the component styles would never apply.
   async headers() {

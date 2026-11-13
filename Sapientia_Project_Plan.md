@@ -244,7 +244,11 @@ User stories, the threat model and the sprint split are in `docs/phase-3-evidenc
 - [x] Web: Lesson Records and Private Hours Log for every role; Playwright journeys; both screens in the accessibility scan
 - [ ] Not built in Sprint 9: a photo on a lesson record (with file uploads in Sprint 10)
 
-Sprint 10 (not started): monthly report with PDF and Excel export, wellbeing indicators, material bank, file uploads, gate G5.
+Sprint 10, part 1 was built on 13 November 2026 (stories and threat model in `docs/phase-3-evidence.md`):
+- [x] Monthly principal report for administrators: lessons scheduled against held, not held (with reasons) and not recorded, by subject; relief; tasks delivered, due and done on time; flagged deadlines; urgent sends with reasons; extension requests; shared hours totals by name
+- [x] PDF and Excel export (pdfkit 0.20.2, write-excel-file 4.1.1) in BM or English, each export audited
+- [x] School-level wellbeing indicators: average free working time and estimated task work per teacher (withheld below five teaching staff), flagged deadlines, extension requests
+- [ ] Part 2: file uploads (photo on a lesson record), shared material bank, gate G5
 
 Scope for the phase:
 - Tables: `lesson_records`, `materials`, `private_hours_log`

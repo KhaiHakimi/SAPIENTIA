@@ -4,17 +4,18 @@ import { writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { NotFoundError, ValidationError } from '@/shared/server/app-errors';
-import { getPool, withTransaction } from '@/shared/server/database.service';
+import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
 import { HOURS_DAYS_BACK, HOURS_ENTRIES_SHOWN_MAX } from '../constants/hours.constants';
-import type { HoursEntry, HoursMonth, HoursShare, NewHoursEntry } from '../interfaces/hours.interface';
+import type { HoursEntry, HoursMonth, HoursShare, NewHoursEntry, SharedHoursTotal } from '../interfaces/hours.interface';
 import {
-  deleteOwnEntry, deleteOwnShare, findOwnShare, insertOwnEntry, listOwnEntries, sumOwnMinutes, upsertOwnShare,
+  deleteOwnEntry, deleteOwnShare, findOwnShare, insertOwnEntry, listOwnEntries, listSchoolShares, sumOwnMinutes, upsertOwnShare,
 } from './hours.repository';
 
 /**
  * The private hours log (plan Phase 3). Every function here acts on the caller's own log only: the owner is always
  * actor.id from the session. There is no function that takes another person's id. Entries are not written to the audit
- * log, because the audit log is not private to the teacher.
+ * log, because the audit log is not private to the teacher. The one exception, listSharedTotals, returns only the totals
+ * people chose to share, and only to administrators.
  */
 
 /** "2026-11" → the first and last day of that month. */
@@ -75,4 +76,13 @@ export async function unshareHoursMonth(actor: SessionUser, month: string): Prom
       { actorId: actor.id, action: 'hours.unshared', entityType: 'user', entityId: actor.id, metadata: { month } },
     ]);
   });
+}
+
+/**
+ * The monthly totals staff chose to share, for the monthly report: names and figures, never an entry. Administrators only;
+ * the report route checks the role as well. month is YYYY-MM.
+ */
+export async function listSharedTotals(actor: SessionUser, month: string, db: Queryable = getPool()): Promise<SharedHoursTotal[]> {
+  if (actor.role !== 'admin') throw new NotFoundError();
+  return listSchoolShares(db, actor.schoolId, monthRange(month).from);
 }

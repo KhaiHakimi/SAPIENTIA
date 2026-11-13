@@ -30,3 +30,11 @@ export interface NewHoursEntry {
   kind: HoursKind;
   note?: string;
 }
+
+/** One person's shared total for a month, as administrators see it in the monthly report. Never an entry. */
+export interface SharedHoursTotal {
+  userId: string;
+  name: string;
+  minutes: number;
+  sharedAt: string;
+}

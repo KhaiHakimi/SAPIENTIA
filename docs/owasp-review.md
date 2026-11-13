@@ -50,3 +50,16 @@ Checked on 12 November 2026 for the new code only.
 | A09 | Logging and monitoring failures | Pass | Notes and links are not logged or audited. |
 
 Nothing new is open from this sprint.
+
+## Sprint 10, part 1: the monthly report
+
+Checked on 13 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | Both report routes require an administrator (404 for a teacher, 401 signed out; tested), and the service checks the role again. Every query filters on the caller's school; another school's administrator sees only their own figures (tested). The one hours query that is not owner-filtered reads `private_hours_shares` only, for one school and month; `private-hours-isolation.test.ts` now allows exactly that statement and still fails if anything reads the log itself. |
+| A03 | Injection | Pass | Parameterised SQL; strict query schemas for month, format and language. Excel cells holding text are written with type String, never derived, so a reason or name beginning with `=` cannot become a formula (checked by opening a sample in Excel). The download file name is built from fixed words and the validated month. |
+| A04 | Insecure design | Pass | No per-teacher lesson or task figures; a lesson with no record is "not recorded", never an absence. Wellbeing averages are withheld below five teaching staff. Notes on lesson records and hours entries are never read by the report (tested). Each export is audited (who, month, format) because the file leaves the system. |
+| A06 | Vulnerable and outdated components | Pass | New: pdfkit 0.20.2 and write-excel-file 4.1.1, pinned exactly; `npm audit --omit=dev` finds nothing. pdfkit runs as a server external package. |
+
+Nothing new is open from this part.

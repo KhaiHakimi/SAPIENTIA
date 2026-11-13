@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 /**
  * The private hours log is readable only by its owner (plan Phase 3, gate G5). The refusal tests show the endpoints refuse
  * everyone else; this test shows there is no other way in. It reads the source: only the hours repository may name the
- * log's tables, and every statement there must filter on, or insert, the school and the owner together.
+ * log's tables, and every statement there must filter on, or insert, the school and the owner together. The one exception
+ * is the monthly report's read of shared totals: private_hours_shares only, for one school and one month.
  */
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const TABLES = /\bprivate_hours_(log|shares)\b/;
@@ -21,6 +22,9 @@ function sourceFiles(directory: string): string[] {
     return /\.(ts|tsx|mjs|js)$/.test(entry.name) && !/\.test\.ts$/.test(entry.name) ? [path] : [];
   });
 }
+
+const isOwnerScoped = (sql: string) =>
+  /^\s*INSERT INTO private_hours_\w+ \(school_id, user_id,/.test(sql) || /WHERE school_id = \$1 AND user_id = \$2/.test(sql);
 
 describe('private hours log isolation', () => {
   it('is named in the hours repository only', () => {
@@ -37,10 +41,13 @@ describe('private hours log isolation', () => {
     const statements = [...source.matchAll(/`([^`]*)`|'([^'\n]*)'/g)]
       .map((match) => match[1] ?? match[2])
       .filter((text) => TABLES.test(text));
-    expect(statements.length).toBeGreaterThanOrEqual(7);
-    for (const sql of statements) {
-      const scoped = /^\s*INSERT INTO private_hours_\w+ \(school_id, user_id,/.test(sql) || /WHERE school_id = \$1 AND user_id = \$2/.test(sql);
-      expect(scoped, sql).toBe(true);
-    }
+    expect(statements.length).toBeGreaterThanOrEqual(8);
+    const schoolWide = statements.filter((sql) => !isOwnerScoped(sql));
+    expect(schoolWide).toHaveLength(1);
+    // The monthly report reads the totals people chose to share, for one month, and nothing from the log itself.
+    const [report] = schoolWide;
+    expect(report).not.toMatch(/\bprivate_hours_log\b/);
+    expect(report).toMatch(/FROM private_hours_shares s\b/);
+    expect(report).toMatch(/WHERE s\.school_id = \$1 AND s\.month = \$2::date/);
   });
 });

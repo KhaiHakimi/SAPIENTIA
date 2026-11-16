@@ -22,3 +22,9 @@ export const lessonRecordSchema = z.strictObject({
     .optional().transform((value) => value || undefined),
 }).refine((record) => record.status === 'held' || record.reason !== undefined, { error: 'reason_required', path: ['reason'] })
   .transform((record) => (record.status === 'held' ? { ...record, reason: undefined } : record));
+
+/** POST /api/lessons/records/photo (form fields) and DELETE /api/lessons/records/photo?slotId=&onDate=. */
+export const lessonTargetSchema = z.object({
+  slotId: z.uuid({ error: 'invalid_slot' }),
+  onDate: z.iso.date({ error: 'invalid_date' }),
+});

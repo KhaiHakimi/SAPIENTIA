@@ -12,10 +12,12 @@ import { LESSONS_MESSAGES } from '../i18n/lessons.messages';
 import type { LessonPeriod, LessonRecordInput, NotHeldReason } from '../interfaces/lesson.interface';
 import { lessonDayKey, saveLessonRecord } from '../services/lessons.client';
 import styles from '../styles/Lessons.module.css';
+import { LessonPhoto } from './LessonPhoto';
 
 /**
  * One period of the day (plan Phase 3). "Held" saves in one tap. "Not held" opens a short form for the reason. Once a
- * record exists, an e-RPH link can be added to it. Only the period's recorder sees the buttons; everyone else sees the state.
+ * record exists, an e-RPH link and a photo can be added to it. Only the period's recorder sees the buttons; everyone else
+ * sees the state.
  */
 export function LessonPeriodItem({ period, onDate }: { period: LessonPeriod; onDate: string }) {
   const text = useMessages(LESSONS_MESSAGES);
@@ -78,6 +80,7 @@ export function LessonPeriodItem({ period, onDate }: { period: LessonPeriod; onD
       {record?.erphUrl && (
         <p><a href={record.erphUrl} target="_blank" rel="noopener noreferrer">{text.erphOpen}</a></p>
       )}
+      {record && <LessonPhoto target={base} record={record} canEdit={period.canRecord} time={time} />}
 
       {!period.canRecord ? (
         !record && !period.coveredBy && <p className={calm.help}>{text.notStarted}</p>

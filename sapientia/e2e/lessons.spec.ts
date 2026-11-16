@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import { violationsOn } from './support/accessibility';
 import { ACCOUNTS, SCHOOL_TIME_ZONE } from './support/e2e-env';
 import { signIn } from './support/staff-actions';
+import { SAMPLE_PNG } from '../shared/server/testing/sample-images';
 
 /** The last Monday-to-Friday day before today at the school: its periods have all started, whatever hour the tests run. */
 function previousSchoolDay(): string {
@@ -42,7 +43,16 @@ test('a teacher records one lesson as held in one tap and another as not held, w
   await first.getByLabel(/^Pautan e-RPH/).fill('https://erph.sapientia.test/rph/123');
   await first.getByRole('button', { name: 'Simpan pautan' }).click();
   await expect(first.getByRole('link', { name: 'Buka e-RPH' })).toHaveAttribute('href', 'https://erph.sapientia.test/rph/123');
+
+  // A photo can be added too: redrawn in the browser, then shown back through the access-checked file route.
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), first.getByRole('button', { name: 'Tambah gambar' }).click()]);
+  await chooser.setFiles({ name: 'papan.png', mimeType: 'image/png', buffer: Buffer.from(SAMPLE_PNG) });
+  const photo = first.getByRole('img', { name: /^Gambar kelas / });
+  await expect(photo).toBeVisible();
+  await expect.poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   expect(await violationsOn(page)).toEqual([]);
+  await first.getByRole('button', { name: 'Buang gambar' }).click();
+  await expect(photo).toHaveCount(0);
 
   // The record is kept.
   await page.reload();

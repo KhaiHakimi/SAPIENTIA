@@ -7,7 +7,7 @@ User stories, acceptance criteria and the threat model for plan Phase 3 (Sprints
 | Sprint | Scope | State |
 |--------|-------|-------|
 | S9 | Lesson records (one tap, reason when not held, optional e-RPH link); private hours log with an optional shared monthly total | Built 12 November 2026 |
-| S10 | Monthly principal report with PDF and Excel export; school-level wellbeing indicators; shared material bank; file uploads (photo on a lesson record, files in the bank); gate G5 | Part 1 built 13 November 2026: report, exports, wellbeing indicators. Part 2 not started: uploads, material bank, gate G5 |
+| S10 | Monthly principal report with PDF and Excel export; school-level wellbeing indicators; shared material bank; file uploads (photo on a lesson record, files in the bank); gate G5 | Built 13 November 2026: report, exports, wellbeing indicators (part 1); uploads, lesson photos, material bank (part 2). Gate G5 evidence below; the decision is open |
 
 No blank report templates were obtained in Phase 0, so the monthly report in Sprint 10 uses a generic format (plan Section 12, item 6). The README will say so.
 
@@ -79,6 +79,46 @@ No blank report templates were obtained in Phase 0, so the monthly report in Spr
 | The report leaks private notes | Administrator | The report reads no note from lesson records or the hours log; the only school-wide hours query reads shared totals (tests check both). |
 | A file carries a formula that runs when opened | Sender | Text is written to Excel as text, never as a formula. |
 | An exported file is passed on without a trace | Administrator | Each export is audited with the month and format. |
+
+## User stories: Sprint 10, part 2
+
+**S10-4. A photo on a lesson record.** As a teacher, I want to add a photo of the board or the pupils' work to a lesson I recorded, so that the record shows what was taught.
+
+- Once a lesson is marked held or not held, I can add one photo, change it, or remove it, while the record is still open (30 days).
+- The photo is seen by the same people as the record: me, and the class's own teacher when I covered it. Not administrators, not colleagues.
+- The page shrinks the photo and removes its location data before sending it; the server removes metadata again.
+
+**S10-5. A shared material bank.** As a teacher, I want to share and find teaching materials by subject, year or form, and topic, so that colleagues do not each make the same worksheet.
+
+- I share a link (preferred: DELIMa content is linked, not copied) or a file: PDF, Word, Excel, PowerPoint, JPEG or PNG, up to 10 MB.
+- Everyone on the school's staff can search and filter the bank and open what is in it. No other school can.
+- I can remove what I shared; an administrator can remove anything.
+
+**S10-6. Uploads are safe to keep and to open.** As the school, we want uploaded files to be what they claim, stored where only the app can reach them.
+
+- The kind of file is decided from its bytes. A program or web page named `.pdf` is refused.
+- Files are kept outside the web root under random names and served only after a check of who is asking; anything but a picture downloads rather than opens in the site.
+
+## Threat model: Sprint 10, part 2
+
+| What could go wrong | Who | How the design prevents it |
+|---------------------|-----|----------------------------|
+| A phone photo reveals where a teacher was, or when | Anyone who sees the photo | The page redraws photos; the server strips EXIF, comments and PNG text chunks again (tested with a GPS marker). |
+| A photo shows pupils' faces (children's data, before Phase 4's safeguards) | Teacher | The page asks for the board or the work, not faces; photos are seen only by the recorder and the class's teacher, never shared school-wide. To revisit in the Phase 4 threat model. |
+| A script or program is uploaded and served as part of the site | Anyone with an account | Kind decided from the bytes (JPEG, PNG, PDF, Office only; HTML and SVG refused); `nosniff`; a sandbox CSP on every file; non-pictures sent as `attachment`. |
+| A file is read by someone who should not see it | Colleague, another school | One route serves files, after a check by purpose; every other case is 404 (tested for colleague, administrator, other school, no sign-in). |
+| A stored name reaches outside the upload folder | Attacker | Names on disk are random 64-character hex, checked before use; the uploader's name is only offered back in Content-Disposition, cleaned and encoded. |
+| Uploads fill the disk | Anyone with an account | Size checked before the body is read; 5 MB for photos, 10 MB for materials, 2 GB per school. |
+| A file stays on disk after its record is gone, or a record points to no file | System | Bytes are removed if the database step fails, and after a record is deleted. |
+
+## Gate G5: evidence
+
+The gate asks for two things (plan Section 4). The decision to pass it is the project owner's; this is the evidence.
+
+1. **The monthly report exports to PDF and Excel.** `GET /api/reports/monthly/export` returns both, in Bahasa Melayu or English (integration tests check type, file name and the audit entry). A Playwright journey downloads both from the report page on desktop and phone. A sample of each was opened: the PDF rendered on three A4 pages; Excel opened the workbook without repair, counts as numbers and text never as formulas.
+2. **The private hours log is provably unreadable by anyone but its owner.** Three independent checks: (a) every hours endpoint is under `/api/me/hours` and takes the owner from the session, with refusal tests for a colleague, an administrator and another school; (b) a source test fails if any file but the hours repository names the log's tables, or if any statement there skips the owner filter, the only exception being the report's read of totals people chose to share, which never touches the log; (c) the report's own tests show a note from an entry never appears in it.
+
+Not covered by the gate, and still open: Phase 0 interviews (G0), so the report layout, the lesson reasons and the minimum group of five are unchecked with teachers.
 
 ## Open questions
 

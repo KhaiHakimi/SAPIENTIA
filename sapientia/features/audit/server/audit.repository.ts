@@ -24,6 +24,10 @@ export type AuditAction =
   | 'timetable.slot_added'
   | 'timetable.slot_removed'
   | 'lesson.recorded'
+  | 'lesson.photo_added'
+  | 'lesson.photo_removed'
+  | 'material.added'
+  | 'material.removed'
   | 'hours.shared'
   | 'hours.unshared'
   | 'report.exported';
@@ -31,7 +35,8 @@ export type AuditAction =
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
-  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user';
+  entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user'
+    | 'material';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

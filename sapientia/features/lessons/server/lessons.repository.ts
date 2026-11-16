@@ -86,6 +86,7 @@ interface RecordRow {
   reason: NotHeldReason | null;
   note: string | null;
   erph_url: string | null;
+  photo_file_id: string | null;
   recorded_by: string;
   recorder_name: string;
   updated_at: Date;
@@ -96,11 +97,13 @@ const toRecord = (row: RecordRow): LessonRecord => ({
   reason: row.reason,
   note: row.note,
   erphUrl: row.erph_url,
+  photoFileId: row.photo_file_id,
   recordedBy: { id: row.recorded_by, name: row.recorder_name },
   updatedAt: row.updated_at.toISOString(),
 });
 
-const RECORD_SELECT = `SELECT l.slot_id, l.status, l.reason, l.note, l.erph_url, l.recorded_by, u.name AS recorder_name, l.updated_at
+const RECORD_SELECT = `SELECT l.slot_id, l.status, l.reason, l.note, l.erph_url, l.photo_file_id, l.recorded_by, u.name AS recorder_name,
+    l.updated_at
   FROM lesson_records l JOIN users u ON u.id = l.recorded_by AND u.school_id = l.school_id`;
 
 /** The records for some periods on one date, by period id. */
@@ -154,4 +157,32 @@ export async function upsertRecord(db: Queryable, schoolId: string, record: Less
 
 export async function findRecord(db: Queryable, schoolId: string, slotId: string, onDate: string): Promise<LessonRecord | null> {
   return (await listRecords(db, schoolId, [slotId], onDate)).get(slotId) ?? null;
+}
+
+/**
+ * Sets or clears the photo on the record of a period on a date, and returns the record and the photo it replaces. recordId
+ * is null when there is no record yet: a photo belongs to a record, so the lesson is marked first.
+ */
+export async function setRecordPhoto(
+  db: Queryable,
+  schoolId: string,
+  record: { slotId: string; onDate: string; photoFileId: string | null; now: Date },
+): Promise<{ recordId: string | null; previous: string | null }> {
+  const { rows } = await db.query<{ id: string; previous: string | null }>(
+    `UPDATE lesson_records l SET photo_file_id = $4, updated_at = $5
+       FROM (SELECT id, photo_file_id FROM lesson_records WHERE school_id = $1 AND slot_id = $2 AND on_date = $3::date FOR UPDATE) old
+      WHERE l.id = old.id
+      RETURNING l.id, old.photo_file_id AS previous`,
+    [schoolId, record.slotId, record.onDate, record.photoFileId, record.now],
+  );
+  return rows[0] ? { recordId: rows[0].id, previous: rows[0].previous } : { recordId: null, previous: null };
+}
+
+/** Whether someone may see a lesson photo: the same people as its record, its recorder and the period's own teacher. */
+export async function canSeeLessonPhoto(db: Queryable, schoolId: string, fileId: string, userId: string): Promise<boolean> {
+  const { rows } = await db.query(
+    `SELECT 1 FROM lesson_records WHERE school_id = $1 AND photo_file_id = $2 AND (recorded_by = $3 OR scheduled_teacher_id = $3)`,
+    [schoolId, fileId, userId],
+  );
+  return rows.length > 0;
 }

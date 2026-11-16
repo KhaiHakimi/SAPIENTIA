@@ -11,7 +11,7 @@ export const TEST_PASSWORD = 'correct-horse-battery';
 
 /** Every application table, children first. pg-boss keeps its own schema and is cleared separately when needed. */
 const APP_TABLES = [
-  'private_hours_shares', 'private_hours_log', 'lesson_records', 'event_notice_sends', 'relief_assignments', 'extension_requests', 'timetable_slots', 'task_types', 'classes', 'subjects',
+  'materials', 'private_hours_shares', 'private_hours_log', 'lesson_records', 'stored_files', 'event_notice_sends', 'relief_assignments', 'extension_requests', 'timetable_slots', 'task_types', 'classes', 'subjects',
   'notification_sends', 'push_subscriptions', 'calendar_events', 'school_settings', 'idempotency_keys', 'audit_logs', 'task_comments', 'task_assignments', 'tasks',
   'auth_throttle', 'invites', 'sessions', 'users', 'schools',
 ];
@@ -49,6 +49,8 @@ export async function createUser(
 export interface CallOptions {
   method?: string;
   body?: unknown;
+  /** A multipart form instead of a JSON body, sent with its length as a browser sends it. */
+  form?: FormData;
   cookie?: string | null;
   headers?: Record<string, string>;
   /** Dynamic route segments, passed the way Next.js passes them (a promise). */
@@ -57,15 +59,25 @@ export interface CallOptions {
 
 type Handler = (request: Request, context: { params: Promise<Record<string, string>> }) => Promise<Response>;
 
-/** Calls a route handler as a same-origin browser would: Origin set, JSON body, cookie if given. */
+/** Calls a route handler as a same-origin browser would: Origin set, JSON body or multipart form, cookie if given. */
 export async function call(handler: unknown, path: string, options: CallOptions = {}): Promise<Response> {
   const headers: Record<string, string> = { origin: TEST_ORIGIN, ...options.headers };
   if (options.cookie) headers.cookie = options.cookie;
-  if (options.body !== undefined) headers['content-type'] = 'application/json';
+  let body: BodyInit | undefined;
+  if (options.form) {
+    const encoded = new Response(options.form);
+    const bytes = new Uint8Array(await encoded.arrayBuffer());
+    headers['content-type'] = encoded.headers.get('content-type') ?? '';
+    headers['content-length'] = String(bytes.byteLength);
+    body = bytes;
+  } else if (options.body !== undefined) {
+    headers['content-type'] = 'application/json';
+    body = JSON.stringify(options.body);
+  }
   const request = new Request(`${TEST_ORIGIN}${path}`, {
     method: options.method ?? 'GET',
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body,
   });
   return (handler as Handler)(request, { params: Promise.resolve(options.params ?? {}) });
 }

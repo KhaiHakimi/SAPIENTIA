@@ -35,6 +35,7 @@ test('a teacher has no monthly report', async ({ page }, testInfo) => {
   await expect(page.getByRole('link', { name: 'Laporan Bulanan' })).toHaveCount(0);
   // Going to the address directly shows the refusal, not a report.
   await page.goto('/staff/reports');
-  await expect(page.getByRole('alert')).toBeVisible();
+  // Within main: Next.js's own route announcer is also a role="alert".
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('tidak ditemui');
   await expect(page.getByRole('heading', { level: 2, name: 'Kelas', exact: true })).toHaveCount(0);
 });

@@ -242,13 +242,14 @@ User stories, the threat model and the sprint split are in `docs/phase-3-evidenc
 - [x] Private hours log: entries, a monthly total, sharing the total only (as a snapshot) and withdrawing it
 - [x] Owner-only access proved three ways: refusal tests on every endpoint, the owner always taken from the session, and a test that fails if any file but the hours repository names the log's tables or if any statement there skips the owner filter
 - [x] Web: Lesson Records and Private Hours Log for every role; Playwright journeys; both screens in the accessibility scan
-- [ ] Not built in Sprint 9: a photo on a lesson record (with file uploads in Sprint 10)
+- [x] A photo on a lesson record: built with file uploads in Sprint 10
 
 Sprint 10, part 1 was built on 13 November 2026 (stories and threat model in `docs/phase-3-evidence.md`):
 - [x] Monthly principal report for administrators: lessons scheduled against held, not held (with reasons) and not recorded, by subject; relief; tasks delivered, due and done on time; flagged deadlines; urgent sends with reasons; extension requests; shared hours totals by name
 - [x] PDF and Excel export (pdfkit 0.20.2, write-excel-file 4.1.1) in BM or English, each export audited
 - [x] School-level wellbeing indicators: average free working time and estimated task work per teacher (withheld below five teaching staff), flagged deadlines, extension requests
-- [ ] Part 2: file uploads (photo on a lesson record), shared material bank, gate G5
+- [x] Part 2 (13 November 2026): file uploads (type from the bytes, metadata stripped, stored outside the web root, served after an authorisation check), a photo on a lesson record, the shared material bank with subject, year or form, and topic tags
+- [ ] Gate G5: evidence in `docs/phase-3-evidence.md`; the decision is the project owner's
 
 Scope for the phase:
 - Tables: `lesson_records`, `materials`, `private_hours_log`

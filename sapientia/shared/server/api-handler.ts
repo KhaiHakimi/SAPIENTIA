@@ -84,6 +84,11 @@ export function readQuery<S extends z.ZodType>(request: Request, schema: S): z.i
   return parseWith(schema, Object.fromEntries(new URL(request.url).searchParams));
 }
 
+/** Validates the text fields of a multipart form (see readUpload) with the same schemas and error shape as bodies. */
+export function readFormFields<S extends z.ZodType>(fields: Record<string, string>, schema: S): z.infer<S> {
+  return parseWith(schema, fields);
+}
+
 function parseWith<S extends z.ZodType>(schema: S, raw: unknown): z.infer<S> {
   const result = schema.safeParse(raw);
   if (result.success) return result.data;

@@ -37,6 +37,7 @@ export default defineConfig({
     url: `${E2E_ORIGIN}/health`,
     reuseExistingServer: false,
     timeout: 300_000,
-    env: { DATABASE_URL: databaseUrl, APP_ORIGIN: '', NEXT_TELEMETRY_DISABLED: '1' },
+    // Uploads from the journeys go to their own folder, never the development uploads.
+    env: { DATABASE_URL: databaseUrl, APP_ORIGIN: '', NEXT_TELEMETRY_DISABLED: '1', UPLOAD_DIR: '.data/e2e-uploads' },
   },
 });

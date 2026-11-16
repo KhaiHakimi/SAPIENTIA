@@ -29,6 +29,16 @@ export interface LessonsMessages {
   erphHelp: string;
   erphOpen: string;
   saveErph: string;
+  // Photo
+  photo: string;
+  photoHelp: string;
+  photoAdd: string;
+  photoReplace: string;
+  photoRemove: string;
+  photoUploading: string;
+  photoAlt: (time: string) => string;
+  photoOpen: string;
+  photoUnreadable: string;
   save: string;
   saving: string;
   saved: string;

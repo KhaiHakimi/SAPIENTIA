@@ -63,3 +63,21 @@ Checked on 13 November 2026 for the new code only.
 | A06 | Vulnerable and outdated components | Pass | New: pdfkit 0.20.2 and write-excel-file 4.1.1, pinned exactly; `npm audit --omit=dev` finds nothing. pdfkit runs as a server external package. |
 
 Nothing new is open from this part.
+
+## Sprint 10, part 2: uploads, lesson photos and the material bank
+
+Checked on 13 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | One route serves files (`GET /api/files/:id`), after a check by purpose: a material for staff of its school, a lesson photo for its recorder and the period's teacher only. Colleague, administrator (for photos), other school and no sign-in are tested. Adding or removing a photo uses the same recorder check as recording; removing a material is for its owner or an administrator (404 otherwise). |
+| A03 | Injection | Pass | Parameterised SQL; the material search escapes `%`, `_` and `\` (tested); multipart text fields go through the same strict schemas as JSON (an unknown field is refused). Links must be https. The download name is cleaned of folders, control and bidirectional characters and quotes, and encoded in Content-Disposition. |
+| A04 | Insecure design | Pass | Type decided from the bytes, not the name or Content-Type (an executable or HTML named `.pdf`, and SVG, are refused); size checked from Content-Length before the body is read, and again from the file; 2 GB per school. Picture metadata (GPS) stripped on the server as well as in the page. Bytes removed when the database step fails. |
+| A05 | Security misconfiguration | Pass | Uploads stored outside the web root (`UPLOAD_DIR` refused if inside `public/`, tested), under random names, mode 0600. Files are sent with `nosniff`, `Content-Security-Policy: default-src 'none'; img-src 'self'; sandbox`, `Cross-Origin-Resource-Policy: same-origin`, and `attachment` for anything but a picture. |
+| A08 | Software and data integrity failures | Pass | A SHA-256 of every stored file is kept with its record. |
+| A09 | Logging and monitoring failures | Pass | Adding and removing photos and materials is audited (record or material id, date, kind); never file names, titles or content. |
+
+Open items carried forward:
+
+7. No virus scan of uploaded documents. They are only downloaded, never opened inside the site, but a teacher could pass on an infected file. Add a scanner (for example ClamAV) when hosting (D5) is chosen.
+8. Lesson photos may show pupils despite the page's advice. Review in the Phase 4 threat model, which brings in children's data.

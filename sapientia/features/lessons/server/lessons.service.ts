@@ -8,10 +8,15 @@ import { isWorkingDay } from '@/features/delivery/services/working-time.service'
 import { toSlot } from '@/features/timetable/server/timetable.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { NotFoundError, ValidationError } from '@/shared/server/app-errors';
-import { getPool, withTransaction } from '@/shared/server/database.service';
+import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
+import { deleteStoredFile } from '@/shared/server/files/stored-files.repository';
+import { discardBytes, storeUpload } from '@/shared/server/files/upload.service';
+import type { CheckedUpload } from '@/shared/interfaces/stored-file.interface';
 import { LESSON_RECORD_DAYS_BACK } from '../constants/lessons.constants';
-import type { LessonDay, LessonRecord, LessonRecordInput } from '../interfaces/lesson.interface';
-import { type DayPeriodRow, findPeriodOnDate, findRecord, listDayPeriods, listRecords, upsertRecord } from './lessons.repository';
+import type { LessonDay, LessonRecord, LessonRecordInput, LessonTarget } from '../interfaces/lesson.interface';
+import {
+  type DayPeriodRow, findPeriodOnDate, findRecord, listDayPeriods, listRecords, setRecordPhoto, upsertRecord,
+} from './lessons.repository';
 
 /** Where "now" sits in the school's calendar: today's date, the time of day, and the oldest date still open. */
 function schoolMoment(now: Date, calendar: WorkingCalendar) {
@@ -30,6 +35,32 @@ function schoolMoment(now: Date, calendar: WorkingCalendar) {
 function recorderOf(period: DayPeriodRow, now: Date): string | null {
   if (!period.cover) return period.teacher_id;
   return period.cover.deliver_at.getTime() <= now.getTime() ? period.cover.relief_teacher_id : null;
+}
+
+/**
+ * The period, when the caller may record it on that date: they are its recorder (anyone else gets 404), and the date is the
+ * period's weekday, a working day, already started, and no more than 30 days back.
+ */
+async function findRecordablePeriod(
+  client: Queryable,
+  actor: SessionUser,
+  target: { slotId: string; onDate: string },
+  now: Date,
+): Promise<DayPeriodRow> {
+  const period = await findPeriodOnDate(client, actor.schoolId, target.slotId, target.onDate);
+  if (!period || recorderOf(period, now) !== actor.id) throw new NotFoundError();
+
+  const calendar = await loadWorkingCalendar(client, actor.schoolId, now);
+  const moment = schoolMoment(now, calendar);
+  if (DateTime.fromISO(target.onDate, { zone: calendar.timeZone }).weekday !== period.weekday) {
+    throw new ValidationError({ onDate: 'wrong_weekday' });
+  }
+  if (target.onDate > moment.today || (target.onDate === moment.today && period.start_time > moment.time)) {
+    throw new ValidationError({ onDate: 'not_started' });
+  }
+  if (target.onDate < moment.oldest) throw new ValidationError({ onDate: 'too_old' });
+  if (!isWorkingDay(target.onDate, calendar)) throw new ValidationError({ onDate: 'not_working_day' });
+  return period;
 }
 
 /** The caller's periods on a date (their own, and colleagues' they cover), each with its record and whether they can record it. */
@@ -69,20 +100,7 @@ export async function getLessonDay(actor: SessionUser, onDate: string, clock: Cl
 export async function recordLesson(actor: SessionUser, input: LessonRecordInput, clock: Clock): Promise<LessonRecord> {
   return withTransaction(async (client) => {
     const now = clock.now();
-    const period = await findPeriodOnDate(client, actor.schoolId, input.slotId, input.onDate);
-    if (!period || recorderOf(period, now) !== actor.id) throw new NotFoundError();
-
-    const calendar = await loadWorkingCalendar(client, actor.schoolId, now);
-    const moment = schoolMoment(now, calendar);
-    if (DateTime.fromISO(input.onDate, { zone: calendar.timeZone }).weekday !== period.weekday) {
-      throw new ValidationError({ onDate: 'wrong_weekday' });
-    }
-    if (input.onDate > moment.today || (input.onDate === moment.today && period.start_time > moment.time)) {
-      throw new ValidationError({ onDate: 'not_started' });
-    }
-    if (input.onDate < moment.oldest) throw new ValidationError({ onDate: 'too_old' });
-    if (!isWorkingDay(input.onDate, calendar)) throw new ValidationError({ onDate: 'not_working_day' });
-
+    const period = await findRecordablePeriod(client, actor, input, now);
     const saved = await upsertRecord(client, actor.schoolId, {
       slot: period, onDate: input.onDate, recordedBy: actor.id, status: input.status, reason: input.reason ?? null,
       note: input.note ?? null, erphUrl: input.erphUrl ?? null, now,
@@ -93,4 +111,42 @@ export async function recordLesson(actor: SessionUser, input: LessonRecordInput,
     }]);
     return (await findRecord(client, actor.schoolId, period.id, input.onDate)) as LessonRecord;
   });
+}
+
+/**
+ * Adds a photo to a lesson record, replacing any photo already there. Same rules as recording: only the recorder, only
+ * while the record is still open. The lesson must be recorded first. The audit log says a photo was added, not what it is.
+ */
+export async function addLessonPhoto(actor: SessionUser, target: LessonTarget, photo: CheckedUpload, clock: Clock): Promise<LessonRecord> {
+  const now = clock.now();
+  const { record, replacedKey } = await storeUpload(actor, { file: photo, purpose: 'lesson_photo', field: 'photo', now }, async (client, fileId) => {
+    await findRecordablePeriod(client, actor, target, now);
+    const { recordId, previous } = await setRecordPhoto(client, actor.schoolId, { ...target, photoFileId: fileId, now });
+    if (!recordId) throw new ValidationError({ photo: 'record_first' });
+    const key = previous ? await deleteStoredFile(client, actor.schoolId, previous) : null;
+    await writeAudit(client, actor.schoolId, [{
+      actorId: actor.id, action: 'lesson.photo_added', entityType: 'lesson_record', entityId: recordId,
+      metadata: { onDate: target.onDate, replaced: Boolean(previous) },
+    }]);
+    return { record: (await findRecord(client, actor.schoolId, target.slotId, target.onDate)) as LessonRecord, replacedKey: key };
+  });
+  await discardBytes([replacedKey]);
+  return record;
+}
+
+/** Removes the photo from a lesson record. Removing one that is not there changes nothing. */
+export async function removeLessonPhoto(actor: SessionUser, target: LessonTarget, clock: Clock): Promise<void> {
+  const now = clock.now();
+  const removedKey = await withTransaction(async (client) => {
+    await findRecordablePeriod(client, actor, target, now);
+    const { recordId, previous } = await setRecordPhoto(client, actor.schoolId, { ...target, photoFileId: null, now });
+    if (!recordId || !previous) return null;
+    const key = await deleteStoredFile(client, actor.schoolId, previous);
+    await writeAudit(client, actor.schoolId, [{
+      actorId: actor.id, action: 'lesson.photo_removed', entityType: 'lesson_record', entityId: recordId,
+      metadata: { onDate: target.onDate },
+    }]);
+    return key;
+  });
+  await discardBytes([removedKey]);
 }

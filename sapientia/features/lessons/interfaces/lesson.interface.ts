@@ -17,6 +17,8 @@ export interface LessonRecord {
   note: string | null;
   /** An https link to the teacher's e-RPH entry, or null. */
   erphUrl: string | null;
+  /** A photo of the board or the work, seen by the same people as the record; served at /api/files/:id. */
+  photoFileId: string | null;
   recordedBy: PersonRef;
   updatedAt: string;
 }
@@ -51,4 +53,10 @@ export interface LessonRecordInput {
   reason?: NotHeldReason;
   note?: string;
   erphUrl?: string;
+}
+
+/** One period on one date: what a photo is added to or removed from. */
+export interface LessonTarget {
+  slotId: string;
+  onDate: string;
 }

@@ -12,7 +12,7 @@ export function schoolDay(daysFromToday = 0): string {
 
 export async function signIn(page: Page, email: string, password = E2E_PASSWORD): Promise<void> {
   await page.goto('/login');
-  await page.locator('#login-email').fill(email);
+  await page.locator('#login-identifier').fill(email);
   await page.locator('#login-password').fill(password);
   await page.getByRole('button', { name: 'Log Masuk', exact: true }).click();
   await page.waitForURL('**/staff');

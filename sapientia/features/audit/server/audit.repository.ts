@@ -30,13 +30,17 @@ export type AuditAction =
   | 'material.removed'
   | 'hours.shared'
   | 'hours.unshared'
-  | 'report.exported';
+  | 'report.exported'
+  | 'student.added'
+  | 'student.updated'
+  | 'student.password_reset'
+  | 'student.removed';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
   entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user'
-    | 'material';
+    | 'material' | 'student';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

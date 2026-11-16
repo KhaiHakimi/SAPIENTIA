@@ -7,12 +7,16 @@ import { THROTTLE_MAX_PER_ADDRESS, THROTTLE_MAX_PER_EMAIL, THROTTLE_WINDOW_MINUT
 const WINDOW_MS = THROTTLE_WINDOW_MINUTES * 60_000;
 
 export interface ThrottleKeys {
-  email: string;
+  /** One counter per account tried: emailThrottleKey for staff, the pupils' own key for pupils. */
+  account: string;
   address: string;
 }
 
-const keysOf = ({ email, address }: ThrottleKeys) => [
-  { key: `email:${email.trim().toLowerCase()}`, max: THROTTLE_MAX_PER_EMAIL },
+/** The throttle key for a staff email. */
+export const emailThrottleKey = (email: string) => `email:${email.trim().toLowerCase()}`;
+
+const keysOf = ({ account, address }: ThrottleKeys) => [
+  { key: account, max: THROTTLE_MAX_PER_EMAIL },
   { key: `ip:${address}`, max: THROTTLE_MAX_PER_ADDRESS },
 ];
 
@@ -47,6 +51,6 @@ export async function recordFailure(db: Queryable, keys: ThrottleKeys, clock: Cl
 }
 
 /** A successful sign-in clears the account's counter (not the address's, which may be a shared school network). */
-export async function clearEmailFailures(db: Queryable, email: string): Promise<void> {
-  await db.query('DELETE FROM auth_throttle WHERE key = $1', [`email:${email.trim().toLowerCase()}`]);
+export async function clearAccountFailures(db: Queryable, account: string): Promise<void> {
+  await db.query('DELETE FROM auth_throttle WHERE key = $1', [account]);
 }

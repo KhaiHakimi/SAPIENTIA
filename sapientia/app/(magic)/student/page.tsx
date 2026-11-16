@@ -1,9 +1,14 @@
 import type { Metadata } from 'next';
 import { StudentHome } from '@/features/student-dashboard/components/StudentHome';
+import { QueryProvider } from '@/shared/api/QueryProvider';
 
 export const metadata: Metadata = { title: 'Sapientia • Papan Pelajar' };
 
-/** The student home (plan D8: magic-academy theme, toned down). Needs a signed-in mock student; sample data until the API exists. */
+/** The student home (plan D8: magic-academy theme, toned down), for the pupil signed in on the server. */
 export default function StudentPage() {
-  return <StudentHome />;
+  return (
+    <QueryProvider>
+      <StudentHome />
+    </QueryProvider>
+  );
 }

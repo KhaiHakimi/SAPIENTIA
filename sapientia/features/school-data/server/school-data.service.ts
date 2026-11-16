@@ -42,7 +42,10 @@ export async function addSchoolData(actor: SessionUser, kind: SchoolDataKind, in
   }
 }
 
-/** Administrators remove an entry; one still used on a timetable is refused with a reason the screen can explain. */
+/**
+ * Administrators remove an entry; one still used on a timetable (or a class that still has pupils) is refused with a reason
+ * the screen can explain.
+ */
 export async function removeSchoolData(actor: SessionUser, kind: SchoolDataKind, id: string, clock: Clock): Promise<void> {
   try {
     await withTransaction(async (client) => {
@@ -52,7 +55,7 @@ export async function removeSchoolData(actor: SessionUser, kind: SchoolDataKind,
       ]);
     });
   } catch (error) {
-    if (errorCode(error) === FOREIGN_KEY_VIOLATION) throw new ConflictError('This is still used on a timetable.', { id: 'in_use' });
+    if (errorCode(error) === FOREIGN_KEY_VIOLATION) throw new ConflictError('This is still used on a timetable or by pupils.', { id: 'in_use' });
     throw error;
   }
 }

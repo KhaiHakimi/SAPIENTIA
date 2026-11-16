@@ -17,8 +17,8 @@ export interface LoginMessages {
   // Card
   title: string;
   subtitle: string;
-  email: string;
-  emailPlaceholder: string;
+  identifier: string;
+  identifierPlaceholder: string;
   password: string;
   show: string;
   hide: string;
@@ -36,7 +36,7 @@ export interface LoginMessages {
   // Demo accounts
   demoTitle: string;
   demoIntro: string;
-  passwordShort: string;
+  demoPasswordNote: string;
   studentRole: string;
   staffDemoNote: string;
   use: string;

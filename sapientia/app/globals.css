@@ -134,6 +134,13 @@ body {
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* A page that shows a .print-area prints only that area (pupils' sign-in slips), in black on white. */
+@media print {
+  body:has(.print-area) * { visibility: hidden; }
+  body:has(.print-area) .print-area, body:has(.print-area) .print-area * { visibility: visible; }
+  body:has(.print-area) .print-area { position: absolute; inset: 0 0 auto 0; border: 0; color: #000; background: #fff; }
+}
+
 /* Stepped pixel corners: a 3px frame drawn as four offset shadows, so the corners are notched, not rounded. */
 .px { box-shadow: 0 -3px 0 0 var(--bd), 0 3px 0 0 var(--bd), -3px 0 0 0 var(--bd), 3px 0 0 0 var(--bd); }
 

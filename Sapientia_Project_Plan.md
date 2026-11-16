@@ -249,7 +249,7 @@ Sprint 10, part 1 was built on 13 November 2026 (stories and threat model in `do
 - [x] PDF and Excel export (pdfkit 0.20.2, write-excel-file 4.1.1) in BM or English, each export audited
 - [x] School-level wellbeing indicators: average free working time and estimated task work per teacher (withheld below five teaching staff), flagged deadlines, extension requests
 - [x] Part 2 (13 November 2026): file uploads (type from the bytes, metadata stripped, stored outside the web root, served after an authorisation check), a photo on a lesson record, the shared material bank with subject, year or form, and topic tags
-- [ ] Gate G5: evidence in `docs/phase-3-evidence.md`; the decision is the project owner's
+- [x] Gate G5: passed on 16 November 2026 by the project owner (evidence in `docs/phase-3-evidence.md`)
 
 Scope for the phase:
 - Tables: `lesson_records`, `materials`, `private_hours_log`
@@ -275,6 +275,16 @@ Scope for the phase:
 - Institution accounts with individual staff logins beneath them; access ends when a staff login is removed
 - **Start the legal review request in S11** so it is ready by S15.
 - **Tests:** a student cannot see another student's records; late-submission lists are never visible to other students; guardian sees only linked children.
+
+Phase 4 started on 16 November 2026 with fictional data only. Decision D7 (a legal reviewer for Act 876) was still open; the project owner chose to continue and log it as a risk (Section 9). Stories, threat model and sprint split: `docs/phase-4-students.md`.
+
+Sprint 11 was built on 16 November 2026:
+- [x] Threat model for the whole phase, and the Sprint 11 stories
+- [x] `students`, `class_enrolments` and separate `student_sessions`: a pupil is a name, a class and an optional school number; MyKad-like numbers refused; no sign-in times stored
+- [x] Administrators add a class list (up to 50 at once) and print sign-in slips; manage pupils (correct details, move class, new slip, disable, remove)
+- [x] Pupils sign in with a username, must replace the slip's password first; signing in as a pupil or as staff ends the other kind of session in that browser
+- [x] The student board opens for the real signed-in pupil; the browser-only demo pupils are gone (seeded pupils instead)
+- [ ] Legal review request (due in S11): needs a named reviewer, which is the project owner's to arrange
 
 ### Phase 5: Bullying reporting (S15 to S17, 17 May to 25 June 2027; gated on legal review)
 - Do not start until G6 passes.
@@ -347,7 +357,8 @@ Scope for the phase:
 | Perceived as surveillance | Medium | High | No monitoring features; teachers see everything about themselves; private hours log | Any story that measures activity rather than work |
 | Duplicate notifications after a crash | Medium | Medium | Idempotent jobs; `singletonKey`; conditional updates; crash-recovery test | Two notifications for one task |
 | Inaccurate effort estimates | High at first | Low | Optional completion feedback; warn rather than block | Many flagged deadlines the sender overrides |
-| Phase 5 starts before legal review | Low | High | Gate G6; request review in S11 | No reviewer identified by S12 |
+| Phase 5 starts before legal review | Low | High | Gate G6; request review in S11 | No reviewer identified by S12 (as of 16 November 2026, none named and Phase 4 started without one: D7 is open) |
+| Children's data held without a legal basis | Low (fictional data only) | High | No real pupils until a PDPA review and school agreement; data minimisation; no activity tracking | Anyone proposing a pilot with a real class |
 | Real data enters seeds, screenshots or demos | Low | High | Fictional seeds; pre-commit check; reviewing the diff before every merge | Names that look real |
 | Free-tier hosting limits or changes | Medium | Low | Docker packaging; worker can run inside the API for a demo | Provider terms change |
 | Burnout on a solo project | Medium | Medium | Two-week sprints with a demo; small visible wins; stop at any phase boundary with a complete product | Skipping sprint reviews |

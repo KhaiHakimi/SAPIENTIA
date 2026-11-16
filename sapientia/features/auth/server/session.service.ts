@@ -8,6 +8,7 @@ import {
   SESSION_TOUCH_MINUTES,
 } from '../constants/session.constants';
 import type { SessionUser } from '../interfaces/session-user.interface';
+import { sessionCookieHeader } from './cookie.service';
 import { generateToken, hashToken } from './token.service';
 
 const MINUTE_MS = 60_000;
@@ -78,23 +79,10 @@ export async function revokeUserSessions(db: Queryable, schoolId: string, userId
   await db.query('DELETE FROM sessions WHERE school_id = $1 AND user_id = $2', [schoolId, userId]);
 }
 
-/** HttpOnly so scripts cannot read it, SameSite=Lax against cross-site posts, Secure whenever the site is served over HTTPS. */
 export function sessionCookie(request: Request, token: string): string {
-  return cookie(request, token, SESSION_ABSOLUTE_HOURS * 3600);
+  return sessionCookieHeader(request, SESSION_COOKIE, token, SESSION_ABSOLUTE_HOURS * 3600);
 }
 
 export function clearedSessionCookie(request: Request): string {
-  return cookie(request, '', 0);
-}
-
-function cookie(request: Request, value: string, maxAgeSeconds: number): string {
-  const secure = new URL(request.url).protocol === 'https:' || process.env.NODE_ENV === 'production';
-  return [
-    `${SESSION_COOKIE}=${encodeURIComponent(value)}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    `Max-Age=${maxAgeSeconds}`,
-    ...(secure ? ['Secure'] : []),
-  ].join('; ');
+  return sessionCookieHeader(request, SESSION_COOKIE, '', 0);
 }

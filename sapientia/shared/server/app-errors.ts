@@ -63,3 +63,10 @@ export class ConfigurationError extends AppError {
     super(422, 'configuration', message);
   }
 }
+
+/** A pupil signed in with the starting password on their slip: nothing opens until they choose their own. */
+export class PasswordChangeRequiredError extends AppError {
+  constructor() {
+    super(403, 'password_change_required', 'Choose your own password first.');
+  }
+}

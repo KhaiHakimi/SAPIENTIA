@@ -11,7 +11,7 @@ import { signIn } from './support/staff-actions';
  */
 const STAFF_SCREENS = [
   '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/relief', '/staff/lessons', '/staff/materials', '/staff/hours',
-  '/staff/reports', '/staff/users', '/staff/school-data',
+  '/staff/reports', '/staff/users', '/staff/students', '/staff/school-data',
   '/staff/settings', '/staff/calendar', '/staff/notifications',
 ];
 
@@ -23,12 +23,12 @@ for (const theme of ['dark', 'light']) {
 
     test('the sign-in page has no detectable WCAG 2.2 AA failures', async ({ page }) => {
       await page.goto('/login');
-      await expect(page.locator('#login-email')).toBeVisible();
+      await expect(page.locator('#login-identifier')).toBeVisible();
       expect(await violationsOn(page)).toEqual([]);
     });
 
     test('the staff screens have no detectable WCAG 2.2 AA failures', async ({ page }) => {
-      // Fifteen screens in one test, so that the sign-in is done once per theme.
+      // Sixteen screens in one test, so that the sign-in is done once per theme.
       test.setTimeout(180_000);
       await signIn(page, ACCOUNTS.admin.email);
       for (const path of STAFF_SCREENS) {

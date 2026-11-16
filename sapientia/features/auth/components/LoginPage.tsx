@@ -3,14 +3,13 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import type { CurrentStudent } from '@/features/students/interfaces/student.interface';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { toggleTheme } from '@/shared/theme/theme.store';
 import { cinzel, inter } from '../constants/login-fonts';
 import { OPEN_BOARD_DELAY_MS } from '../constants/login.constants';
-import { useSession } from '../hooks/useSession';
 import type { SessionUser } from '../interfaces/session-user.interface';
 import { LOGIN_MESSAGES } from '../i18n/login.messages';
-import { accountName } from '../services/auth.service';
 import styles from '../styles/Login.module.css';
 import { AmbientMotes } from './AmbientMotes';
 import { LoginForm } from './LoginForm';
@@ -26,15 +25,15 @@ function Seal({ size, className }: { size: number; className: string }) {
 
 /**
  * The prototype's "Bilik Darjah" split login (prototypes/login, variant D). Once signed in, everyone sees the access seal; a
- * demo student is then taken to /student and staff to their task board at /staff.
+ * pupil is then taken to /student (which asks a pupil still on their slip's password to choose one) and staff to /staff.
  */
 export function LoginPage() {
   const text = useMessages(LOGIN_MESSAGES);
   const { toggleLang } = useLanguage();
-  const { account } = useSession();
   const [staff, setStaff] = useState<SessionUser | null>(null);
+  const [pupil, setPupil] = useState<CurrentStudent | null>(null);
   const router = useRouter();
-  const destination = staff ? '/staff' : account ? '/student' : null;
+  const destination = staff ? '/staff' : pupil ? '/student' : null;
   const signedIn = Boolean(destination);
 
   useEffect(() => {
@@ -74,7 +73,7 @@ export function LoginPage() {
               </div>
             </div>
 
-            <LoginForm text={text} onStaffSignedIn={setStaff} />
+            <LoginForm text={text} onStaffSignedIn={setStaff} onStudentSignedIn={setPupil} />
 
             <p className={styles.demoBadge}>{text.demoBadge}</p>
           </div>
@@ -84,7 +83,7 @@ export function LoginPage() {
           <div className={styles.banner} role="status">
             <Seal size={76} className={styles.bannerSeal} />
             <h2>{text.successTitle}</h2>
-            <p>{staff ? text.staffOpening(staff.name) : account ? text.studentOpening(accountName(account)) : null}</p>
+            <p>{staff ? text.staffOpening(staff.name) : pupil ? text.studentOpening(pupil.student.name) : null}</p>
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ export type ApiErrorCode =
   | 'rate_limited'
   | 'csrf'
   | 'configuration'
+  | 'password_change_required'
   | 'internal';
 
 /** Body of every error response: { error: ApiErrorBody }. */

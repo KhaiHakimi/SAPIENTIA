@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useSignOut } from '@/features/auth/hooks/useSession';
+import { useStudentSignOut } from '@/features/students/hooks/useCurrentStudent';
 import { CharacterPortrait } from '@/features/characters/components/CharacterPortrait';
 import { BATTLE_MESSAGES } from '@/features/battle/i18n/battle.messages';
 import { usePahlawanCharacter } from '@/features/pahlawan/hooks/usePahlawanCharacter';
@@ -53,7 +53,7 @@ export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardPro
   const pahlawanText = useMessages(PAHLAWAN_MESSAGES);
   const hero = usePahlawanCharacter();
   const { toggleLang } = useLanguage();
-  const signOut = useSignOut();
+  const signOut = useStudentSignOut();
 
   return (
     <PixelCard title={text.menu} icon="key">
@@ -84,7 +84,7 @@ export function MenuCard({ onOpenWeek, onOpenShop, onOpenPahlawan }: MenuCardPro
         <button className={`${styles.toolButton} px`} type="button" onClick={toggleTheme}>
           {text.theme}
         </button>
-        <button className={`${styles.toolButton} ${styles.signOut} px`} type="button" onClick={signOut}>
+        <button className={`${styles.toolButton} ${styles.signOut} px`} type="button" onClick={() => void signOut()}>
           {text.signOut}
         </button>
       </div>

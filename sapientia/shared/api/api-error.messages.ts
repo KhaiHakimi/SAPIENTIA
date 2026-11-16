@@ -20,6 +20,7 @@ export const API_ERROR_MESSAGES: Record<Lang, ApiErrorMessages> = {
       rate_limited: 'Terlalu banyak cubaan. Sila tunggu sebentar dan cuba lagi.',
       csrf: 'Permintaan ditolak. Muat semula halaman dan cuba lagi.',
       configuration: 'Tetapan sekolah tidak membenarkan tindakan ini. Hubungi pentadbir.',
+      password_change_required: 'Pilih kata laluan anda sendiri dahulu.',
       internal: 'Ralat pelayan. Cuba lagi sebentar lagi.',
     },
     fields: {
@@ -72,6 +73,7 @@ export const API_ERROR_MESSAGES: Record<Lang, ApiErrorMessages> = {
       rate_limited: 'Too many attempts. Please wait a moment and try again.',
       csrf: 'Request refused. Reload the page and try again.',
       configuration: 'The school settings do not allow this. Contact your administrator.',
+      password_change_required: 'Choose your own password first.',
       internal: 'Server error. Try again shortly.',
     },
     fields: {

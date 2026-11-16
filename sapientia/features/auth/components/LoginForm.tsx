@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import type { CurrentStudent } from '@/features/students/interfaces/student.interface';
+import { signInStudent } from '@/features/students/services/student-auth.client';
 import { ApiError } from '@/shared/api/api-client';
-import { SIGN_IN_DELAY_MS } from '../constants/login.constants';
-import type { DemoAccount, LoginFieldErrors } from '../interfaces/account.interface';
+import type { DemoPupil, LoginFieldErrors } from '../interfaces/account.interface';
 import type { SessionUser } from '../interfaces/session-user.interface';
 import type { LoginMessages } from '../i18n/login-messages.interface';
-import { accountName, checkLoginFields, findAccount } from '../services/auth.service';
-import { sessionStore } from '../services/session.store';
+import { checkLoginFields, isEmailIdentifier } from '../services/auth.service';
 import { signInStaff } from '../services/staff-auth.client';
 import styles from '../styles/Login.module.css';
 import { DemoAccounts } from './DemoAccounts';
@@ -18,29 +18,33 @@ type LoginAlert =
   | { kind: 'ok'; reason: 'forgot' }
   | { kind: 'ok'; reason: 'filled'; who: string };
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 function alertText(alert: LoginAlert, text: LoginMessages): string {
   if (alert.kind === 'error') return text[alert.reason];
   if (alert.reason === 'forgot') return text.forgotInfo;
   return text.filled(alert.who);
 }
 
+interface LoginFormProps {
+  text: LoginMessages;
+  onStaffSignedIn: (user: SessionUser) => void;
+  onStudentSignedIn: (current: CurrentStudent) => void;
+}
+
 /**
- * Email and password form. A demo student is checked in the browser and saved to the session store; anyone else signs in
- * through the API, which sets the session cookie. LoginPage reacts to either and opens the right board.
+ * One form for everyone: an email signs in a member of staff, anything else is a pupil's username from their slip. Both go
+ * to the API, which sets an HttpOnly cookie; LoginPage then opens the right board.
  */
-export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onStaffSignedIn: (user: SessionUser) => void }) {
-  const [email, setEmail] = useState('');
+export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn }: LoginFormProps) {
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<LoginFieldErrors>({});
   const [alert, setAlert] = useState<LoginAlert | null>(null);
   const [loading, setLoading] = useState(false);
-  const emailInput = useRef<HTMLInputElement>(null);
+  const identifierInput = useRef<HTMLInputElement>(null);
   const passwordInput = useRef<HTMLInputElement>(null);
 
-  // The fake sign-in waits; leaving the page during the wait must not update a component that is gone.
+  // Leaving the page while the request is out must not update a component that is gone.
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -53,24 +57,21 @@ export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onSt
     event.preventDefault();
     if (loading) return;
     setAlert(null);
-    const found = checkLoginFields(email, password);
+    const found = checkLoginFields(identifier, password);
     setErrors(found);
-    if (found.email) return emailInput.current?.focus();
+    if (found.identifier) return identifierInput.current?.focus();
     if (found.password) return passwordInput.current?.focus();
 
     setLoading(true);
-    const student = findAccount(email, password);
-    if (student) {
-      await wait(SIGN_IN_DELAY_MS);
-      if (!mounted.current) return;
-      setLoading(false);
-      sessionStore.set(student.id);
-      return;
-    }
-
+    const trimmed = identifier.trim();
     try {
-      const user = await signInStaff({ email: email.trim(), password });
-      if (mounted.current) onStaffSignedIn(user);
+      if (isEmailIdentifier(trimmed)) {
+        const user = await signInStaff({ email: trimmed, password });
+        if (mounted.current) onStaffSignedIn(user);
+      } else {
+        const current = await signInStudent({ username: trimmed, password });
+        if (mounted.current) onStudentSignedIn(current);
+      }
     } catch (error) {
       if (!mounted.current) return;
       const reason = !(error instanceof ApiError) || error.code === 'network' ? 'networkError'
@@ -83,11 +84,12 @@ export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onSt
     }
   };
 
-  const fillDemoAccount = (account: DemoAccount) => {
-    setEmail(account.email);
-    setPassword(account.password);
+  const fillDemoPupil = (pupil: DemoPupil) => {
+    setIdentifier(pupil.username);
+    setPassword('');
     setErrors({});
-    setAlert({ kind: 'ok', reason: 'filled', who: accountName(account) });
+    setAlert({ kind: 'ok', reason: 'filled', who: pupil.name });
+    passwordInput.current?.focus();
   };
 
   return (
@@ -98,25 +100,26 @@ export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onSt
 
       <form onSubmit={onSubmit} noValidate>
         <div className={styles.field}>
-          <label htmlFor="login-email">{text.email}</label>
+          <label htmlFor="login-identifier">{text.identifier}</label>
           <input
-            ref={emailInput}
-            id="login-email"
-            name="email"
-            type="email"
+            ref={identifierInput}
+            id="login-identifier"
+            name="username"
+            type="text"
             autoComplete="username"
-            inputMode="email"
-            placeholder={text.emailPlaceholder}
-            value={email}
-            aria-invalid={Boolean(errors.email)}
-            aria-describedby="login-email-hint"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder={text.identifierPlaceholder}
+            value={identifier}
+            aria-invalid={Boolean(errors.identifier)}
+            aria-describedby="login-identifier-hint"
             onChange={(event) => {
-              setEmail(event.target.value);
+              setIdentifier(event.target.value);
               setErrors(({ password: passwordError }) => ({ password: passwordError }));
             }}
           />
-          <div id="login-email-hint" className={styles.hint}>
-            {errors.email ? text.fieldErrors[errors.email] : ''}
+          <div id="login-identifier-hint" className={styles.hint}>
+            {errors.identifier ? text.fieldErrors[errors.identifier] : ''}
           </div>
         </div>
 
@@ -135,7 +138,7 @@ export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onSt
               aria-describedby="login-password-hint"
               onChange={(event) => {
                 setPassword(event.target.value);
-                setErrors(({ email: emailError }) => ({ email: emailError }));
+                setErrors(({ identifier: identifierError }) => ({ identifier: identifierError }));
               }}
             />
             <button type="button" className={styles.toggle} aria-controls="login-password" aria-pressed={showPassword} onClick={() => setShowPassword((shown) => !shown)}>
@@ -164,7 +167,7 @@ export function LoginForm({ text, onStaffSignedIn }: { text: LoginMessages; onSt
       </form>
 
       <p className={styles.note}>{text.note}</p>
-      <DemoAccounts text={text} onUse={fillDemoAccount} />
+      <DemoAccounts text={text} onUse={fillDemoPupil} />
     </>
   );
 }

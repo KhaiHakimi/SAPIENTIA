@@ -6,7 +6,7 @@ import { logger } from '@/shared/server/logger.service';
 import type { AcceptInviteRequest, SignInRequest } from '../interfaces/session-user.interface';
 import { hashPassword, timingDummyHash, verifyPassword } from './password.service';
 import { createSession, revokeUserSessions } from './session.service';
-import { assertNotThrottled, clearEmailFailures, recordFailure } from './throttle.service';
+import { assertNotThrottled, clearAccountFailures, emailThrottleKey, recordFailure } from './throttle.service';
 import { hashToken } from './token.service';
 
 interface CredentialRow {
@@ -21,7 +21,7 @@ interface CredentialRow {
  * same error after the same amount of work, so the response reveals nothing about which accounts exist.
  */
 export async function signIn(input: SignInRequest, address: string, clock: Clock, db: Queryable = getPool()): Promise<string> {
-  const keys = { email: input.email, address };
+  const keys = { account: emailThrottleKey(input.email), address };
   await assertNotThrottled(db, keys, clock);
 
   const { rows } = await db.query<CredentialRow>(
@@ -36,7 +36,7 @@ export async function signIn(input: SignInRequest, address: string, clock: Clock
     throw new InvalidCredentialsError();
   }
 
-  await clearEmailFailures(db, input.email);
+  await clearAccountFailures(db, keys.account);
   await db.query('UPDATE users SET last_sign_in_at = $2 WHERE id = $1', [user.id, clock.now()]);
   logger.info('auth.signed_in', { userId: user.id, schoolId: user.school_id });
   return createSession(db, user.school_id, user.id, clock);

@@ -1,0 +1,26 @@
+/* Pupils page (staff, calm scope). Slips print on their own: see the print-area rule in app/globals.css. */
+
+.preview { margin: 0 0 16px; }
+.previewList { margin: 4px 0 0; padding-left: 2em; max-height: 16em; overflow-y: auto; }
+.previewList li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 2px 0; }
+.previewProblem { color: var(--danger); }
+
+.panel { background: var(--bg); }
+.panelForm { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0 16px; align-items: end; margin-bottom: 12px; }
+
+.slipActions { margin-bottom: 12px; }
+.slips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 12px; }
+.slip { border: 2px dashed currentColor; border-radius: 6px; padding: 12px 14px; break-inside: avoid; }
+.slip p { margin: 4px 0; }
+.slipHeading { font-size: .85em; opacity: .8; }
+.slipName { font-weight: 700; font-size: 1.1em; }
+.slipName span { font-weight: 400; }
+.slipCredentials { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 8px 0; }
+.slipCredentials dt { opacity: .8; }
+.slipCredentials dd { margin: 0; font-size: 1.15em; font-weight: 700; letter-spacing: .04em; }
+
+@media print {
+  .slipActions { display: none; }
+  .slips { grid-template-columns: 1fr 1fr; gap: 0; }
+  .slip { color: #000; background: #fff; border-color: #000; border-radius: 0; margin: -1px 0 0 -1px; }
+}

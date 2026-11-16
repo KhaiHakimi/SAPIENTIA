@@ -10,3 +10,6 @@ export const ERPH_URL_MAX = 500;
 export const NOT_HELD_REASONS: readonly NotHeldReason[] = [
   'official_duty', 'leave', 'school_programme', 'pupils_away', 'examination', 'other',
 ];
+
+/** A lesson photo, after the page has shrunk it; the server allows some room for a photo sent without the page. */
+export const LESSON_PHOTO_MAX_BYTES = 5 * 1024 * 1024;

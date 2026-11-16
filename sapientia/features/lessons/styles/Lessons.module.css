@@ -7,3 +7,8 @@
 .form { display: grid; gap: .25em; }
 .actions { display: flex; flex-wrap: wrap; gap: .5em; }
 .dateField { max-width: 16em; }
+/* The lesson photo: a small thumbnail that opens the full picture, and its controls. */
+.photo { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .75em; }
+.photoThumb { display: block; width: 7.5em; height: 5.5em; object-fit: cover; border: 1px solid var(--bd); border-radius: .35em; background: var(--panel); }
+.photoControls { display: grid; gap: .25em; flex: 1 1 14em; }
+.photoControls .help, .photoControls p { margin: 0; }

@@ -1,5 +1,6 @@
 -- Up Migration
--- Phase 4, Sprint 11: pupil accounts, their class, and their sessions. See docs/phase-4-students.md.
+-- Phase 4, Sprint 11: pupil accounts, their class, and their sessions. Sprint 12: homework and paper hand-ins. See
+-- docs/phase-4-students.md.
 -- Data minimisation: a pupil is a name, a class and an optional school-issued number. No MyKad number, birth date,
 -- address, contact details, photo or sign-in times are stored.
 
@@ -56,7 +57,56 @@ CREATE TABLE student_sessions (
 CREATE INDEX student_sessions_student ON student_sessions (student_id);
 CREATE INDEX student_sessions_expires ON student_sessions (expires_at);
 
+-- Sprint 12 (folded in before release): homework set by a teacher for a class and subject on their own timetable.
+-- marking_minutes and mark_by are the setter's marking estimate and the day they plan to finish it; until marked_at is set
+-- the estimate counts as committed work in the capacity rules, like an open task. load_flagged records that the class
+-- already had two or more pieces of homework due that day when this one was set (plan Phase 4: warn, never block).
+CREATE TABLE homework (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES schools (id),
+  class_id uuid NOT NULL,
+  subject_id uuid NOT NULL,
+  set_by uuid NOT NULL,
+  title text NOT NULL,
+  details text,
+  due_on date NOT NULL,
+  marking_minutes integer,
+  mark_by date,
+  marked_at timestamptz,
+  load_flagged boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT homework_title_length CHECK (char_length(btrim(title)) BETWEEN 1 AND 120),
+  CONSTRAINT homework_details_length CHECK (details IS NULL OR char_length(btrim(details)) BETWEEN 1 AND 1000),
+  CONSTRAINT homework_marking_range CHECK (marking_minutes IS NULL OR marking_minutes BETWEEN 5 AND 600),
+  CONSTRAINT homework_marking_pair CHECK ((marking_minutes IS NULL) = (mark_by IS NULL)),
+  CONSTRAINT homework_mark_after_due CHECK (mark_by IS NULL OR mark_by >= due_on),
+  CONSTRAINT homework_marked_needs_estimate CHECK (marked_at IS NULL OR marking_minutes IS NOT NULL),
+  CONSTRAINT homework_school_id_id_unique UNIQUE (school_id, id),
+  FOREIGN KEY (school_id, class_id) REFERENCES classes (school_id, id),
+  FOREIGN KEY (school_id, subject_id) REFERENCES subjects (school_id, id),
+  FOREIGN KEY (school_id, set_by) REFERENCES users (school_id, id)
+);
+CREATE INDEX homework_class_due ON homework (school_id, class_id, due_on);
+CREATE INDEX homework_setter ON homework (school_id, set_by, due_on);
+
+-- A paper hand-in the teacher ticked on the class list. A row means handed in; undoing the tick deletes it. Only the time
+-- and who recorded it are kept.
+CREATE TABLE homework_status (
+  homework_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  school_id uuid NOT NULL,
+  handed_in_at timestamptz NOT NULL,
+  recorded_by uuid NOT NULL,
+  PRIMARY KEY (homework_id, student_id),
+  FOREIGN KEY (school_id, homework_id) REFERENCES homework (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, student_id) REFERENCES students (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, recorded_by) REFERENCES users (school_id, id)
+);
+CREATE INDEX homework_status_student ON homework_status (school_id, student_id);
+
 -- Down Migration
+DROP TABLE homework_status;
+DROP TABLE homework;
 DROP TABLE student_sessions;
 DROP TABLE class_enrolments;
 DROP TABLE students;

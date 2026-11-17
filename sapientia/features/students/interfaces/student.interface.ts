@@ -55,6 +55,7 @@ export interface SessionStudent {
   schoolName: string;
   timeZone: string;
   name: string;
+  classId: string | null;
   className: string | null;
   username: string;
   mustChangePassword: boolean;

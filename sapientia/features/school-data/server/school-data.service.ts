@@ -55,7 +55,7 @@ export async function removeSchoolData(actor: SessionUser, kind: SchoolDataKind,
       ]);
     });
   } catch (error) {
-    if (errorCode(error) === FOREIGN_KEY_VIOLATION) throw new ConflictError('This is still used on a timetable or by pupils.', { id: 'in_use' });
+    if (errorCode(error) === FOREIGN_KEY_VIOLATION) throw new ConflictError('This is still used on a timetable, by homework or by pupils.', { id: 'in_use' });
     throw error;
   }
 }

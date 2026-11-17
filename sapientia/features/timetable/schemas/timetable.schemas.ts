@@ -23,3 +23,6 @@ export const newSlotSchema = z.strictObject({
   .refine((slot) => Boolean(slot.classId) || Boolean(slot.label), { error: 'lesson_or_label', path: ['label'] });
 
 export const slotIdSchema = z.uuid();
+
+/** GET /api/student/timetable?weekOf=: any day of the week wanted; the current week when absent. */
+export const classWeekQuerySchema = z.object({ weekOf: z.iso.date({ error: 'invalid_date' }).optional() });

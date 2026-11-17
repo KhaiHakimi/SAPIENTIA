@@ -34,13 +34,20 @@ export type AuditAction =
   | 'student.added'
   | 'student.updated'
   | 'student.password_reset'
-  | 'student.removed';
+  | 'student.removed'
+  | 'homework.set'
+  | 'homework.load_flagged'
+  | 'homework.marked'
+  | 'homework.unmarked'
+  | 'homework.removed'
+  | 'homework.hand_in_recorded'
+  | 'homework.hand_in_cleared';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
   entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user'
-    | 'material' | 'student';
+    | 'material' | 'student' | 'homework';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

@@ -100,3 +100,14 @@ Open items carried forward:
 
 9. Children's data: no legal review yet (decision D7 open, PDPA consent and retention unreviewed). Fictional data only until it is done.
 10. The 8-character minimum for pupils is below the staff minimum of 10, a judgement for young pupils to revisit with schools.
+
+## Sprint 12, part 1: homework, hand-ins and the pupil's week
+
+Checked on 16 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | Homework can be set only for a class and subject on the caller's own timetable (refused otherwise, administrators included; tested). After that only the setter reads, marks, removes or ticks hand-ins (404 for another teacher and for administrators; tested). A hand-in can be ticked only for a pupil now in the homework's class (404 otherwise; tested). Pupil endpoints take the pupil and class from the session, never from the request; a pupil sees their own hand-in only and nothing of another class (tested); staff sessions get 401 on pupil endpoints and pupil sessions 401 on staff ones (tested). |
+| A03 | Injection | Pass | Parameterised SQL; strict schemas with lengths and ranges for every body and query; path ids must be UUIDs. Homework details are shown as text, never as HTML. |
+| A04 | Insecure design | Pass | The class's week shows dates and subjects only, never who set the homework or anything about pupils. No list of who has not handed in is ever shown to pupils. A relief lesson appears on the pupil's timetable only once the relief has been delivered to the relief teacher, so a class does not learn of a teacher's absence earlier than staff do (tested). The load warning never blocks. |
+| A09 | Logging and monitoring failures | Pass | Setting, the load flag, marking, removal and each hand-in tick are audited with ids only (the pupil's id for a tick, never their name; tested). |

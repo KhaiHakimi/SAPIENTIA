@@ -286,6 +286,14 @@ Sprint 11 was built on 16 November 2026:
 - [x] The student board opens for the real signed-in pupil; the browser-only demo pupils are gone (seeded pupils instead)
 - [ ] Legal review request (due in S11): needs a named reviewer, which is the project owner's to arrange
 
+Sprint 12 part 1 was built on 16 November 2026 (part 2 puts the pupil's homework and timetable on the board):
+- [x] Sprint 12 stories (`docs/phase-4-students.md`); `homework` and `homework_status` folded into the unreleased Phase 4 migration
+- [x] Teachers set homework for a class and subject on their own timetable; the class's week (dates and subjects only) and a warning at the third piece due on one day, saved as flagged, never refused
+- [x] Marking time: an optional estimate and finish day, checked against the setter's working time and counted in capacity until marked
+- [x] Paper hand-in by tapping names on the class list; only the setter sees it
+- [x] Pupil APIs: their class's homework with their own hand-in only, and their class timetable for a week with relief marked
+- [ ] Part 2: the student board shows the real homework and timetable instead of the sample data
+
 ### Phase 5: Bullying reporting (S15 to S17, 17 May to 25 June 2027; gated on legal review)
 - Do not start until G6 passes.
 - Tables: `bullying_reports`, `report_escalations`, `report_view_log`. Append-only: no UPDATE or DELETE of report content (enforce with database permissions or triggers as well as code).
@@ -357,7 +365,7 @@ Sprint 11 was built on 16 November 2026:
 | Perceived as surveillance | Medium | High | No monitoring features; teachers see everything about themselves; private hours log | Any story that measures activity rather than work |
 | Duplicate notifications after a crash | Medium | Medium | Idempotent jobs; `singletonKey`; conditional updates; crash-recovery test | Two notifications for one task |
 | Inaccurate effort estimates | High at first | Low | Optional completion feedback; warn rather than block | Many flagged deadlines the sender overrides |
-| Phase 5 starts before legal review | Low | High | Gate G6; request review in S11 | No reviewer identified by S12 (as of 16 November 2026, none named and Phase 4 started without one: D7 is open) |
+| Phase 5 starts before legal review | Medium | High | Gate G6; request review in S11 | **Triggered:** S12 started on 16 November 2026 with no reviewer named (D7 open). Phase 5 stays blocked; name a reviewer before S13 |
 | Children's data held without a legal basis | Low (fictional data only) | High | No real pupils until a PDPA review and school agreement; data minimisation; no activity tracking | Anyone proposing a pilot with a real class |
 | Real data enters seeds, screenshots or demos | Low | High | Fictional seeds; pre-commit check; reviewing the diff before every merge | Names that look real |
 | Free-tier hosting limits or changes | Medium | Low | Docker packaging; worker can run inside the API for a demo | Provider terms change |

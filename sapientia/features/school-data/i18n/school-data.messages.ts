@@ -53,7 +53,7 @@ export const SCHOOL_DATA_MESSAGES: Record<Lang, SchoolDataMessages> = {
     columns: { name: 'Nama', estimate: 'Anggaran', actions: 'Tindakan' },
     fieldErrors: {
       name_taken: 'Nama ini sudah ada dalam senarai.',
-      in_use: 'Masih digunakan dalam jadual waktu, atau kelas ini masih ada murid. Buang waktu itu atau pindahkan murid dahulu.',
+      in_use: 'Masih digunakan dalam jadual waktu atau kerja rumah, atau kelas ini masih ada murid. Buang waktu atau kerja rumah itu, atau pindahkan murid, dahulu.',
       too_small: 'Sekurang-kurangnya 5 minit.',
       too_large: 'Paling banyak 6000 minit.',
     },
@@ -109,7 +109,7 @@ export const SCHOOL_DATA_MESSAGES: Record<Lang, SchoolDataMessages> = {
     columns: { name: 'Name', estimate: 'Estimate', actions: 'Actions' },
     fieldErrors: {
       name_taken: 'This name is already on the list.',
-      in_use: 'Still used on a timetable, or the class still has pupils. Remove that period or move the pupils first.',
+      in_use: 'Still used on a timetable or by homework, or the class still has pupils. Remove that period or homework, or move the pupils, first.',
       too_small: 'At least 5 minutes.',
       too_large: '6000 minutes at most.',
     },

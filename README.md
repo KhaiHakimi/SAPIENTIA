@@ -50,7 +50,7 @@ The defining feature is **held delivery**. A task created outside working hours 
 | `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable, deadline check, extension requests, the workload view, relief suggestions, lesson records, the private hours log, the monthly report, the material bank and pupil accounts are built and tested with fictional data. See `sapientia/README.md` |
 | `docs/` | OWASP review; stories and threat models for Phases 2, 3 and 4 | Written |
 
-Nothing is deployed: the app runs locally against a Docker database. Pupil accounts are real (Phase 4, Sprint 11) but hold fictional data only; the student board's quests and progress are still sample data.
+Nothing is deployed: the app runs locally against a Docker database. Pupil accounts (Phase 4, Sprint 11) and homework (Sprint 12, part 1) are real but hold fictional data only; the student board's quests, timetable and progress are still sample data until Sprint 12 part 2.
 
 ## The student dashboard prototype
 

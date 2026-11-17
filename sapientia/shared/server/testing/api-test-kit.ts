@@ -11,7 +11,7 @@ export const TEST_PASSWORD = 'correct-horse-battery';
 
 /** Every application table, children first. pg-boss keeps its own schema and is cleared separately when needed. */
 const APP_TABLES = [
-  'student_sessions', 'class_enrolments', 'students', 'materials', 'private_hours_shares', 'private_hours_log', 'lesson_records', 'stored_files', 'event_notice_sends', 'relief_assignments', 'extension_requests', 'timetable_slots', 'task_types', 'classes', 'subjects',
+  'homework_status', 'homework', 'student_sessions', 'class_enrolments', 'students', 'materials', 'private_hours_shares', 'private_hours_log', 'lesson_records', 'stored_files', 'event_notice_sends', 'relief_assignments', 'extension_requests', 'timetable_slots', 'task_types', 'classes', 'subjects',
   'notification_sends', 'push_subscriptions', 'calendar_events', 'school_settings', 'idempotency_keys', 'audit_logs', 'task_comments', 'task_assignments', 'tasks',
   'auth_throttle', 'invites', 'sessions', 'users', 'schools',
 ];

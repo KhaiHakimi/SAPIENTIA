@@ -30,3 +30,25 @@ export interface NewTimetableSlot {
   subjectId?: string;
   label?: string;
 }
+
+/** One lesson on a pupil's day: times "HH:mm", school-local. relief: a relief teacher covers it on this date. */
+export interface ClassLesson {
+  startTime: string;
+  endTime: string;
+  subjectName: string;
+  relief: boolean;
+}
+
+/** One day of a class's week. A day off (weekend or holiday) has no lessons. */
+export interface ClassDay {
+  date: string;
+  weekday: IsoWeekday;
+  schoolDay: boolean;
+  lessons: ClassLesson[];
+}
+
+/** GET /api/student/timetable: the pupil's class, Monday to Sunday of the week asked for. */
+export interface ClassWeek {
+  weekOf: string;
+  days: ClassDay[];
+}

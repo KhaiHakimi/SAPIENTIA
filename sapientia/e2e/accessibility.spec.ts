@@ -10,7 +10,8 @@ import { signIn } from './support/staff-actions';
  * request) are scanned inside their own journeys.
  */
 const STAFF_SCREENS = [
-  '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/relief', '/staff/lessons', '/staff/materials', '/staff/hours',
+  '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/relief', '/staff/lessons', '/staff/homework',
+  '/staff/materials', '/staff/hours',
   '/staff/reports', '/staff/users', '/staff/students', '/staff/school-data',
   '/staff/settings', '/staff/calendar', '/staff/notifications',
 ];
@@ -28,7 +29,7 @@ for (const theme of ['dark', 'light']) {
     });
 
     test('the staff screens have no detectable WCAG 2.2 AA failures', async ({ page }) => {
-      // Sixteen screens in one test, so that the sign-in is done once per theme.
+      // Seventeen screens in one test, so that the sign-in is done once per theme.
       test.setTimeout(180_000);
       await signIn(page, ACCOUNTS.admin.email);
       for (const path of STAFF_SCREENS) {

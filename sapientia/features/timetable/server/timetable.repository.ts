@@ -90,3 +90,35 @@ export async function deleteSlot(db: Queryable, schoolId: string, slotId: string
   );
   return rows[0]?.teacher_id ?? null;
 }
+
+/** A class's lessons across the week, for its pupils: times and subject only, never who teaches or other duties. */
+export async function listClassLessons(db: Queryable, schoolId: string, classId: string) {
+  const { rows } = await db.query<{ id: string; weekday: number; start_time: string; end_time: string; subject_name: string }>(
+    `SELECT s.id, s.weekday, to_char(s.start_time, 'HH24:MI') AS start_time, to_char(s.end_time, 'HH24:MI') AS end_time,
+            j.name AS subject_name
+       FROM timetable_slots s JOIN subjects j ON j.id = s.subject_id AND j.school_id = s.school_id
+      WHERE s.school_id = $1 AND s.class_id = $2
+      ORDER BY s.weekday, s.start_time`,
+    [schoolId, classId],
+  );
+  return rows;
+}
+
+/**
+ * Which of these periods a relief teacher covers between two dates (inclusive). Only relief already delivered counts, so a
+ * class learns of a teacher's absence no earlier than the relief teacher does.
+ */
+export async function listCoveredPeriods(
+  db: Queryable,
+  schoolId: string,
+  slotIds: readonly string[],
+  range: { fromDate: string; toDate: string },
+  now: Date,
+) {
+  const { rows } = await db.query<{ slot_id: string; on_date: string }>(
+    `SELECT slot_id, on_date::text AS on_date FROM relief_assignments
+      WHERE school_id = $1 AND slot_id = ANY($2::uuid[]) AND on_date BETWEEN $3::date AND $4::date AND deliver_at <= $5`,
+    [schoolId, slotIds, range.fromDate, range.toDate, now],
+  );
+  return rows;
+}

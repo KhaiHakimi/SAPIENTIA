@@ -29,6 +29,7 @@ interface SessionRow {
   name: string;
   username: string;
   must_change_password: boolean;
+  class_id: string | null;
   class_name: string | null;
 }
 
@@ -47,7 +48,7 @@ export async function createStudentSession(db: Queryable, schoolId: string, stud
 export async function resolveStudentSession(db: Queryable, token: string, clock: Clock): Promise<SessionStudent | null> {
   const { rows } = await db.query<SessionRow>(
     `SELECT ss.id AS session_id, ss.last_seen_at, ss.expires_at, s.id, s.school_id, sc.name AS school_name, sc.time_zone,
-            s.name, s.username, s.must_change_password, c.name AS class_name
+            s.name, s.username, s.must_change_password, c.id AS class_id, c.name AS class_name
        FROM student_sessions ss
        JOIN students s ON s.id = ss.student_id AND s.school_id = ss.school_id
        JOIN schools sc ON sc.id = s.school_id
@@ -70,7 +71,7 @@ export async function resolveStudentSession(db: Queryable, token: string, clock:
   }
   return {
     id: row.id, schoolId: row.school_id, schoolName: row.school_name, timeZone: row.time_zone, name: row.name,
-    className: row.class_name, username: row.username, mustChangePassword: row.must_change_password,
+    classId: row.class_id, className: row.class_name, username: row.username, mustChangePassword: row.must_change_password,
   };
 }
 

@@ -3,6 +3,8 @@ import type { SchoolSubjectKey } from '@/shared/interfaces/school-subject.interf
 export interface Student {
   name: string;
   className: string;
+  /** The school's time zone, for the board's "today" and "now". */
+  timeZone: string;
 }
 
 /** How well the student is doing in one subject, 0 to 100. */
@@ -17,6 +19,4 @@ export interface ProgressBaseline {
   coins: number;
   /** Days in a row before today. */
   streak: number;
-  classHandedIn: number;
-  classTotal: number;
 }

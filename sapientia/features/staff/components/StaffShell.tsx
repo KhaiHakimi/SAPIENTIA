@@ -1,16 +1,18 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { signOutStaff } from '@/features/auth/services/staff-auth.client';
+import { PUSH_OFF_DEADLINE_MS } from '@/features/notifications/constants/notification.constants';
 import { disablePush } from '@/features/notifications/services/push-device.client';
 import { ApiError } from '@/shared/api/api-client';
 import calm from '@/shared/calm/Calm.module.css';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { startInstallListener } from '@/shared/pwa/install-prompt.store';
 import { registerServiceWorker } from '@/shared/pwa/service-worker.client';
+import { withDeadline } from '@/shared/services/deadline.service';
+import { openSignInPage } from '@/shared/services/sign-in-page.service';
 import { toggleTheme } from '@/shared/theme/theme.store';
 import { STAFF_NAV } from '../constants/staff-nav.constants';
 import { StaffUserContext, useCurrentUserQuery } from '../hooks/useStaffUser';
@@ -21,16 +23,14 @@ import styles from '../styles/StaffShell.module.css';
 export function StaffShell({ children }: { children: ReactNode }) {
   const text = useMessages(STAFF_MESSAGES);
   const { toggleLang } = useLanguage();
-  const router = useRouter();
   const pathname = usePathname();
-  const queryClient = useQueryClient();
   const me = useCurrentUserQuery();
   const [signingOut, setSigningOut] = useState(false);
 
   const signedOut = me.error instanceof ApiError && me.error.status === 401;
   useEffect(() => {
-    if (signedOut) router.replace('/login');
-  }, [signedOut, router]);
+    if (signedOut) openSignInPage();
+  }, [signedOut]);
 
   // The service worker shows push notifications; the install listener must be in place before the browser offers to install.
   useEffect(() => {
@@ -42,7 +42,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
     setSigningOut(true);
     try {
       // A shared staffroom PC should not keep showing this person's task notices after they sign out.
-      await disablePush();
+      await withDeadline(disablePush(), PUSH_OFF_DEADLINE_MS);
     } catch (error) {
       console.error('Could not turn off push for this device', error);
     }
@@ -52,8 +52,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
       // The cookie may still be set if the call failed; the login page will show the account again, which is honest.
       console.error('Sign-out request failed', error);
     }
-    queryClient.clear();
-    router.replace('/login');
+    openSignInPage();
   };
 
   if (!me.data) {

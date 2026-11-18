@@ -4,3 +4,8 @@
 .day h4 { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--ink); }
 .tag { padding: 1px 8px; font: 600 .66rem var(--font); letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--seal); }
 .day .slots { gap: 6px; }
+
+/* Last week / this range / next week. */
+.nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.range { margin: 0; font-weight: 600; color: var(--ink); text-align: center; }
+.empty { margin: 0; font-size: .85rem; color: var(--ink-muted); }

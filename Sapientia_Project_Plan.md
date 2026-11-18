@@ -286,13 +286,21 @@ Sprint 11 was built on 16 November 2026:
 - [x] The student board opens for the real signed-in pupil; the browser-only demo pupils are gone (seeded pupils instead)
 - [ ] Legal review request (due in S11): needs a named reviewer, which is the project owner's to arrange
 
-Sprint 12 part 1 was built on 16 November 2026 (part 2 puts the pupil's homework and timetable on the board):
+Sprint 12 part 1 was built on 16 November 2026, part 2 on 18 November 2026:
 - [x] Sprint 12 stories (`docs/phase-4-students.md`); `homework` and `homework_status` folded into the unreleased Phase 4 migration
 - [x] Teachers set homework for a class and subject on their own timetable; the class's week (dates and subjects only) and a warning at the third piece due on one day, saved as flagged, never refused
 - [x] Marking time: an optional estimate and finish day, checked against the setter's working time and counted in capacity until marked
 - [x] Paper hand-in by tapping names on the class list; only the setter sees it
 - [x] Pupil APIs: their class's homework with their own hand-in only, and their class timetable for a week with relief marked
-- [ ] Part 2: the student board shows the real homework and timetable instead of the sample data
+- [x] Part 2: the student board shows the class's real homework (a hand-in the teacher records clears the room) and timetable on the school's clock, and the class goal as counts only (withheld below 5 pupils)
+
+Sprint 13 part 1 was built on 18 November 2026 (part 2: printable summary and meeting requests). The project owner chose printed slips for guardians (no email or phone stored), refusal by the guardian and removal by the administrator, each with a reason code:
+- [x] Sprint 13 stories and threat-model rows (`docs/phase-4-students.md`); `guardians`, `guardian_links` and `guardian_sessions` folded into the unreleased Phase 4 migration
+- [x] Administrators add a guardian with a link to a pupil and a relationship type, print the slip, link more children (up to 10), remove a link with a reason code, print a new slip, disable or remove a guardian
+- [x] Guardians sign in with a `penjaga.` username, must replace the slip's password (10 characters at least); signing in as staff, pupil or guardian ends the other kinds' sessions in that browser
+- [x] The read-only guardian view (calm theme): each linked child's homework with that child's own hand-in, and the class week; children are named by the link's id, never the pupil's
+- [x] A guardian refuses a wrong link with a reason code; the administrator sees it
+- [ ] Part 2: printable summary for guardians without smartphones; meeting requests that reach the teacher only in working hours (teachers see the guardian's name only)
 
 ### Phase 5: Bullying reporting (S15 to S17, 17 May to 25 June 2027; gated on legal review)
 - Do not start until G6 passes.
@@ -365,7 +373,7 @@ Sprint 12 part 1 was built on 16 November 2026 (part 2 puts the pupil's homework
 | Perceived as surveillance | Medium | High | No monitoring features; teachers see everything about themselves; private hours log | Any story that measures activity rather than work |
 | Duplicate notifications after a crash | Medium | Medium | Idempotent jobs; `singletonKey`; conditional updates; crash-recovery test | Two notifications for one task |
 | Inaccurate effort estimates | High at first | Low | Optional completion feedback; warn rather than block | Many flagged deadlines the sender overrides |
-| Phase 5 starts before legal review | Medium | High | Gate G6; request review in S11 | **Triggered:** S12 started on 16 November 2026 with no reviewer named (D7 open). Phase 5 stays blocked; name a reviewer before S13 |
+| Phase 5 starts before legal review | Medium | High | Gate G6; request review in S11 | **Triggered:** S12 started on 16 November 2026 with no reviewer named (D7 open). Phase 5 stays blocked; name a reviewer before S13. S13 started on 18 November 2026, still with no reviewer: the project owner accepted the risk again, fictional data only |
 | Children's data held without a legal basis | Low (fictional data only) | High | No real pupils until a PDPA review and school agreement; data minimisation; no activity tracking | Anyone proposing a pilot with a real class |
 | Real data enters seeds, screenshots or demos | Low | High | Fictional seeds; pre-commit check; reviewing the diff before every merge | Names that look real |
 | Free-tier hosting limits or changes | Medium | Low | Docker packaging; worker can run inside the API for a demo | Provider terms change |

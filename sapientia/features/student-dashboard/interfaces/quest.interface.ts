@@ -1,23 +1,29 @@
-import type { LocalizedText } from '@/shared/interfaces/localized-text.interface';
-import type { SchoolSubjectKey } from '@/shared/interfaces/school-subject.interface';
+/** Where a quest's due date stands against the school's today. */
+export type DueStatus = 'overdue' | 'today' | 'tomorrow' | 'later';
 
-export type QuestDue = 'today' | 'tomorrow' | 'friday';
-
-/** A homework task, shown as a room on the quest map. */
+/**
+ * A piece of the class's homework, shown as a room on the quest map. The text is the teacher's own, in the language they
+ * wrote it, so it is not translated.
+ */
 export interface Quest {
   id: string;
-  subject: SchoolSubjectKey;
-  title: LocalizedText;
-  due: QuestDue;
+  subjectName: string;
+  title: string;
+  teacherName: string;
+  details: string | null;
+  /** YYYY-MM-DD, school-local. */
+  dueOn: string;
   xp: number;
   coins: number;
-  teacher: LocalizedText;
-  description: LocalizedText;
-  /** What to hand in, one step per line. */
-  steps: { ms: string[]; en: string[] };
-  /** Already handed in before this visit; finishing it again earns nothing. */
-  doneAtStart: boolean;
+  /**
+   * The teacher has recorded the hand-in. The room is cleared for good: the pupil cannot undo it, and it pays nothing on this
+   * visit, since it was done before.
+   */
+  handedIn: boolean;
 }
 
-/** Which quests are marked done right now, by quest id. */
+/** The rooms the pupil has ticked on this visit, by quest id: their own checklist, apart from the teacher's record. */
 export type QuestDoneMap = Readonly<Record<string, boolean>>;
+
+/** Where the homework list stands while it loads. */
+export type QuestsStatus = 'loading' | 'error' | 'ready';

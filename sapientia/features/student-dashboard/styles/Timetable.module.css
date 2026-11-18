@@ -33,3 +33,6 @@
   .card { grid-template-columns: 48px 28px minmax(0, 1fr) auto; }
   .card .sprite { width: 26px; height: 26px; }
 }
+
+/* Loading, error and "no lessons" lines in place of the list. */
+.status { margin: 0; color: var(--muted); }

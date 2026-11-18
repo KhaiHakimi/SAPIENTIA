@@ -3,11 +3,12 @@
 import { PixelButton } from '@/shared/components/PixelButton';
 import { PixelSprite } from '@/shared/components/PixelSprite';
 import { ScrollDialog, scrollStyles } from '@/shared/components/ScrollDialog';
-import { SCHOOL_SUBJECTS } from '@/shared/data/school-subjects';
+import { formatDayShort } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { useStudentProgress } from '../../hooks/useStudentProgress';
 import { DASHBOARD_MESSAGES } from '../../i18n/dashboard.messages';
 import { isQuestDone } from '../../services/progress.service';
+import { dueStatus } from '../../services/quest.service';
 
 interface QuestScrollDialogProps {
   /** The quest to show; null keeps the scroll closed. */
@@ -17,11 +18,11 @@ interface QuestScrollDialogProps {
   onToggle: (questId: string) => void;
 }
 
-/** The teacher's full message for one quest, on a parchment scroll. */
+/** The teacher's homework in full, on a parchment scroll. */
 export function QuestScrollDialog({ questId, onClose, onToggle }: QuestScrollDialogProps) {
   const text = useMessages(DASHBOARD_MESSAGES);
-  const { lang, pick } = useLanguage();
-  const { quests, done } = useStudentProgress();
+  const { lang } = useLanguage();
+  const { quests, done, clock } = useStudentProgress();
   const index = quests.findIndex((quest) => quest.id === questId);
   const quest = index >= 0 ? quests[index] : null;
   const isDone = quest ? isQuestDone(quest, done) : false;
@@ -30,8 +31,8 @@ export function QuestScrollDialog({ questId, onClose, onToggle }: QuestScrollDia
     <ScrollDialog
       open={quest !== null}
       onClose={onClose}
-      eyebrow={quest ? `${text.room(index + 1)} • ${pick(SCHOOL_SUBJECTS[quest.subject].name)}` : ''}
-      title={quest ? pick(quest.title) : ''}
+      eyebrow={quest ? `${text.room(index + 1)} • ${quest.subjectName}` : ''}
+      title={quest ? quest.title : ''}
       closeLabel={text.close}
       actions={
         quest && (
@@ -39,15 +40,17 @@ export function QuestScrollDialog({ questId, onClose, onToggle }: QuestScrollDia
             <PixelButton variant="ghost" onClick={onClose}>
               {text.close}
             </PixelButton>
-            <PixelButton
-              variant={isDone ? 'ghost' : 'primary'}
-              onClick={() => {
-                onClose();
-                onToggle(quest.id);
-              }}
-            >
-              {isDone ? text.undo : text.markDone}
-            </PixelButton>
+            {!quest.handedIn && (
+              <PixelButton
+                variant={isDone ? 'ghost' : 'primary'}
+                onClick={() => {
+                  onClose();
+                  onToggle(quest.id);
+                }}
+              >
+                {isDone ? text.undo : text.markDone}
+              </PixelButton>
+            )}
           </>
         )
       }
@@ -57,11 +60,11 @@ export function QuestScrollDialog({ questId, onClose, onToggle }: QuestScrollDia
           <dl className={scrollStyles.meta}>
             <div>
               <dt>{text.scrollFrom}</dt>
-              <dd>{pick(quest.teacher)}</dd>
+              <dd>{quest.teacherName}</dd>
             </div>
             <div>
               <dt>{text.scrollDue}</dt>
-              <dd>{isDone ? text.cleared : text.due[quest.due]}</dd>
+              <dd>{text.due(dueStatus(quest.dueOn, clock.today), formatDayShort(quest.dueOn, lang))}</dd>
             </div>
             <div>
               <dt>{text.scrollReward}</dt>
@@ -73,13 +76,9 @@ export function QuestScrollDialog({ questId, onClose, onToggle }: QuestScrollDia
             </div>
           </dl>
           <h4 className={scrollStyles.subhead}>{text.scrollMessage}</h4>
-          <p>{pick(quest.description)}</p>
+          <p className={scrollStyles.typed}>{quest.details ?? text.scrollNoDetails}</p>
           <h4 className={scrollStyles.subhead}>{text.scrollHandIn}</h4>
-          <ul className={scrollStyles.list}>
-            {quest.steps[lang].map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ul>
+          <p>{quest.handedIn ? text.scrollHandedIn : text.scrollHandInNote}</p>
         </>
       )}
     </ScrollDialog>

@@ -20,3 +20,9 @@ export const MY_HOMEWORK_DAYS_BACK = 14;
 export const PUPIL_HOMEWORK_DAYS_BACK = 7;
 /** Upper bound on either list; a teacher or class with more is not a real school week. */
 export const HOMEWORK_LIST_MAX = 200;
+
+/**
+ * The class's shared goal on the pupil's board (hand-ins this week across the class) is withheld below this many pupils: in a
+ * very small class a count points at the few who have not handed in.
+ */
+export const CLASS_GOAL_MIN_PUPILS = 5;

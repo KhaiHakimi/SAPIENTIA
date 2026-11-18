@@ -261,6 +261,28 @@ describe('homework (Sprint 12)', () => {
       expect(other.items).toEqual([]);
     });
 
+    it('sees the class\'s hand-ins for this week as counts only, withheld in a class under five pupils', async () => {
+      const names = ['Aisyah binti Rahman', 'Daniel Lee', 'Kavitha a/p Raman', 'Mei Ling', 'Arjun Nair'];
+      const { ids, cookie } = await pupilIn(classA, names);
+      const thisWeek = await setOk();
+      const nextWeek = await setOk({ dueOn: '2027-03-29' });
+      const handIn = (homeworkId: string, studentId: string) => call(setHandIn, `/api/homework/${homeworkId}/hand-ins/${studentId}`, {
+        params: { id: homeworkId, studentId }, method: 'PUT', cookie: guru, body: { handedIn: true },
+      });
+      await handIn(thisWeek.id, ids[1]);
+      await handIn(thisWeek.id, ids[2]);
+      await handIn(nextWeek.id, ids[3]);
+
+      const goal = async (pupilCookie: string) =>
+        ((await (await call(pupilHomework, '/api/student/homework', { cookie: pupilCookie })).json()) as PupilHomeworkList).classGoal;
+      // One piece due this week for five pupils; next week's hand-in does not count.
+      expect(await goal(cookie)).toEqual({ handedIn: 2, expected: 5 });
+
+      // A pupil who leaves the class takes their hand-in out of both counts, and four pupils are too few to show it.
+      await getPool().query('DELETE FROM students WHERE id = $1', [ids[1]]);
+      expect(await goal(cookie)).toBeNull();
+    });
+
     it('cannot use the staff endpoints, and staff cannot use the pupil ones', async () => {
       const { cookie } = await pupilIn(classA, ['Aisyah binti Rahman']);
       expect((await call(myHomework, '/api/homework', { cookie })).status).toBe(401);

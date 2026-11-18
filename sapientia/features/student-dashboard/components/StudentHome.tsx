@@ -8,17 +8,17 @@ import { StudentDashboard } from './StudentDashboard';
 
 /**
  * The board for the signed-in pupil (from the server session). A pupil still on their slip's password chooses their own
- * first; without a session the hook sends the browser to /login. Quests, timetable and progress are still sample data until
- * homework and the class timetable arrive (plan Sprint 12), so every pupil starts from the same sample baseline.
+ * first; without a session the hook sends the browser to /login. Homework and the timetable are the pupil's class's own (plan
+ * Sprint 12); XP, coins, the streak and mastery still start from the same sample baseline for every pupil.
  */
 export function StudentHome() {
   const { data } = useCurrentStudent();
   if (!data) return null;
   if (data.mustChangePassword) return <ChoosePasswordPage name={data.student.name} />;
-  const { id, name, className } = data.student;
+  const { id, name, className, timeZone } = data.student;
   return (
     // Keyed by pupil, so a different pupil never inherits the previous one's quest ticks or battle wins.
-    <StudentProgressProvider key={id} student={{ name, className: className ?? '' }} baseline={SAMPLE_BASELINE}>
+    <StudentProgressProvider key={id} student={{ name, className: className ?? '', timeZone }} baseline={SAMPLE_BASELINE}>
       <StudentDashboard />
     </StudentProgressProvider>
   );

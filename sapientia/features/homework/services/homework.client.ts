@@ -1,12 +1,14 @@
 import { apiFetch } from '@/shared/api/api-client';
 import type {
-  HandInList, Homework, HomeworkPreview, HomeworkPreviewRequest, MyHomework, SetHomeworkRequest,
+  HandInList, Homework, HomeworkPreview, HomeworkPreviewRequest, MyHomework, PupilHomeworkList, SetHomeworkRequest,
 } from '../interfaces/homework.interface';
 
 export const HOMEWORK_ROOT_KEY = ['homework'] as const;
 export const MY_HOMEWORK_KEY = [...HOMEWORK_ROOT_KEY, 'mine'] as const;
 export const homeworkPreviewKey = (input: HomeworkPreviewRequest) => [...HOMEWORK_ROOT_KEY, 'preview', input] as const;
 export const handInsKey = (homeworkId: string) => [...HOMEWORK_ROOT_KEY, 'hand-ins', homeworkId] as const;
+/** The signed-in pupil's class homework (pupil session). */
+export const PUPIL_HOMEWORK_KEY = ['student', 'homework'] as const;
 
 export function fetchMyHomework(): Promise<MyHomework> {
   return apiFetch('/api/homework');
@@ -36,4 +38,8 @@ export function setHandIn(id: string, studentId: string, handedIn: boolean): Pro
   return apiFetch(`/api/homework/${encodeURIComponent(id)}/hand-ins/${encodeURIComponent(studentId)}`, {
     method: 'PUT', body: { handedIn },
   });
+}
+
+export function fetchPupilHomework(): Promise<PupilHomeworkList> {
+  return apiFetch('/api/student/homework');
 }

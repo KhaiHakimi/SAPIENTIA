@@ -1,4 +1,4 @@
-import type { QuestDue } from '../interfaces/quest.interface';
+import type { DueStatus } from '../interfaces/quest.interface';
 
 export interface DashboardMessages {
   // Sidebar
@@ -26,7 +26,6 @@ export interface DashboardMessages {
 
   // Page
   hello: (name: string) => string;
-  dayName: string;
   footer: string;
 
   // Torch streak
@@ -42,11 +41,18 @@ export interface DashboardMessages {
   now: string;
   relief: string;
   minutesLeft: (minutes: number) => string;
+  timetableLoading: string;
+  timetableError: string;
+  noLessonsToday: string;
+  noLessons: string;
+  dayOff: string;
   weekButton: string;
   weekTitle: string;
   weekToday: string;
   weekIntro: string;
-  daysFull: readonly string[];
+  weekPrevious: string;
+  weekNext: string;
+  weekRange: (from: string, to: string) => string;
 
   // Mastery
   mastery: string;
@@ -57,8 +63,13 @@ export interface DashboardMessages {
   questMap: string;
   questCount: (done: number, total: number) => string;
   room: (number: number) => string;
-  due: Record<QuestDue, string>;
+  /** day is the due date written out, for "later" and "overdue". */
+  due: (status: DueStatus, day: string) => string;
   cleared: string;
+  handedIn: string;
+  questsLoading: string;
+  questsError: string;
+  questsEmpty: string;
   markDone: string;
   undo: string;
   viewDetails: string;
@@ -72,7 +83,10 @@ export interface DashboardMessages {
   scrollDue: string;
   scrollReward: string;
   scrollMessage: string;
+  scrollNoDetails: string;
   scrollHandIn: string;
+  scrollHandInNote: string;
+  scrollHandedIn: string;
   close: string;
 
   // Relics and class
@@ -82,6 +96,8 @@ export interface DashboardMessages {
   party: string;
   partyText: (handedIn: number, total: number) => string;
   partyNote: string;
+  partyNone: string;
+  partyHidden: string;
 
   // Feedback
   toastLoot: (xp: number, coins: number) => string;

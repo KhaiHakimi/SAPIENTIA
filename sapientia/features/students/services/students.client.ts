@@ -11,8 +11,9 @@ import type {
 export const STUDENTS_ROOT_KEY = ['students'] as const;
 export const studentsKey = (classId: string) => [...STUDENTS_ROOT_KEY, classId] as const;
 
-export function fetchStudentsPage(classId: string, cursor: string | null): Promise<Page<SchoolStudent>> {
-  const query = new URLSearchParams({ limit: '25' });
+/** One page of pupils; the guardian form's pupil list asks for a whole class at once (limit 100, the API's maximum). */
+export function fetchStudentsPage(classId: string, cursor: string | null, limit = 25): Promise<Page<SchoolStudent>> {
+  const query = new URLSearchParams({ limit: String(limit) });
   if (classId) query.set('classId', classId);
   if (cursor) query.set('cursor', cursor);
   return apiFetch(`/api/students?${query.toString()}`);

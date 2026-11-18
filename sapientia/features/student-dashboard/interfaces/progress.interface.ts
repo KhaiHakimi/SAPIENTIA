@@ -1,5 +1,7 @@
-import type { Quest, QuestDoneMap } from './quest.interface';
+import type { ClassGoal } from '@/features/homework/interfaces/homework.interface';
+import type { Quest, QuestDoneMap, QuestsStatus } from './quest.interface';
 import type { Relic } from './relic.interface';
+import type { SchoolNow } from '@/shared/interfaces/school-clock.interface';
 import type { ProgressBaseline, Student, SubjectMastery } from './student.interface';
 
 export interface QuestToggleResult {
@@ -21,7 +23,13 @@ export interface BattleWinResult {
 export interface StudentProgress {
   student: Student;
   baseline: ProgressBaseline;
+  /** The school's today and time of day, moving with the real clock. */
+  clock: SchoolNow;
+  /** The class's homework from the server; empty until questsStatus is "ready". */
   quests: readonly Quest[];
+  questsStatus: QuestsStatus;
+  /** The class's hand-ins this week, counts only; null while loading or when the class is too small to show it. */
+  classGoal: ClassGoal | null;
   done: QuestDoneMap;
   relics: readonly Relic[];
   mastery: readonly SubjectMastery[];
@@ -35,7 +43,6 @@ export interface StudentProgress {
   guardianDefeated: boolean;
   guardianHpPercent: number;
   earnedRelicIds: readonly string[];
-  classHandedIn: number;
   battleWins: readonly string[];
 
   toggleQuest: (questId: string) => QuestToggleResult | null;

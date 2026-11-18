@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
+import { useVisitKey } from '@/shared/hooks/useVisitKey';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { toggleTheme } from '@/shared/theme/theme.store';
 import { OPEN_BOARD_DELAY_MS } from '../constants/login.constants';
@@ -18,8 +19,15 @@ const subscribeNothing = () => () => {};
 /** The token travels in the URL fragment, which browsers never send to servers or in Referer headers. */
 const readToken = () => new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '';
 
-/** Sets the password from a one-time invite link, then opens the staff board (magic scope, like sign-in). */
+/**
+ * Sets the password from a one-time invite link, then opens the staff board (magic scope, like sign-in). Every visit starts
+ * fresh, for the same reason as LoginPage: a kept-alive copy that had succeeded would open the board again on return.
+ */
 export function AcceptInvitePage() {
+  return <AcceptInviteScreen key={useVisitKey()} />;
+}
+
+function AcceptInviteScreen() {
   const text = useMessages(ACCEPT_INVITE_MESSAGES);
   const { lang, toggleLang } = useLanguage();
   const router = useRouter();
@@ -51,6 +59,9 @@ export function AcceptInvitePage() {
     setBusy(true);
     try {
       setUser(await acceptStaffInvite({ token, password }));
+      // Next.js keeps this page alive, hidden, while the board is open; the new password must not stay in it.
+      setPassword('');
+      setConfirm('');
       // Drop the token from the address bar and history now that it is spent.
       window.history.replaceState(null, '', window.location.pathname);
     } catch (error) {

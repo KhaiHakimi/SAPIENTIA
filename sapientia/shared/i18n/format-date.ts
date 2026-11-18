@@ -13,6 +13,12 @@ export function formatDay(isoDay: string, lang: Lang, options: { weekday?: boole
   }).format(new Date(`${isoDay}T00:00:00Z`));
 }
 
+/** A calendar day (YYYY-MM-DD) in a short form for tight spaces, "Friday 20 Nov", with no year and no time-zone shift. */
+export function formatDayShort(isoDay: string, lang: Lang): string {
+  return new Intl.DateTimeFormat(LOCALES[lang], { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(`${isoDay}T00:00:00Z`));
+}
+
 /** A month stored as YYYY-MM, shown as "September 2026". */
 export function formatMonth(isoMonth: string, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALES[lang], { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${isoMonth}-01T00:00:00Z`));

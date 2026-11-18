@@ -1,6 +1,7 @@
 import 'server-only';
 import nodemailer from 'nodemailer';
-import { DeadlineError, withDeadline, withRetry } from '@/shared/server/external-call.service';
+import { withRetry } from '@/shared/server/external-call.service';
+import { DeadlineError, withDeadline } from '@/shared/services/deadline.service';
 import { SEND_DEADLINE_MS, SEND_RETRY, SOCKET_TIMEOUT_MS } from '../constants/notification.constants';
 import type { EmailConfig, EmailMessage, EmailSender } from '../interfaces/notification.interface';
 import { isTemporary, SendFailure } from './send-failure';

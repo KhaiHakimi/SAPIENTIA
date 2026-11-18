@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import type { CurrentGuardian } from '@/features/guardians/interfaces/guardian.interface';
+import { signInGuardian } from '@/features/guardians/services/guardian-auth.client';
 import type { CurrentStudent } from '@/features/students/interfaces/student.interface';
 import { signInStudent } from '@/features/students/services/student-auth.client';
 import { ApiError } from '@/shared/api/api-client';
-import type { DemoPupil, LoginFieldErrors } from '../interfaces/account.interface';
+import type { LoginFieldErrors } from '../interfaces/account.interface';
 import type { SessionUser } from '../interfaces/session-user.interface';
 import type { LoginMessages } from '../i18n/login-messages.interface';
-import { checkLoginFields, isEmailIdentifier } from '../services/auth.service';
+import { checkLoginFields, isEmailIdentifier, isGuardianIdentifier } from '../services/auth.service';
 import { signInStaff } from '../services/staff-auth.client';
 import styles from '../styles/Login.module.css';
-import { DemoAccounts } from './DemoAccounts';
+import { DemoAccounts, type DemoChoice } from './DemoAccounts';
 
 /** Alerts keep what happened, not the words, so switching language re-translates an alert already on screen. */
 type LoginAlert =
@@ -28,13 +30,14 @@ interface LoginFormProps {
   text: LoginMessages;
   onStaffSignedIn: (user: SessionUser) => void;
   onStudentSignedIn: (current: CurrentStudent) => void;
+  onGuardianSignedIn: (current: CurrentGuardian) => void;
 }
 
 /**
- * One form for everyone: an email signs in a member of staff, anything else is a pupil's username from their slip. Both go
- * to the API, which sets an HttpOnly cookie; LoginPage then opens the right board.
+ * One form for everyone: an email signs in a member of staff, a "penjaga." username a guardian, anything else a pupil (both
+ * usernames come from printed slips). Each goes to the API, which sets an HttpOnly cookie; LoginPage then opens the right page.
  */
-export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn }: LoginFormProps) {
+export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardianSignedIn }: LoginFormProps) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -67,10 +70,20 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn }: LoginFor
     try {
       if (isEmailIdentifier(trimmed)) {
         const user = await signInStaff({ email: trimmed, password });
-        if (mounted.current) onStaffSignedIn(user);
+        if (!mounted.current) return;
+        // Next.js keeps this page alive, hidden, while the board is open; the password must not stay in it.
+        setPassword('');
+        onStaffSignedIn(user);
+      } else if (isGuardianIdentifier(trimmed)) {
+        const current = await signInGuardian({ username: trimmed, password });
+        if (!mounted.current) return;
+        setPassword('');
+        onGuardianSignedIn(current);
       } else {
         const current = await signInStudent({ username: trimmed, password });
-        if (mounted.current) onStudentSignedIn(current);
+        if (!mounted.current) return;
+        setPassword('');
+        onStudentSignedIn(current);
       }
     } catch (error) {
       if (!mounted.current) return;
@@ -84,11 +97,11 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn }: LoginFor
     }
   };
 
-  const fillDemoPupil = (pupil: DemoPupil) => {
-    setIdentifier(pupil.username);
+  const fillDemoAccount = (account: DemoChoice) => {
+    setIdentifier(account.username);
     setPassword('');
     setErrors({});
-    setAlert({ kind: 'ok', reason: 'filled', who: pupil.name });
+    setAlert({ kind: 'ok', reason: 'filled', who: account.name });
     passwordInput.current?.focus();
   };
 
@@ -167,7 +180,7 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn }: LoginFor
       </form>
 
       <p className={styles.note}>{text.note}</p>
-      <DemoAccounts text={text} onUse={fillDemoPupil} />
+      <DemoAccounts text={text} onUse={fillDemoAccount} />
     </>
   );
 }

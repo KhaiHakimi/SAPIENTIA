@@ -1,47 +1,46 @@
 'use client';
 
+import type { ClassLesson } from '@/features/timetable/interfaces/timetable.interface';
 import { PixelSprite } from '@/shared/components/PixelSprite';
-import { SCHOOL_SUBJECTS } from '@/shared/data/school-subjects';
-import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
-import { DEMO_NOW_MINUTES } from '../../constants/demo-clock.constants';
+import { useMessages } from '@/shared/i18n/useLanguage';
+import { useStudentProgress } from '../../hooks/useStudentProgress';
 import { DASHBOARD_MESSAGES } from '../../i18n/dashboard.messages';
-import type { TimetableSlot } from '../../interfaces/timetable.interface';
-import { slotProgress, slotStatus } from '../../services/timetable.service';
+import { lessonSprite, slotProgress, slotStatus } from '../../services/timetable.service';
 import styles from '../../styles/Timetable.module.css';
 
 interface TimetableSlotRowProps {
-  slot: TimetableSlot;
+  lesson: ClassLesson;
   isToday: boolean;
   /** "card" on the dashboard, "scroll" inside the parchment weekly timetable. */
   variant: 'card' | 'scroll';
 }
 
 /** One lesson. Shared by the "today" card and the weekly scroll, so both show "now" and relief the same way. */
-export function TimetableSlotRow({ slot, isToday, variant }: TimetableSlotRowProps) {
+export function TimetableSlotRow({ lesson, isToday, variant }: TimetableSlotRowProps) {
   const text = useMessages(DASHBOARD_MESSAGES);
-  const { pick } = useLanguage();
-  const status = slotStatus(slot, isToday, DEMO_NOW_MINUTES);
+  const { clock } = useStudentProgress();
+  const status = slotStatus(lesson, isToday, clock.minutes);
   const isNow = status === 'now';
-  const progress = isNow ? slotProgress(slot, DEMO_NOW_MINUTES) : null;
-  // Monsters belong to quiz levels, not subjects, so a lesson shows a book; Physical Education gets a trophy.
+  const progress = isNow ? slotProgress(lesson, clock.minutes) : null;
 
   return (
     <li className={[styles.slot, styles[variant], isNow && styles.now, status === 'past' && styles.past].filter(Boolean).join(' ')}>
-      <time>{slot.from}</time>
+      <time>{lesson.startTime}</time>
       <span className={styles.icon} aria-hidden="true">
-        <PixelSprite name={slot.subject === 'pe' ? 'trophy' : 'scroll'} scale={2} className={styles.sprite} />
+        {/* Monsters belong to quiz levels, not subjects, so a lesson shows a scroll; physical education gets a trophy. */}
+        <PixelSprite name={lessonSprite(lesson.subjectName)} scale={2} className={styles.sprite} />
       </span>
       <div>
-        <b>{pick(SCHOOL_SUBJECTS[slot.subject].name)}</b>
+        <b>{lesson.subjectName}</b>
         <div className={styles.sub}>
-          {pick(slot.room)} • {slot.from}–{slot.to}
+          {lesson.startTime}–{lesson.endTime}
           {progress && ` • ${text.minutesLeft(progress.minutesLeft)}`}
         </div>
       </div>
-      {(isNow || slot.relief) && (
+      {(isNow || lesson.relief) && (
         <span className={styles.pills}>
           {isNow && <span className={styles.pill}>{text.now}</span>}
-          {slot.relief && <span className={`${styles.pill} ${styles.relief}`}>{text.relief}</span>}
+          {lesson.relief && <span className={`${styles.pill} ${styles.relief}`}>{text.relief}</span>}
         </span>
       )}
       {progress && (

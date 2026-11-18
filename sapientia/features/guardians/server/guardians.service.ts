@@ -5,6 +5,7 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import { hashPassword } from '@/features/auth/server/password.service';
 import { STARTING_PASSWORD_VALID_DAYS } from '@/features/students/constants/students.constants';
 import { generateStartingPassword, generateUsername } from '@/features/students/server/student-credentials.service';
+import { cancelPendingForLink } from '@/features/meetings/server/meetings.repository';
 import { findStudent } from '@/features/students/server/students.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -148,7 +149,7 @@ export async function addLink(actor: SessionUser, guardianId: string, input: Add
   });
 }
 
-/** Removes an active link with a reason code. The guardian stops seeing that child at once. */
+/** Removes an active link with a reason code. The guardian stops seeing that child at once; waiting meeting requests end. */
 export async function removeLink(
   actor: SessionUser,
   target: { guardianId: string; linkId: string },
@@ -157,9 +158,10 @@ export async function removeLink(
 ): Promise<SchoolGuardian> {
   return withTransaction(async (client) => {
     if (!(await endLink(client, actor.schoolId, target, { status: 'removed', reason, now: clock.now() }))) throw new NotFoundError();
+    const meetingsCancelled = await cancelPendingForLink(client, actor.schoolId, target.linkId, clock.now());
     await writeAudit(client, actor.schoolId, [{
       actorId: actor.id, action: 'guardian.link_removed', entityType: 'guardian', entityId: target.guardianId,
-      metadata: { linkId: target.linkId, reason },
+      metadata: { linkId: target.linkId, reason, meetingsCancelled },
     }]);
     return loadGuardian(client, actor.schoolId, target.guardianId);
   });

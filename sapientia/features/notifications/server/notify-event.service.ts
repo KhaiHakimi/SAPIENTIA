@@ -1,4 +1,5 @@
 import 'server-only';
+import { findMeetingForNotice } from '@/features/meetings/server/meetings.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { getPool, type Queryable } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
@@ -14,7 +15,7 @@ import { dispatchNotices } from './notice-dispatch.service';
 const NOTHING_SENT: NotifyResult = { sent: 0, failed: 0 };
 
 /**
- * Sends one message about an extension request or relief, when its job comes due. The event is read again now, so a
+ * Sends one message about an extension request, relief or a meeting request, when its job comes due. The event is read again now, so a
  * message that no longer applies is dropped: a request already answered, or a relief cancelled before its teacher was told.
  */
 export async function notifyEvent(
@@ -80,6 +81,12 @@ async function resolveNotice(db: Queryable, job: EventNoticeJob): Promise<{ noti
           startTime: relief.start_time, endTime: relief.end_time, period: classAndSubject || relief.label,
         },
       };
+    }
+    case 'meeting.requested': {
+      const meeting = await findMeetingForNotice(db, job.schoolId, job.meetingId);
+      // Withdrawn by the guardian, or the link ended, before working hours began: nothing to tell.
+      if (!meeting || meeting.status !== 'pending') return null;
+      return { recipientId: meeting.teacher_id, notice: { kind: job.kind, meetingId: job.meetingId } };
     }
     case 'relief.cancelled': {
       const absentTeacherName = await findStaffName(db, job.schoolId, job.absentTeacherId);

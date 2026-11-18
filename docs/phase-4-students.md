@@ -13,8 +13,8 @@ User stories, acceptance criteria and the threat model for plan Phase 4 (Sprints
 |--------|-------|-------|
 | S11 | Pupil accounts: classes and enrolment, the administrator adds pupils from a class list, printed sign-in slips, pupil sign-in with a password of their own, managing pupils (class, disable, new slip, remove); the student board opens for a real signed-in pupil | Built 16 November 2026 |
 | S12 | Homework set by teachers, the pupil's homework list and week, the pupil's timetable from the class timetable (relief included), the cross-subject load warning, marking time in the teacher's capacity, paper hand-in by tapping names | Part 1 (homework, warnings, marking time, hand-in, pupil homework and timetable APIs) built 16 November 2026; part 2 (the board shows them) built 18 November 2026 |
-| S13 | Guardians: linked by the administrator only, refusing or removing a link with a reason, the read-only guardian view, a printable summary, meeting requests in working hours | Part 1 (guardian accounts on printed slips, links, refusal and removal, the read-only view) built 18 November 2026; part 2 (printable summary, meeting requests) not started. Started with no legal reviewer named: the project owner accepted the risk again on 18 November 2026, fictional data only |
-| S14 | Institution accounts with individual staff logins, afternoon-only pupil reminders, teacher-to-pupil comments on homework (logged), polish and the phase review | Not started |
+| S13 | Guardians: linked by the administrator only, refusing or removing a link with a reason, the read-only guardian view, a printable summary, meeting requests in working hours | Part 1 (guardian accounts on printed slips, links, refusal and removal, the read-only view) and part 2 (the printed summary, meeting requests in working hours) built 18 November 2026. Started with no legal reviewer named: the project owner accepted the risk again on 18 November 2026, fictional data only |
+| S14 | Institution accounts with individual staff logins, afternoon-only pupil reminders, teacher-to-pupil comments on homework (logged), polish and the phase review | Built 18 November 2026. The project owner chose: the school is the institution (removing a staff login, no new tables), the reminder on the board only (no push to pupils), comments as short text kept and audited |
 
 ## Data kept about a pupil
 
@@ -27,6 +27,8 @@ The account adds a username, a password hash, whether the pupil has set their ow
 Plan Phase 4: **the guardian's name and, for each child, the relationship type only** (mother, father, guardian, grandparent, other relative, other). Never the circumstances: no reason a child lives with them, no custody details, no MyKad number, address, email or phone. The account is a username, a password hash, whether the guardian has set their own password and whether the account is active; like pupils, **no sign-in times**.
 
 A link that is refused or removed keeps a reason from a fixed list, never free text, so no circumstances are written down by accident. The audit log keeps ids and those reason codes.
+
+A meeting request (part 2) keeps the teacher, a topic, a preferred time of day and, once answered, the meeting time or a decline reason. Every one of these is a code from a fixed list: no message box, so nothing about a family is written down. A request belongs to the link and ends with it.
 
 ## User stories: Sprint 11
 
@@ -117,6 +119,44 @@ Sprint 13 is built in two parts. Part 1 is guardian accounts, links and the read
 - I choose a reason (not my child, I am not responsible for this child, other) and confirm. The child disappears from my view at once; the administrator sees the refusal and the reason.
 - I cannot undo a refusal; the administrator can link again if it was a mistake.
 
+**S13-5. A printed summary for a guardian without a smartphone (part 2).** As an administrator, I want to print one sheet for a guardian, so that a family without a smartphone still knows the homework and the week.
+
+- From the guardian's row I open "Printed summary": the school, the guardian's name and the date printed, then for each active link the child's class homework due in the next two weeks (due date, subject, title, teacher, the teacher's message) and this week's or next week's timetable with relief marked. Only the sheet prints.
+- Hand-ins are not on the sheet: they stay with the teacher who set the work (Sprint 12), and the guardian sees them when they sign in.
+- Administrators of the guardian's school only (404 for anyone else). Each view is audited with ids only, because it puts a child's school week on paper.
+
+**S13-6. Ask a teacher for a meeting (part 2).** As a guardian, I want to ask one of my child's teachers for a meeting, so that I can talk to them without needing their phone number.
+
+- Under each child I choose a teacher who teaches the class (from the timetable), a topic (homework, progress, conduct, other) and a time of day that suits me. There is no message box.
+- The request reaches the teacher in working hours only, worked out exactly as a task's delivery: one sent at night, at the weekend or on a holiday waits for the next working start, and the page tells me when it will arrive. The teacher gets an email or push saying only that a guardian asked; the names stay in the app.
+- At most 3 requests waiting at once, and one per teacher per child. I can withdraw a request still waiting. If my link ends, waiting requests are cancelled.
+
+**S13-7. Answer a meeting request (part 2).** As a teacher, I want to see guardians' requests and answer them in my working time.
+
+- "Meetings" lists requests that have reached me: the guardian's name only (no username, relationship or other children), the pupil and class, the topic and preferred time.
+- I accept with a date and time inside working hours on a working day, within 60 days, or decline with a reason from a list (see another teacher, not available, other). The guardian sees my answer when they sign in. Anyone else, including administrators, gets 404.
+
+## User stories: Sprint 14
+
+The project owner chose on 18 November 2026: the school is the institution and its staff logins sit beneath it (no new tables); pupil reminders appear on the board only; teacher comments are short text, kept and audited.
+
+**S14-1. Disable or remove a staff login.** As an administrator, I want to end a colleague's access when they leave, so that a former teacher cannot reach pupils' or guardians' records.
+
+- On Users I can disable a login (it signs them out at once and stops sign-in and invites) and enable it again, or remove it for good after a confirmation that says what removal means.
+- Removal keeps the row so tasks, homework and records keep the name, shown as former staff. Their email is replaced (so the address can be invited again as a new account), and their password, last sign-in time, devices and private hours log are deleted. Totals they chose to share stay in the monthly report. Meeting requests still waiting for them are cancelled.
+- I cannot change my own login, which also means the school always keeps an active administrator. Teachers, senders and other schools get 404.
+
+**S14-2. An afternoon reminder.** As a pupil, I want to be reminded in the afternoon about homework due on the next school day, so that I remember it before the evening, never at night.
+
+- From 2 pm to 6 pm school time, my board shows the homework due on the next school day (Friday reminds about Monday; holidays are skipped) that my teacher has not received and I have not ticked. Each line opens its scroll.
+- Outside that window the reminder is not shown. Nothing is sent to my device and nothing new is stored.
+
+**S14-3. A note from my teacher.** As a teacher, I want to write a short note to one pupil about their homework, so that feedback reaches them and their family.
+
+- Only the teacher who set the work writes, reads or hides notes on it. A note is up to 300 characters, at most 10 per pupil per piece of homework; text that contains a number written like a MyKad number is refused.
+- The pupil sees it on the homework's scroll, and their linked guardians under the homework. The pupil cannot reply; there is no pupil-to-pupil messaging anywhere.
+- A note is never edited or deleted on its own; the teacher may hide it, and it goes only if the homework is removed. Adding and hiding are audited with ids, never the text.
+
 ## Threat model: Phase 4
 
 | What could go wrong | Who | How the design prevents it |
@@ -129,10 +169,43 @@ Sprint 13 is built in two parts. Part 1 is guardian accounts, links and the read
 | A pupil sees another pupil's records (S12 onwards) | Pupil | Pupil endpoints take the pupil from the session and never accept a pupil id; refusal tests per endpoint. Late-hand-in lists are never shown to pupils (plan). The class goal is two counts, withheld below 5 pupils. |
 | A teacher reads another class's hand-ins, or sets homework for a class they do not teach (S12) | Teacher | Homework can be set only for a class and subject on the setter's own timetable; hand-ins are read and changed by the setter only (404 for anyone else, administrators included). The load warning shows dates and subjects, never names. |
 | A guardian sees a child who is not theirs (S13) | Guardian | Links made by the administrator only, never self-claimed; every guardian query filtered by link; refusal tests. A guardian refers to a child by the link's id, never the pupil's, and a refused or removed link answers 404. |
-| A guardian's circumstances (custody, family situation) end up stored | Administrator, guardian | Only a relationship type from a fixed list; refusal and removal reasons from fixed lists, never free text. |
+| A guardian's circumstances (custody, family situation) end up stored | Administrator, guardian | Only a relationship type from a fixed list; refusal and removal reasons from fixed lists, never free text. Meeting requests take codes only (topic, time of day, decline reason); a body with any other field is refused. |
+| Guardians reach teachers at night or flood them with requests (S13) | Guardian | Requests reach the teacher only in working hours (the held-delivery rule) and stay off the teacher's list until then; at most 3 waiting per guardian and one per teacher per child; a guardian may ask only teachers on the child's class timetable. |
+| A meeting request tells more than the guardian's name, or leaks by email (S13) | Teacher, guardian | The teacher sees the guardian's name only; the email or push names no one. The printed summary carries no hand-ins, and each view is audited. |
+| A teacher who has left still reaches pupils' or guardians' records (S14) | Former staff | Disabling or removing a login deletes its sessions in the same transaction, and every staff check requires an active login; removal also revokes invites, clears the password and email, and deletes devices (tested). |
+| A teacher writes something about a child that should not be kept, or to the wrong pupil (S14) | Teacher | Notes are short, to one pupil of the setter's own class only (another pupil is refused), MyKad-like numbers refused, a warning on the form, hidden on request; the audit log keeps ids, never the text. Pupils cannot reply. |
+| A reminder disturbs a child at night (S14) | Pupil | The reminder exists only on the board, from 2 pm to 6 pm school time; nothing is pushed to a child's device. |
 | A guardian, pupil and staff member share a computer and inherit each other's session | Anyone | Signing in as any kind ends the other kinds' sessions in that browser; guardians have their own session table and cookie, and no staff or pupil check accepts a guardian session. |
 | Children's data is held without a legal basis | School | Fictional data only in this phase; legal review before any real pupil (see Conditions). |
 | Slips or pupil lists are left on a shared printer or screen | Administrator | Passwords are shown once and are useless after the pupil chooses their own. The page warns to hand slips out in person. |
+
+## Phase 4 review
+
+Checked on 18 November 2026 against the plan's list for Phase 4 (Section 4). The decision to close the phase is the project owner's; this is the evidence. Every item below was built with fictional data only.
+
+| Plan item | Status | Evidence |
+|-----------|--------|----------|
+| Threat-model the phase first | Done | The threat model above, written in Sprint 11 and extended each sprint |
+| Tables | Done, with one change | `students`, `class_enrolments`, `homework`, `homework_status`, `guardians`, `guardian_links`, plus sessions, `meeting_requests` and `homework_comments`. No `institutions` or `institution_staff`: the project owner chose the school as the institution (S14-1) |
+| Data minimisation | Done | Pupils: name, class, optional school number (MyKad-like numbers refused). Guardians: name and relationship type. Reasons, topics and answers are codes; the only free text about a pupil is a teacher's short note, with MyKad-like numbers refused |
+| Guardians linked by the administrator only; refusal and removal with a reason; teachers see the guardian's name only | Done | S13-1 to S13-4 and S13-7; refusal tests per endpoint |
+| Pupil timetable (relief included) and homework with the week | Done | S12-4, S12-5 |
+| Cross-subject load warning; marking time in capacity | Done | S12-1, S12-2 |
+| Paper hand-ins by tapping names | Done | S12-3 |
+| Pupil reminders in the afternoon only | Done, on the board | S14-2: 2 pm to 6 pm, no push to pupils |
+| Guardian view, meeting requests in working hours, printable summary | Done | S13-3, S13-5 to S13-7 |
+| Teacher to pupil communication only on homework, logged; no pupil-to-pupil messaging | Done | S14-3; no endpoint lets a pupil send anything to anyone |
+| Institution accounts with staff logins; access ends when a login is removed | Done, as the school | S14-1; sessions end in the same transaction (tested) |
+| Start the legal review request in S11 | **Not done** | No reviewer named (decision D7). The project owner accepted the risk at the start of S12 and S13; fictional data only |
+| Tests: a pupil cannot see another's records; late lists never visible to pupils; a guardian sees only linked children | Done | Integration refusal tests for every pupil and guardian endpoint; hand-ins are read by the setter only; the class goal is two counts, withheld below 5 pupils |
+
+Still open after Phase 4:
+
+1. **Legal review (D7) and gate G6.** Phase 5 (bullying reporting) must not start until a written legal review is received, the Phase 5 threat model is written and MFA is ready for administrators (OWASP open item 4).
+2. **No real pupil data** until a legal review covers children's data under the PDPA and a school agrees (Conditions above).
+3. **Phase 0 interviews** are still outstanding: the slip lifetime, the reminder window, the note length and the meeting limits are judgements.
+4. **XP, coins, streak, relics and mastery** on the pupil's board are still sample values kept in the browser.
+5. **A removed or disabled teacher's timetable slots stay** until an administrator changes the timetable, so a class may still show their lessons; the meeting list already leaves them out.
 
 ## Open questions
 

@@ -25,6 +25,14 @@
   .areaLair { grid-area: lair; }
 }
 
+/* The afternoon reminder (Sprint 14): a parchment strip above the cards, from 2 pm to 6 pm only. */
+.reminder { position: relative; margin: 0 0 24px; padding: 14px 18px; background: var(--panel); background-image: var(--tex); }
+.reminder h2 { margin: 0 0 6px; font: 600 .95rem/1.2 var(--heading); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-text); }
+.reminder p { margin: 0 0 6px; }
+.reminder ul { margin: 0; padding-left: 1.2em; }
+.reminderLink { padding: 2px 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.reminderLink:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
 .foot { text-align: center; padding: 26px 0 4px; font-size: .82rem; color: var(--on-scene-muted); text-shadow: var(--on-scene-shadow); }
 
 @media (max-width: 1000px) {

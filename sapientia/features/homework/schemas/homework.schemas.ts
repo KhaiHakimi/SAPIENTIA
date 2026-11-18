@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  HOMEWORK_DETAILS_MAX, HOMEWORK_TITLE_MAX, MARKING_MAX_MINUTES, MARKING_MIN_MINUTES,
+  HOMEWORK_COMMENT_MAX, HOMEWORK_DETAILS_MAX, HOMEWORK_TITLE_MAX, MARKING_MAX_MINUTES, MARKING_MIN_MINUTES,
 } from '../constants/homework.constants';
 
 const lessonFields = {
@@ -50,4 +50,22 @@ export const handInSchema = z.strictObject({
 
 /** Path ids: a malformed one is a record that does not exist. */
 export const homeworkIdSchema = z.uuid({ error: 'not_found' });
+export const commentIdSchema = z.uuid({ error: 'not_found' });
+
+/** Twelve digits written like a MyKad number, anywhere in a comment: never kept, so refused if typed by habit. */
+const MYKAD_IN_TEXT = /\b\d{6}-?\d{2}-?\d{4}\b/;
+
+/** POST /api/homework/:id/comments: one short note to one pupil of the class. */
+export const addCommentSchema = z.strictObject({
+  studentId: z.uuid({ error: 'invalid_student' }),
+  body: z.string({ error: 'required' }).trim()
+    .min(1, { error: 'required' })
+    .max(HOMEWORK_COMMENT_MAX, { error: 'too_long' })
+    .refine((value) => !MYKAD_IN_TEXT.test(value), { error: 'looks_like_mykad' }),
+});
+
+/** PATCH /api/homework/:id/comments/:commentId: a comment can be hidden, never edited or deleted. */
+export const hideCommentSchema = z.strictObject({
+  hidden: z.literal(true, { error: 'invalid_boolean' }),
+});
 

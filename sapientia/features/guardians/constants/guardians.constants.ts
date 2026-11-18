@@ -29,3 +29,6 @@ export const LINK_REFUSAL_REASONS = ['not_my_child', 'not_responsible', 'other']
 
 /** Why an administrator removes a link: a fixed list for the same reason. */
 export const LINK_REMOVAL_REASONS = ['entered_in_error', 'guardian_asked', 'school_decision', 'pupil_left'] as const;
+
+/** The printed summary lists homework due from today to this many days ahead: two school weeks. */
+export const SUMMARY_HOMEWORK_DAYS_AHEAD = 14;

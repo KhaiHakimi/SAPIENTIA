@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
@@ -88,6 +89,10 @@ export function GuardianRow({ text, guardian, onSlip }: GuardianRowProps) {
             ))}
             <AddLinkForm text={text} guardianId={guardian.id} onDone={refresh} />
             <div className={calm.row}>
+              <Link href={`/staff/guardians/${encodeURIComponent(guardian.id)}/summary`} className={calm.button}
+                aria-label={text.summaryLinkLabel(guardian.name)}>
+                {text.summaryLink}
+              </Link>
               <button type="button" className={calm.button} disabled={slip.isPending} onClick={() => slip.mutate()}>{text.newSlip}</button>
               <button type="button" className={calm.button} disabled={status.isPending} onClick={() => status.mutate()}>
                 {guardian.status === 'active' ? text.disable : text.enable}

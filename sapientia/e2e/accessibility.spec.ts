@@ -11,6 +11,7 @@ import { signIn } from './support/staff-actions';
  */
 const STAFF_SCREENS = [
   '/staff', '/staff/sent', '/staff/held', '/staff/tasks/new', '/staff/timetable', '/staff/relief', '/staff/lessons', '/staff/homework',
+  '/staff/meetings',
   '/staff/materials', '/staff/hours',
   '/staff/reports', '/staff/users', '/staff/students', '/staff/guardians', '/staff/school-data',
   '/staff/settings', '/staff/calendar', '/staff/notifications',

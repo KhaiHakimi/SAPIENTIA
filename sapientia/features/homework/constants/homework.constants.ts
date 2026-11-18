@@ -26,3 +26,9 @@ export const HOMEWORK_LIST_MAX = 200;
  * very small class a count points at the few who have not handed in.
  */
 export const CLASS_GOAL_MIN_PUPILS = 5;
+
+/** A teacher's comment to one pupil on a piece of homework (Sprint 14): short, like a note in the margin. */
+export const HOMEWORK_COMMENT_MAX = 300;
+
+/** Comments one pupil may get on one piece of homework: a few notes, not a conversation. */
+export const HOMEWORK_COMMENTS_PER_PUPIL_MAX = 10;

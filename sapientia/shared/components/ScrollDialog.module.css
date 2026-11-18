@@ -44,4 +44,6 @@
   .actions { bottom: -18px; margin: 0 -20px -18px; padding: 12px 20px 16px; }
 }
 /* Text someone typed (a teacher's message): keep their line breaks. */
+.notes { margin: 0 0 .5em; padding-left: 1.2em; }
+.notes li { margin: .2em 0; }
 .typed { white-space: pre-line; overflow-wrap: anywhere; }

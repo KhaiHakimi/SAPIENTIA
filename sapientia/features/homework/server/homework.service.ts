@@ -12,15 +12,46 @@ import type { Clock } from '@/shared/interfaces/clock.interface';
 import { NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
 import {
-  CLASS_GOAL_MIN_PUPILS, HOMEWORK_DUE_DAYS_AHEAD, HOMEWORK_LIST_MAX, LOAD_WARNING_DEADLINES, MARK_BY_DAYS_AFTER_DUE, MY_HOMEWORK_DAYS_BACK,
+  CLASS_GOAL_MIN_PUPILS,
+  HOMEWORK_COMMENTS_PER_PUPIL_MAX,
+  HOMEWORK_DUE_DAYS_AHEAD,
+  HOMEWORK_LIST_MAX,
+  LOAD_WARNING_DEADLINES,
+  MARK_BY_DAYS_AFTER_DUE,
+  MY_HOMEWORK_DAYS_BACK,
   PUPIL_HOMEWORK_DAYS_BACK,
 } from '../constants/homework.constants';
 import type {
-  HandInList, Homework, HomeworkPreview, HomeworkPreviewRequest, MyHomework, PupilHomeworkList, SetHomeworkRequest,
+  AddHomeworkCommentRequest,
+  HandInList,
+  Homework,
+  HomeworkComment,
+  HomeworkComments,
+  HomeworkPreview,
+  HomeworkPreviewRequest,
+  MyHomework,
+  PupilHomeworkList,
+  SetHomeworkRequest,
 } from '../interfaces/homework.interface';
 import {
-  clearHandIn, countClassHandIns, deleteHomework, findOwnHomework, insertHomework, isEnrolled, listClassHomeworkDays, listHandIns,
-  listOwnHomework, listPupilHomework, listTeacherLessons, recordHandIn, setMarked, teachesLesson,
+  clearHandIn,
+  countClassHandIns,
+  countPupilComments,
+  deleteHomework,
+  findOwnHomework,
+  hideComment,
+  insertComment,
+  insertHomework,
+  isEnrolled,
+  listClassHomeworkDays,
+  listHandIns,
+  listHomeworkComments,
+  listOwnHomework,
+  listPupilHomework,
+  listTeacherLessons,
+  recordHandIn,
+  setMarked,
+  teachesLesson,
 } from './homework.repository';
 
 /**
@@ -203,4 +234,46 @@ export async function listHomeworkForPupil(student: SessionStudent, clock: Clock
   const counts = await countClassHandIns(db, student.schoolId, student.classId, week);
   const classGoal = counts.pupils < CLASS_GOAL_MIN_PUPILS ? null : { handedIn: counts.handedIn, expected: counts.pieces * counts.pupils };
   return { items, classGoal };
+}
+
+/**
+ * Comments to pupils (plan Phase 4, Sprint 14: teacher to pupil communication only on homework, logged). Only the teacher
+ * who set the work writes, reads or hides them; the pupil cannot reply. Each is audited with ids only, never the text.
+ */
+export async function getComments(actor: SessionUser, homeworkId: string): Promise<HomeworkComments> {
+  const db = getPool();
+  await findOwnOrThrow(db, actor, homeworkId);
+  return { comments: await listHomeworkComments(db, actor.schoolId, homeworkId, HOMEWORK_LIST_MAX) };
+}
+
+/** A comment to one pupil of the class: 404 for a pupil not in it now; refused past HOMEWORK_COMMENTS_PER_PUPIL_MAX. */
+export async function addComment(actor: SessionUser, homeworkId: string, input: AddHomeworkCommentRequest, clock: Clock) {
+  return withTransaction(async (client): Promise<HomeworkComment> => {
+    const homework = await findOwnOrThrow(client, actor, homeworkId);
+    if (!(await isEnrolled(client, actor.schoolId, input.studentId, homework.class.id))) {
+      throw new ValidationError({ studentId: 'invalid_student' });
+    }
+    if ((await countPupilComments(client, actor.schoolId, homeworkId, input.studentId)) >= HOMEWORK_COMMENTS_PER_PUPIL_MAX) {
+      throw new ValidationError({ body: 'too_many_comments' });
+    }
+    const comment = await insertComment(client, actor.schoolId, { homeworkId, ...input, authorId: actor.id, now: clock.now() });
+    await writeAudit(client, actor.schoolId, [{
+      actorId: actor.id, action: 'homework.comment_added', entityType: 'homework', entityId: homeworkId,
+      metadata: { commentId: comment.id, studentId: input.studentId },
+    }]);
+    return comment;
+  });
+}
+
+/** Hides a comment from the pupil and their guardians. It stays in the database; it cannot be shown again or edited. */
+export async function hideHomeworkComment(actor: SessionUser, homeworkId: string, commentId: string, clock: Clock): Promise<void> {
+  await withTransaction(async (client) => {
+    await findOwnOrThrow(client, actor, homeworkId);
+    const studentId = await hideComment(client, actor.schoolId, homeworkId, commentId, clock.now());
+    if (!studentId) throw new NotFoundError();
+    await writeAudit(client, actor.schoolId, [{
+      actorId: actor.id, action: 'homework.comment_hidden', entityType: 'homework', entityId: homeworkId,
+      metadata: { commentId, studentId },
+    }]);
+  });
 }

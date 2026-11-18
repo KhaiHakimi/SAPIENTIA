@@ -87,6 +87,7 @@ export interface DashboardMessages {
   scrollHandIn: string;
   scrollHandInNote: string;
   scrollHandedIn: string;
+  scrollComments: (teacherName: string) => string;
   close: string;
 
   // Relics and class
@@ -98,6 +99,8 @@ export interface DashboardMessages {
   partyNote: string;
   partyNone: string;
   partyHidden: string;
+  reminderTitle: string;
+  reminderText: (count: number, day: string) => string;
 
   // Feedback
   toastLoot: (xp: number, coins: number) => string;

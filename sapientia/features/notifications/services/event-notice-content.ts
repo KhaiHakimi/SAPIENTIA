@@ -6,12 +6,13 @@ import { EMAIL_FOOTER, escapeHtml, oneLine } from './message-text';
 import { taskPath } from './notification-content';
 
 /**
- * The words of the messages about extension requests and relief. Like the task message, email carries Bahasa Melayu first
+ * The words of the messages about extension requests, relief and meeting requests. Like the task message, email carries Bahasa Melayu first
  * and English below it, and push has one line in Bahasa Melayu. Nothing private goes out: no reason for a request, no
  * capacity figures, no reason for an absence.
  */
 
 const RELIEF_PATH = '/staff/relief';
+const MEETINGS_PATH = '/staff/meetings';
 
 interface Wording {
   intro: string;
@@ -20,7 +21,16 @@ interface Wording {
 }
 
 export function eventPath(notice: EventNotice): string {
-  return notice.kind === 'extension.requested' || notice.kind === 'extension.answered' ? taskPath(notice.taskId) : RELIEF_PATH;
+  switch (notice.kind) {
+    case 'extension.requested':
+    case 'extension.answered':
+      return taskPath(notice.taskId);
+    case 'meeting.requested':
+      return MEETINGS_PATH;
+    case 'relief.assigned':
+    case 'relief.cancelled':
+      return RELIEF_PATH;
+  }
 }
 
 function subject(notice: EventNotice): string {
@@ -35,6 +45,8 @@ function subject(notice: EventNotice): string {
       return 'Kelas ganti baharu / New relief class';
     case 'relief.cancelled':
       return 'Kelas ganti dibatalkan / Relief class cancelled';
+    case 'meeting.requested':
+      return 'Permintaan pertemuan / Meeting request';
   }
 }
 
@@ -75,6 +87,18 @@ function wording(notice: EventNotice, lang: Lang): Wording {
             linkLabel: 'Open the task',
           };
     }
+    case 'meeting.requested':
+      return ms
+        ? {
+            intro: 'Seorang penjaga meminta untuk bertemu dengan anda.',
+            details: ['Buka Sapientia untuk melihat permintaan itu dan menjawabnya.'],
+            linkLabel: 'Lihat permintaan pertemuan',
+          }
+        : {
+            intro: 'A guardian has asked to meet you.',
+            details: ['Open Sapientia to see the request and answer it.'],
+            linkLabel: 'See the meeting request',
+          };
     case 'relief.assigned':
     case 'relief.cancelled': {
       const cancelled = notice.kind === 'relief.cancelled';
@@ -148,6 +172,13 @@ export function buildEventPush(notice: EventNotice): PushPayload {
         url: eventPath(notice),
         // The cancellation replaces the assignment on the device rather than sitting beside it.
         tag: `relief-${notice.reliefId}`,
+      };
+    case 'meeting.requested':
+      return {
+        title: 'Permintaan pertemuan',
+        body: 'Seorang penjaga meminta untuk bertemu dengan anda.',
+        url: eventPath(notice),
+        tag: `meeting-${notice.meetingId}`,
       };
   }
 }

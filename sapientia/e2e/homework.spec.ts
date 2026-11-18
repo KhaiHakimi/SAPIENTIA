@@ -56,6 +56,14 @@ test('a teacher sets homework, ticks a hand-in and the pupil sees it recorded', 
 
   await item.getByRole('button', { name: 'Tandakan sudah disemak' }).click();
   await expect(item.getByText('Sudah disemak')).toBeVisible();
+
+  // Sprint 14: a note to this pupil, which only they (and their guardians) see.
+  await item.getByRole('button', { name: `Pesanan kepada murid: ${title}` }).click();
+  await item.getByLabel('Murid', { exact: true }).selectOption({ label: pupil.name });
+  await item.getByLabel('Pesanan', { exact: true }).fill('Kerja yang kemas. Teruskan!');
+  await item.getByRole('button', { name: 'Hantar pesanan' }).click();
+  await expect(item.getByRole('status').filter({ hasText: 'Pesanan dihantar.' })).toBeVisible();
+  expect(await violationsOn(page)).toEqual([]);
   await signOut(page);
 
   // The pupil's own list (the board shows it from part 2): their hand-in only.
@@ -77,6 +85,7 @@ test('a teacher sets homework, ticks a hand-in and the pupil sees it recorded', 
   const scroll = page.getByRole('dialog', { name: title });
   await expect(scroll).toContainText('Jawab soalan 1 hingga 5.');
   await expect(scroll).toContainText('Guru anda telah merekod penghantaran ini.');
+  await expect(scroll).toContainText('Kerja yang kemas. Teruskan!');
   expect(await violationsOn(page)).toEqual([]);
   await scroll.getByRole('button', { name: 'Tutup', exact: true }).last().click();
 

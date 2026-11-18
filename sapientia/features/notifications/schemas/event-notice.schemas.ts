@@ -10,6 +10,7 @@ export const eventNoticeJobSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('extension.requested'), schoolId: z.uuid(), extensionId: z.uuid() }),
   z.strictObject({ kind: z.literal('extension.answered'), schoolId: z.uuid(), extensionId: z.uuid() }),
   z.strictObject({ kind: z.literal('relief.assigned'), schoolId: z.uuid(), reliefId: z.uuid() }),
+  z.strictObject({ kind: z.literal('meeting.requested'), schoolId: z.uuid(), meetingId: z.uuid() }),
   z.strictObject({
     kind: z.literal('relief.cancelled'),
     schoolId: z.uuid(),

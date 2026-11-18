@@ -12,6 +12,7 @@ interface UserRow {
   role: StaffRole;
   status: StaffStatus;
   last_sign_in_at: Date | null;
+  removed_at: Date | null;
 }
 
 export const toStaffUser = (row: UserRow): StaffUser => ({
@@ -21,11 +22,12 @@ export const toStaffUser = (row: UserRow): StaffUser => ({
   role: row.role,
   status: row.status,
   lastSignInAt: row.last_sign_in_at?.toISOString() ?? null,
+  removed: row.removed_at !== null,
 });
 
 export async function listUsers(db: Queryable, schoolId: string, limit: number, after: { name: string; id: string } | null) {
   const { rows } = await db.query<UserRow>(
-    `SELECT id, name, email, role, status, last_sign_in_at FROM users
+    `SELECT id, name, email, role, status, last_sign_in_at, removed_at FROM users
       WHERE school_id = $1 AND ($2::text IS NULL OR (name, id) > ($2, $3::uuid))
       ORDER BY name, id LIMIT $4`,
     [schoolId, after?.name ?? null, after?.id ?? null, limit + 1],
@@ -35,7 +37,7 @@ export async function listUsers(db: Queryable, schoolId: string, limit: number, 
 
 export async function findUserByEmail(db: Queryable, email: string) {
   const { rows } = await db.query<UserRow & { school_id: string }>(
-    'SELECT id, school_id, name, email, role, status, last_sign_in_at FROM users WHERE lower(email) = lower($1)',
+    'SELECT id, school_id, name, email, role, status, last_sign_in_at, removed_at FROM users WHERE lower(email) = lower($1)',
     [email],
   );
   return rows[0] ?? null;
@@ -44,7 +46,7 @@ export async function findUserByEmail(db: Queryable, email: string) {
 export async function insertInvitedUser(db: Queryable, schoolId: string, input: { email: string; name: string; role: StaffRole }) {
   const { rows } = await db.query<UserRow>(
     `INSERT INTO users (school_id, email, name, role, status) VALUES ($1, $2, $3, $4, 'invited')
-     RETURNING id, name, email, role, status, last_sign_in_at`,
+     RETURNING id, name, email, role, status, last_sign_in_at, removed_at`,
     [schoolId, input.email, input.name, input.role],
   );
   return rows[0];
@@ -59,4 +61,35 @@ export async function listActiveStaff(db: Queryable, schoolId: string, ids?: rea
     [schoolId, ids ?? null],
   );
   return rows;
+}
+
+/** One of the school's accounts that has not been removed, locked until the transaction ends. */
+export async function findUserForUpdate(db: Queryable, schoolId: string, id: string) {
+  const { rows } = await db.query<UserRow & { has_password: boolean }>(
+    `SELECT id, name, email, role, status, last_sign_in_at, removed_at, (password_hash IS NOT NULL) AS has_password FROM users
+      WHERE school_id = $1 AND id = $2 AND removed_at IS NULL
+      FOR UPDATE`,
+    [schoolId, id],
+  );
+  return rows[0] ?? null;
+}
+
+
+export async function setUserStatus(db: Queryable, schoolId: string, id: string, status: StaffStatus, now: Date): Promise<void> {
+  await db.query('UPDATE users SET status = $3, updated_at = $4 WHERE school_id = $1 AND id = $2', [schoolId, id, status, now]);
+}
+
+/**
+ * Removes a login for good while keeping the row, so records keep the name: the email becomes a placeholder (freeing the
+ * address for a new invite), and the password, sign-in time and devices go. Unused invites stop working.
+ */
+export async function markUserRemoved(db: Queryable, schoolId: string, id: string, now: Date): Promise<void> {
+  await db.query(
+    `UPDATE users SET status = 'disabled', removed_at = $3, updated_at = $3, password_hash = NULL, last_sign_in_at = NULL,
+            email = 'removed-' || id::text || '@removed.invalid', notify_by_email = false
+      WHERE school_id = $1 AND id = $2`,
+    [schoolId, id, now],
+  );
+  await db.query('UPDATE invites SET revoked_at = $3 WHERE school_id = $1 AND user_id = $2 AND used_at IS NULL AND revoked_at IS NULL', [schoolId, id, now]);
+  await db.query('DELETE FROM push_subscriptions WHERE school_id = $1 AND user_id = $2', [schoolId, id]);
 }

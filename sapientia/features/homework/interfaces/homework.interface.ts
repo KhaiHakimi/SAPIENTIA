@@ -84,15 +84,27 @@ export interface HandInRequest {
   handedIn: boolean;
 }
 
-/** One piece of homework as a pupil sees it: their own hand-in only. */
-export interface PupilHomework {
+/** One piece of a class's homework, with no pupil's hand-in: what a printed summary for a guardian carries. */
+export interface ClassHomework {
   id: string;
   subjectName: string;
   teacherName: string;
   title: string;
   details: string | null;
   dueOn: string;
+}
+
+/** A comment the teacher wrote to this pupil, as the pupil and their guardians see it. Hidden comments are never sent. */
+export interface PupilComment {
+  id: string;
+  body: string;
+  createdAt: string;
+}
+
+/** One piece of homework as a pupil sees it: their own hand-in and the teacher's comments to them only. */
+export interface PupilHomework extends ClassHomework {
   handedIn: boolean;
+  comments: PupilComment[];
 }
 
 /**
@@ -108,4 +120,24 @@ export interface ClassGoal {
 export interface PupilHomeworkList {
   items: PupilHomework[];
   classGoal: ClassGoal | null;
+}
+
+/** A comment as its teacher sees it, hidden ones included (Sprint 14). */
+export interface HomeworkComment {
+  id: string;
+  studentId: string;
+  body: string;
+  createdAt: string;
+  hidden: boolean;
+}
+
+/** GET /api/homework/:id/comments. The setter only. */
+export interface HomeworkComments {
+  comments: HomeworkComment[];
+}
+
+/** POST /api/homework/:id/comments. */
+export interface AddHomeworkCommentRequest {
+  studentId: string;
+  body: string;
 }

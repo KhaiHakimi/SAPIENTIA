@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { ChildMeetings } from '@/features/meetings/components/ChildMeetings';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDayShort } from '@/shared/i18n/format-date';
@@ -118,6 +119,9 @@ function ChildSection({ child, timeZone, onRefused }: { child: GuardianChild; ti
                   <td>
                     {item.title}
                     {item.details && <div className={calm.help}>{item.details}</div>}
+                    {item.comments.map((comment) => (
+                      <div key={comment.id} className={styles.note}>{text.teacherNote(comment.body)}</div>
+                    ))}
                   </td>
                   <td>{item.teacherName}</td>
                   <td>
@@ -133,6 +137,9 @@ function ChildSection({ child, timeZone, onRefused }: { child: GuardianChild; ti
 
       <h3>{text.weekTitle}</h3>
       <ChildWeek text={text} linkId={child.linkId} timeZone={timeZone} />
+
+      <h3>{text.meetingsTitle}</h3>
+      <ChildMeetings linkId={child.linkId} timeZone={timeZone} />
 
       <RefuseLinkForm text={text} linkId={child.linkId} childName={child.name} onRefused={onRefused} />
     </section>

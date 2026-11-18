@@ -255,7 +255,7 @@ describe('homework (Sprint 12)', () => {
       const list = (await (await call(pupilHomework, '/api/student/homework', { cookie: aisyahCookie })).json()) as PupilHomeworkList;
       expect(list.items).toEqual([{
         id: homework.id, subjectName: 'Matematik', teacherName: 'guru', title: 'Latihan pecahan', details: 'Soalan 1 hingga 10',
-        dueOn: WEDNESDAY, handedIn: true,
+        dueOn: WEDNESDAY, handedIn: true, comments: [],
       }]);
       const other = (await (await call(pupilHomework, '/api/student/homework', { cookie: kavithaCookie })).json()) as PupilHomeworkList;
       expect(other.items).toEqual([]);

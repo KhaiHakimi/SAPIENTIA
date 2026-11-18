@@ -151,7 +151,7 @@ Each phase ends with a go/no-go gate. The next phase does not start until the ga
 
 ## Status and licence
 
-Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, Phase 2 (capacity) is built and its gate (G4) passed, and Phase 3 (evidence) is built and its gate (G5) passed. Phase 4 (students and guardians) has started with pupil accounts, using fictional data only. Nothing is deployed and all data is fictional.
+Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, Phase 2 (capacity) is built and its gate (G4) passed, and Phase 3 (evidence) is built and its gate (G5) passed. Phase 4 (students and guardians) is built with fictional data only; the legal review it asked for is still outstanding, so Phase 5 has not started. Nothing is deployed and all data is fictional.
 
 Licence: to be decided. Until a licence file is added, all rights are reserved by the author.
 

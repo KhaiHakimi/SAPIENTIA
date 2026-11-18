@@ -57,6 +57,27 @@ export interface GuardiansMessages {
   slipExpires: (date: string) => string;
   slipKeepSafe: string;
 
+  summaryLink: string;
+  summaryLinkLabel: (name: string) => string;
+  summaryTitle: string;
+  summaryIntro: string;
+  summaryBack: string;
+  summaryThisWeek: string;
+  summaryNextWeek: string;
+  summaryPrint: string;
+  summaryHeading: (guardianName: string) => string;
+  summaryPrinted: (date: string) => string;
+  summaryChild: (name: string, className: string | null) => string;
+  summaryHomeworkTitle: (from: string, to: string) => string;
+  summaryHomeworkEmpty: string;
+  summaryColumns: { due: string; subject: string; title: string; teacher: string };
+  summaryWeekTitle: (from: string, to: string) => string;
+  summaryDayOff: string;
+  summaryNoLessons: string;
+  summaryRelief: string;
+  summaryNoChildren: string;
+  summaryFooter: string;
+
   /** Field reasons worded for this page; anything else falls back to the shared table. */
   fieldErrors: Record<string, string>;
 }

@@ -1,6 +1,8 @@
 import 'server-only';
 import type { Queryable } from '@/shared/server/database.service';
-import type { HandInPupil, Homework, HomeworkLesson, PupilHomework } from '../interfaces/homework.interface';
+import type {
+  ClassHomework, HandInPupil, Homework, HomeworkComment, HomeworkLesson, PupilComment, PupilHomework,
+} from '../interfaces/homework.interface';
 
 /** Every function takes schoolId first and filters on it. Dates are read as text so no time zone can shift the day. */
 
@@ -227,8 +229,101 @@ export async function listPupilHomework(
       LIMIT $5`,
     [schoolId, pupil.studentId, pupil.classId, fromDate, limit],
   );
+  const comments = await listPupilComments(db, schoolId, pupil.studentId, rows.map((row) => row.id));
   return rows.map((row) => ({
     id: row.id, subjectName: row.subject_name, teacherName: row.teacher_name, title: row.title, details: row.details,
-    dueOn: row.due_on, handedIn: row.handed_in,
+    dueOn: row.due_on, handedIn: row.handed_in, comments: comments.get(row.id) ?? [],
   }));
+}
+
+/**
+ * A class's homework due between two dates, with no hand-ins: for the guardian summary an administrator prints. Hand-ins stay
+ * with the teacher who set the work (Sprint 12), so the printed sheet does not show them.
+ */
+export async function listClassHomework(
+  db: Queryable,
+  schoolId: string,
+  classId: string,
+  dates: { fromDate: string; toDate: string },
+  limit: number,
+): Promise<ClassHomework[]> {
+  const { rows } = await db.query<{
+    id: string; subject_name: string; teacher_name: string; title: string; details: string | null; due_on: string;
+  }>(
+    `SELECT h.id, j.name AS subject_name, u.name AS teacher_name, h.title, h.details, h.due_on::text AS due_on
+       FROM homework h
+       JOIN subjects j ON j.id = h.subject_id AND j.school_id = h.school_id
+       JOIN users u ON u.id = h.set_by AND u.school_id = h.school_id
+      WHERE h.school_id = $1 AND h.class_id = $2 AND h.due_on BETWEEN $3::date AND $4::date
+      ORDER BY h.due_on, j.name, h.id
+      LIMIT $5`,
+    [schoolId, classId, dates.fromDate, dates.toDate, limit],
+  );
+  return rows.map((row) => ({
+    id: row.id, subjectName: row.subject_name, teacherName: row.teacher_name, title: row.title, details: row.details, dueOn: row.due_on,
+  }));
+}
+
+/** This pupil's visible comments on these pieces of homework, in one query, oldest first under each piece. */
+async function listPupilComments(db: Queryable, schoolId: string, studentId: string, homeworkIds: string[]) {
+  const byHomework = new Map<string, PupilComment[]>();
+  if (homeworkIds.length === 0) return byHomework;
+  const { rows } = await db.query<{ id: string; homework_id: string; body: string; created_at: Date }>(
+    `SELECT id, homework_id, body, created_at FROM homework_comments
+      WHERE school_id = $1 AND student_id = $2 AND homework_id = ANY($3::uuid[]) AND hidden_at IS NULL
+      ORDER BY created_at, id`,
+    [schoolId, studentId, homeworkIds],
+  );
+  for (const row of rows) {
+    const list = byHomework.get(row.homework_id) ?? [];
+    list.push({ id: row.id, body: row.body, createdAt: row.created_at.toISOString() });
+    byHomework.set(row.homework_id, list);
+  }
+  return byHomework;
+}
+
+/** Every comment on one piece of homework, hidden ones included: for the teacher who set it. */
+export async function listHomeworkComments(db: Queryable, schoolId: string, homeworkId: string, limit: number): Promise<HomeworkComment[]> {
+  const { rows } = await db.query<{ id: string; student_id: string; body: string; created_at: Date; hidden_at: Date | null }>(
+    `SELECT id, student_id, body, created_at, hidden_at FROM homework_comments
+      WHERE school_id = $1 AND homework_id = $2
+      ORDER BY created_at, id
+      LIMIT $3`,
+    [schoolId, homeworkId, limit],
+  );
+  return rows.map((row) => ({
+    id: row.id, studentId: row.student_id, body: row.body, createdAt: row.created_at.toISOString(), hidden: row.hidden_at !== null,
+  }));
+}
+
+export async function countPupilComments(db: Queryable, schoolId: string, homeworkId: string, studentId: string): Promise<number> {
+  const { rows } = await db.query<{ total: number }>(
+    'SELECT count(*)::int AS total FROM homework_comments WHERE school_id = $1 AND homework_id = $2 AND student_id = $3',
+    [schoolId, homeworkId, studentId],
+  );
+  return rows[0].total;
+}
+
+export async function insertComment(
+  db: Queryable,
+  schoolId: string,
+  input: { homeworkId: string; studentId: string; authorId: string; body: string; now: Date },
+): Promise<HomeworkComment> {
+  const { rows } = await db.query<{ id: string }>(
+    `INSERT INTO homework_comments (school_id, homework_id, student_id, author_id, body, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [schoolId, input.homeworkId, input.studentId, input.authorId, input.body, input.now],
+  );
+  return { id: rows[0].id, studentId: input.studentId, body: input.body, createdAt: input.now.toISOString(), hidden: false };
+}
+
+/** Hides a comment still shown. Returns the pupil's id, or null when there is no such shown comment on this homework. */
+export async function hideComment(db: Queryable, schoolId: string, homeworkId: string, commentId: string, now: Date) {
+  const { rows } = await db.query<{ student_id: string }>(
+    `UPDATE homework_comments SET hidden_at = $4
+      WHERE school_id = $1 AND homework_id = $2 AND id = $3 AND hidden_at IS NULL
+      RETURNING student_id`,
+    [schoolId, homeworkId, commentId, now],
+  );
+  return rows[0]?.student_id ?? null;
 }

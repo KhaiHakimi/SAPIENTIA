@@ -68,4 +68,22 @@ test('a teacher sets homework, ticks a hand-in and the pupil sees it recorded', 
   expect(response.status()).toBe(200);
   const { items } = (await response.json()) as PupilHomeworkList;
   expect(items.find((entry) => entry.title === title)).toMatchObject({ dueOn, handedIn: true, details: 'Jawab soalan 1 hingga 5.' });
+
+  // Part 2: the board shows it as a room the teacher has cleared (no button to undo it), with the teacher's message on its scroll.
+  const room = page.getByRole('listitem').filter({ hasText: title }).filter({ visible: true });
+  await expect(room).toContainText('Diterima cikgu');
+  await expect(room.getByRole('button', { name: /^Tandakan siap/ })).toHaveCount(0);
+  await room.getByRole('button', { name: title, exact: true }).click();
+  const scroll = page.getByRole('dialog', { name: title });
+  await expect(scroll).toContainText('Jawab soalan 1 hingga 5.');
+  await expect(scroll).toContainText('Guru anda telah merekod penghantaran ini.');
+  expect(await violationsOn(page)).toEqual([]);
+  await scroll.getByRole('button', { name: 'Tutup', exact: true }).last().click();
+
+  // The weekly scroll is built from the teachers' timetables. Next week, since other journeys put a holiday on today.
+  await page.getByRole('button', { name: 'Jadual Seminggu' }).filter({ visible: true }).click();
+  const week = page.getByRole('dialog', { name: 'Jadual Waktu Seminggu' });
+  await week.getByRole('button', { name: /Minggu depan/ }).click();
+  await expect(week.getByText(lesson.split(' — ')[1], { exact: true }).first()).toBeVisible();
+  expect(await violationsOn(page)).toEqual([]);
 });

@@ -181,6 +181,30 @@ export async function clearHandIn(db: Queryable, schoolId: string, homeworkId: s
   ]);
 }
 
+/**
+ * For homework due in a date range: the class's current pupils, the pieces of homework, and the hand-ins recorded by those
+ * pupils (a pupil who has moved class drops out of both counts). Counts only, never who.
+ */
+export async function countClassHandIns(
+  db: Queryable,
+  schoolId: string,
+  classId: string,
+  range: { fromDate: string; toDate: string },
+): Promise<{ pupils: number; pieces: number; handedIn: number }> {
+  const { rows } = await db.query<{ pupils: number; pieces: number; handed_in: number }>(
+    `SELECT (SELECT count(*)::int FROM class_enrolments e WHERE e.school_id = $1 AND e.class_id = $2) AS pupils,
+            (SELECT count(*)::int FROM homework h
+              WHERE h.school_id = $1 AND h.class_id = $2 AND h.due_on BETWEEN $3::date AND $4::date) AS pieces,
+            (SELECT count(*)::int FROM homework h
+               JOIN homework_status hs ON hs.homework_id = h.id AND hs.school_id = h.school_id
+               JOIN class_enrolments e ON e.student_id = hs.student_id AND e.school_id = h.school_id AND e.class_id = h.class_id
+              WHERE h.school_id = $1 AND h.class_id = $2 AND h.due_on BETWEEN $3::date AND $4::date) AS handed_in`,
+    [schoolId, classId, range.fromDate, range.toDate],
+  );
+  const [row] = rows;
+  return { pupils: row.pupils, pieces: row.pieces, handedIn: row.handed_in };
+}
+
 /** A class's homework due on or after a day, with whether this one pupil's hand-in is recorded. Nothing about anyone else. */
 export async function listPupilHomework(
   db: Queryable,

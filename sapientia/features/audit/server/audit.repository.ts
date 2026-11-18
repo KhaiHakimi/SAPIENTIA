@@ -41,13 +41,20 @@ export type AuditAction =
   | 'homework.unmarked'
   | 'homework.removed'
   | 'homework.hand_in_recorded'
-  | 'homework.hand_in_cleared';
+  | 'homework.hand_in_cleared'
+  | 'guardian.added'
+  | 'guardian.updated'
+  | 'guardian.password_reset'
+  | 'guardian.removed'
+  | 'guardian.link_added'
+  | 'guardian.link_removed'
+  | 'guardian.link_refused';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
   entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user'
-    | 'material' | 'student' | 'homework';
+    | 'material' | 'student' | 'homework' | 'guardian';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_QUESTS } from '../data/sample-quests';
 import { SAMPLE_RELICS } from '../data/sample-relics';
+import type { Quest } from '../interfaces/quest.interface';
 import {
   currentStreak,
   guardianHpPercent,
   isGuardianDefeated,
+  isQuestDone,
   isRelicEarned,
   isTodayLit,
   levelOf,
+  newlyDone,
   rankIndex,
   totalCoins,
   totalXp,
@@ -15,9 +17,15 @@ import {
   type TotalsInput,
 } from './progress.service';
 
-const allDone = Object.fromEntries(SAMPLE_QUESTS.map((quest) => [quest.id, true]));
+const TODAY = '2026-11-19'; // a Thursday
+const quest = (id: string, dueOn: string, xp: number, handedIn = false): Quest => ({
+  id, subjectName: 'Matematik', title: id, teacherName: 'Cikgu', details: null, dueOn, xp, coins: xp / 3, handedIn,
+});
+// Due today, tomorrow, Friday, and one the teacher has already recorded.
+const QUESTS: readonly Quest[] = [quest('math', TODAY, 30), quest('sci', '2026-11-20', 30), quest('bm', '2026-11-20', 60), quest('bi', '2026-11-18', 30, true)];
+const allTicked = { math: true, sci: true, bm: true };
 const base: TotalsInput = {
-  baseXp: 430, baseCoins: 120, quests: SAMPLE_QUESTS, done: {},
+  baseXp: 430, baseCoins: 120, quests: QUESTS, done: {},
   battleWins: 0, battleBonusXp: 20, battleBonusCoins: 10, spentCoins: 0,
 };
 const relic = (id: string) => SAMPLE_RELICS.find((candidate) => candidate.id === id)!;
@@ -37,16 +45,35 @@ describe('levels', () => {
   });
 });
 
+describe('the teacher\'s record and the pupil\'s tick', () => {
+  it('treats a recorded hand-in as done whatever the pupil ticks, and never pays for it', () => {
+    const recorded = QUESTS[3];
+    expect(isQuestDone(recorded, {})).toBe(true);
+    expect(isQuestDone(recorded, { bi: false })).toBe(true);
+    expect(newlyDone(QUESTS, { bi: true })).toEqual([]);
+  });
+
+  it('counts the pupil\'s own ticks as done until undone', () => {
+    expect(isQuestDone(QUESTS[0], { math: true })).toBe(true);
+    expect(isQuestDone(QUESTS[0], { math: false })).toBe(false);
+  });
+});
+
 describe('totals', () => {
-  it('pays only for quests finished during this visit', () => {
-    // The reading log was done at the start, so it earns nothing again.
+  it('pays only for quests the pupil ticks on this visit', () => {
     expect(totalXp(base)).toBe(430);
     expect(totalXp({ ...base, done: { math: true } })).toBe(460);
   });
 
   it('adds the guardian bonus once every room is cleared, and takes it back on undo', () => {
-    expect(totalXp({ ...base, done: allDone })).toBe(430 + 30 + 40 + 50 + 25);
-    expect(totalXp({ ...base, done: { ...allDone, sci: false } })).toBe(430 + 30 + 50);
+    expect(totalXp({ ...base, done: allTicked })).toBe(430 + 30 + 30 + 60 + 25);
+    expect(totalXp({ ...base, done: { ...allTicked, sci: false } })).toBe(430 + 30 + 60);
+  });
+
+  it('pays no guardian bonus when the teacher had already recorded everything', () => {
+    const recordedOnly = [quest('a', TODAY, 30, true)];
+    expect(isGuardianDefeated(recordedOnly, {})).toBe(true);
+    expect(totalXp({ ...base, quests: recordedOnly })).toBe(430);
   });
 
   it('counts battle wins and takes shop spending off the coins', () => {
@@ -61,26 +88,31 @@ describe('totals', () => {
 
 describe('guardian and torch', () => {
   it('drains guardian HP by the share of quest XP done', () => {
-    expect(guardianHpPercent(SAMPLE_QUESTS, {})).toBe(Math.round((120 / 140) * 100));
-    expect(guardianHpPercent(SAMPLE_QUESTS, allDone)).toBe(0);
-    expect(isGuardianDefeated(SAMPLE_QUESTS, allDone)).toBe(true);
+    expect(guardianHpPercent(QUESTS, {})).toBe(Math.round((120 / 150) * 100));
+    expect(guardianHpPercent(QUESTS, allTicked)).toBe(0);
+    expect(isGuardianDefeated(QUESTS, allTicked)).toBe(true);
   });
 
-  it("lights today's torch once any quest is done", () => {
-    expect(isTodayLit(SAMPLE_QUESTS, {})).toBe(true); // the reading log was already done
-    expect(isTodayLit(SAMPLE_QUESTS, { bi: false })).toBe(false);
+  it('has no guardian to defeat when there is no homework', () => {
+    expect(isGuardianDefeated([], {})).toBe(false);
+    expect(guardianHpPercent([], {})).toBe(0);
+  });
+
+  it("lights today's torch once the pupil ticks a quest, not for a hand-in recorded before", () => {
+    expect(isTodayLit(QUESTS, {})).toBe(false);
+    expect(isTodayLit(QUESTS, { math: true })).toBe(true);
     expect(currentStreak(3, true)).toBe(4);
   });
 });
 
 describe('relics', () => {
-  it('earns "early" only for a quest finished before its due day', () => {
-    expect(isRelicEarned(relic('early'), SAMPLE_QUESTS, { math: true })).toBe(false); // due today
-    expect(isRelicEarned(relic('early'), SAMPLE_QUESTS, { sci: true })).toBe(true); // due tomorrow
+  it('earns "early" only for a quest ticked before its due day', () => {
+    expect(isRelicEarned(relic('early'), QUESTS, { math: true }, TODAY)).toBe(false); // due today
+    expect(isRelicEarned(relic('early'), QUESTS, { sci: true }, TODAY)).toBe(true); // due tomorrow
   });
 
   it('earns "perfect" with the guardian and loses it on undo', () => {
-    expect(isRelicEarned(relic('perfect'), SAMPLE_QUESTS, allDone)).toBe(true);
-    expect(isRelicEarned(relic('perfect'), SAMPLE_QUESTS, { ...allDone, bm: false })).toBe(false);
+    expect(isRelicEarned(relic('perfect'), QUESTS, allTicked, TODAY)).toBe(true);
+    expect(isRelicEarned(relic('perfect'), QUESTS, { ...allTicked, bm: false }, TODAY)).toBe(false);
   });
 });

@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import type { CurrentGuardian } from '@/features/guardians/interfaces/guardian.interface';
 import type { CurrentStudent } from '@/features/students/interfaces/student.interface';
+import { useVisitKey } from '@/shared/hooks/useVisitKey';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { toggleTheme } from '@/shared/theme/theme.store';
 import { cinzel, inter } from '../constants/login-fonts';
@@ -25,15 +27,24 @@ function Seal({ size, className }: { size: number; className: string }) {
 
 /**
  * The prototype's "Bilik Darjah" split login (prototypes/login, variant D). Once signed in, everyone sees the access seal; a
- * pupil is then taken to /student (which asks a pupil still on their slip's password to choose one) and staff to /staff.
+ * pupil is then taken to /student, a guardian to /guardian (each asks for a password of their own while still on the slip's)
+ * and staff to /staff.
+ *
+ * Every visit starts fresh: a kept-alive copy still "signed in" would open the board again by itself on return, and the board,
+ * finding no session, would send it back here (a sign-in, sign-out loop). It would also show the last person's email.
  */
 export function LoginPage() {
+  return <LoginScreen key={useVisitKey()} />;
+}
+
+function LoginScreen() {
   const text = useMessages(LOGIN_MESSAGES);
   const { toggleLang } = useLanguage();
   const [staff, setStaff] = useState<SessionUser | null>(null);
   const [pupil, setPupil] = useState<CurrentStudent | null>(null);
+  const [guardian, setGuardian] = useState<CurrentGuardian | null>(null);
   const router = useRouter();
-  const destination = staff ? '/staff' : pupil ? '/student' : null;
+  const destination = staff ? '/staff' : pupil ? '/student' : guardian ? '/guardian' : null;
   const signedIn = Boolean(destination);
 
   useEffect(() => {
@@ -73,7 +84,7 @@ export function LoginPage() {
               </div>
             </div>
 
-            <LoginForm text={text} onStaffSignedIn={setStaff} onStudentSignedIn={setPupil} />
+            <LoginForm text={text} onStaffSignedIn={setStaff} onStudentSignedIn={setPupil} onGuardianSignedIn={setGuardian} />
 
             <p className={styles.demoBadge}>{text.demoBadge}</p>
           </div>
@@ -83,7 +94,11 @@ export function LoginPage() {
           <div className={styles.banner} role="status">
             <Seal size={76} className={styles.bannerSeal} />
             <h2>{text.successTitle}</h2>
-            <p>{staff ? text.staffOpening(staff.name) : pupil ? text.studentOpening(pupil.student.name) : null}</p>
+            <p>
+              {staff ? text.staffOpening(staff.name)
+                : pupil ? text.studentOpening(pupil.student.name)
+                  : guardian ? text.guardianOpening(guardian.guardian.name) : null}
+            </p>
           </div>
         )}
       </div>

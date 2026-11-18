@@ -61,9 +61,9 @@ export interface SessionStudent {
   mustChangePassword: boolean;
 }
 
-/** Body of GET /api/student/me. */
+/** Body of GET /api/student/me. timeZone is the school's, so the board's "today" and "now" are the school's wherever the device is. */
 export interface CurrentStudent {
-  student: { id: string; name: string; className: string | null; schoolName: string; username: string };
+  student: { id: string; name: string; className: string | null; schoolName: string; timeZone: string; username: string };
   mustChangePassword: boolean;
 }
 

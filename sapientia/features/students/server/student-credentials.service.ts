@@ -16,18 +16,18 @@ const secureRandom: RandomInt = (max) => randomInt(max);
 
 /**
  * The letters of the first name, without accents, in lower case, at most 12: "Nur'Aisyah binti Ali" → "nuraisyah". A first
- * name with no Latin letters falls back to "murid"; the slip always carries the full name.
+ * name with no Latin letters falls back to "murid" (or the given fallback); the slip always carries the full name.
  */
-export function usernameStem(name: string): string {
+export function usernameStem(name: string, fallback: string = USERNAME_FALLBACK_STEM): string {
   const first = name.trim().split(/\s+/)[0] ?? '';
   const letters = first.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z]/g, '');
-  return (letters || USERNAME_FALLBACK_STEM).slice(0, USERNAME_STEM_MAX);
+  return (letters || fallback).slice(0, USERNAME_STEM_MAX);
 }
 
-/** A username for a pupil: the stem plus four random digits. Uniqueness is the database's job; callers retry on a clash. */
-export function generateUsername(name: string, random: RandomInt = secureRandom): string {
+/** A username: the stem plus four random digits. Uniqueness is the database's job; callers retry on a clash. */
+export function generateUsername(name: string, random: RandomInt = secureRandom, fallbackStem: string = USERNAME_FALLBACK_STEM): string {
   const digits = String(random(10 ** USERNAME_DIGITS)).padStart(USERNAME_DIGITS, '0');
-  return `${usernameStem(name)}${digits}`;
+  return `${usernameStem(name, fallbackStem)}${digits}`;
 }
 
 /** A starting password for a slip, such as "k7mp-x3ra", from characters that cannot be misread on paper. */

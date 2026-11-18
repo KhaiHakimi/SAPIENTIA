@@ -12,15 +12,15 @@ import type { Clock } from '@/shared/interfaces/clock.interface';
 import { NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
 import {
-  HOMEWORK_DUE_DAYS_AHEAD, HOMEWORK_LIST_MAX, LOAD_WARNING_DEADLINES, MARK_BY_DAYS_AFTER_DUE, MY_HOMEWORK_DAYS_BACK,
+  CLASS_GOAL_MIN_PUPILS, HOMEWORK_DUE_DAYS_AHEAD, HOMEWORK_LIST_MAX, LOAD_WARNING_DEADLINES, MARK_BY_DAYS_AFTER_DUE, MY_HOMEWORK_DAYS_BACK,
   PUPIL_HOMEWORK_DAYS_BACK,
 } from '../constants/homework.constants';
 import type {
   HandInList, Homework, HomeworkPreview, HomeworkPreviewRequest, MyHomework, PupilHomeworkList, SetHomeworkRequest,
 } from '../interfaces/homework.interface';
 import {
-  clearHandIn, deleteHomework, findOwnHomework, insertHomework, isEnrolled, listClassHomeworkDays, listHandIns, listOwnHomework,
-  listPupilHomework, listTeacherLessons, recordHandIn, setMarked, teachesLesson,
+  clearHandIn, countClassHandIns, deleteHomework, findOwnHomework, insertHomework, isEnrolled, listClassHomeworkDays, listHandIns,
+  listOwnHomework, listPupilHomework, listTeacherLessons, recordHandIn, setMarked, teachesLesson,
 } from './homework.repository';
 
 /**
@@ -188,12 +188,19 @@ export async function setHandIn(actor: SessionUser, target: { homeworkId: string
   return { studentId: target.studentId, handedIn };
 }
 
-/** The pupil's class's homework from a week ago onwards, with their own hand-in only. A pupil with no class has none. */
+/**
+ * The pupil's class's homework from a week ago onwards, with their own hand-in only, and the class's shared goal for this week
+ * (counts, no names; withheld in a class under CLASS_GOAL_MIN_PUPILS). A pupil with no class has neither.
+ */
 export async function listHomeworkForPupil(student: SessionStudent, clock: Clock): Promise<PupilHomeworkList> {
-  if (!student.classId) return { items: [] };
-  const fromDate = DateTime.fromJSDate(clock.now(), { zone: student.timeZone }).minus({ days: PUPIL_HOMEWORK_DAYS_BACK }).toISODate() ?? '';
-  const items = await listPupilHomework(
-    getPool(), student.schoolId, { studentId: student.id, classId: student.classId }, fromDate, HOMEWORK_LIST_MAX,
-  );
-  return { items };
+  if (!student.classId) return { items: [], classGoal: null };
+  const db = getPool();
+  const today = DateTime.fromJSDate(clock.now(), { zone: student.timeZone });
+  const fromDate = today.minus({ days: PUPIL_HOMEWORK_DAYS_BACK }).toISODate() ?? '';
+  const week = { fromDate: today.startOf('week').toISODate() ?? '', toDate: today.endOf('week').toISODate() ?? '' };
+  const pupil = { studentId: student.id, classId: student.classId };
+  const items = await listPupilHomework(db, student.schoolId, pupil, fromDate, HOMEWORK_LIST_MAX);
+  const counts = await countClassHandIns(db, student.schoolId, student.classId, week);
+  const classGoal = counts.pupils < CLASS_GOAL_MIN_PUPILS ? null : { handedIn: counts.handedIn, expected: counts.pieces * counts.pupils };
+  return { items, classGoal };
 }

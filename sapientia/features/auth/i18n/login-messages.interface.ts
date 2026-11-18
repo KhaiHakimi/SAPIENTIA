@@ -38,6 +38,7 @@ export interface LoginMessages {
   demoIntro: string;
   demoPasswordNote: string;
   studentRole: string;
+  guardianRole: (childName: string) => string;
   staffDemoNote: string;
   use: string;
   useAccount: (who: string) => string;
@@ -46,6 +47,7 @@ export interface LoginMessages {
   // After sign-in
   successTitle: string;
   studentOpening: (name: string) => string;
+  guardianOpening: (name: string) => string;
   staffOpening: (name: string) => string;
 
   // Corner tools

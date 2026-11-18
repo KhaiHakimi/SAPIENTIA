@@ -3,15 +3,19 @@
 import { PixelCard } from '@/shared/components/PixelCard';
 import { PixelSprite } from '@/shared/components/PixelSprite';
 import { useMessages } from '@/shared/i18n/useLanguage';
-import { DEMO_TODAY_INDEX } from '../../constants/demo-clock.constants';
 import { useStudentProgress } from '../../hooks/useStudentProgress';
 import { DASHBOARD_MESSAGES } from '../../i18n/dashboard.messages';
+import { weekdayIndex } from '@/shared/services/school-clock.service';
 import styles from '../../styles/TorchStreakCard.module.css';
 
-/** A running day count beside the five school-day torches. Lit torches flicker; today's pulses until a finished quest lights it. */
+/**
+ * A running day count beside the five school-day torches. Lit torches flicker; today's pulses until a finished quest lights it.
+ * The earlier days are sample data, like the streak itself; at the weekend no torch is today's.
+ */
 export function TorchStreakCard({ className }: { className?: string }) {
   const text = useMessages(DASHBOARD_MESSAGES);
-  const { streak, todayLit } = useStudentProgress();
+  const { streak, todayLit, clock } = useStudentProgress();
+  const todayIndex = weekdayIndex(clock.today);
 
   return (
     <PixelCard id="week" title={text.torchStreak} icon="flame" className={className}>
@@ -23,8 +27,8 @@ export function TorchStreakCard({ className }: { className?: string }) {
         </div>
         <div className={styles.week}>
           {text.days.map((label, index) => {
-            const lit = index < DEMO_TODAY_INDEX || (index === DEMO_TODAY_INDEX && todayLit);
-            const isToday = index === DEMO_TODAY_INDEX;
+            const isToday = index === todayIndex;
+            const lit = index < todayIndex || (isToday && todayLit);
             return (
               <div key={label} className={[styles.day, lit && styles.lit, isToday && styles.today].filter(Boolean).join(' ')}>
                 <PixelSprite name="flame" scale={3} className={lit ? styles.flame : styles.off} />

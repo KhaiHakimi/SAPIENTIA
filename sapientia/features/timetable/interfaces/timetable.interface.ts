@@ -52,3 +52,10 @@ export interface ClassWeek {
   weekOf: string;
   days: ClassDay[];
 }
+
+/** What a class week needs to know about the pupil: their school, its time zone, and their class (null: none). */
+export interface ClassOfPupil {
+  schoolId: string;
+  timeZone: string;
+  classId: string | null;
+}

@@ -7,7 +7,7 @@ export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
     mainNav: 'Menu utama',
     nav: {
       board: 'Papan Tugas', sent: 'Tugas Dihantar', held: 'Ditahan', newTask: 'Tugas Baharu', timetable: 'Jadual Waktu', relief: 'Guru Ganti',
-      lessons: 'Rekod Kelas', homework: 'Kerja Rumah', materials: 'Bank Bahan', hours: 'Log Jam Peribadi', reports: 'Laporan Bulanan', users: 'Pengguna', students: 'Murid', schoolData: 'Data Sekolah', settings: 'Waktu Bekerja', calendar: 'Kalendar', notifications: 'Pemberitahuan',
+      lessons: 'Rekod Kelas', homework: 'Kerja Rumah', materials: 'Bank Bahan', hours: 'Log Jam Peribadi', reports: 'Laporan Bulanan', users: 'Pengguna', students: 'Murid', guardians: 'Penjaga', schoolData: 'Data Sekolah', settings: 'Waktu Bekerja', calendar: 'Kalendar', notifications: 'Pemberitahuan',
     },
     roles: { admin: 'Pentadbir', sender: 'Pengirim tugas', teacher: 'Guru' },
     switchLanguage: 'Tukar bahasa / Switch language',
@@ -23,7 +23,7 @@ export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
     mainNav: 'Main menu',
     nav: {
       board: 'Task Board', sent: 'Sent Tasks', held: 'Held', newTask: 'New Task', timetable: 'Timetable', relief: 'Relief',
-      lessons: 'Lesson Records', homework: 'Homework', materials: 'Material Bank', hours: 'Private Hours Log', reports: 'Monthly Report', users: 'Users', students: 'Pupils', schoolData: 'School Data', settings: 'Working Hours', calendar: 'Calendar', notifications: 'Notifications',
+      lessons: 'Lesson Records', homework: 'Homework', materials: 'Material Bank', hours: 'Private Hours Log', reports: 'Monthly Report', users: 'Users', students: 'Pupils', guardians: 'Guardians', schoolData: 'School Data', settings: 'Working Hours', calendar: 'Calendar', notifications: 'Notifications',
     },
     roles: { admin: 'Administrator', sender: 'Task sender', teacher: 'Teacher' },
     switchLanguage: 'Tukar bahasa / Switch language',

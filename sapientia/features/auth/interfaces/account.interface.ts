@@ -5,6 +5,15 @@ export interface DemoPupil {
   username: string;
 }
 
+/** A seeded demo guardian, linked to one of the demo pupils. Same password as the pupils. */
+export interface DemoGuardian {
+  name: string;
+  username: string;
+  /** The demo pupil (by username) this guardian is linked to. */
+  childUsername: string;
+  relationship: 'mother' | 'father';
+}
+
 export type LoginFieldError = 'identifierRequired' | 'emailInvalid' | 'passwordRequired';
 
 export interface LoginFieldErrors {

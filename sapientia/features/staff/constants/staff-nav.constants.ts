@@ -1,7 +1,7 @@
 import type { StaffRole } from '@/features/auth/interfaces/session-user.interface';
 
 export type StaffNavKey =
-  | 'board' | 'sent' | 'held' | 'newTask' | 'timetable' | 'relief' | 'lessons' | 'homework' | 'materials' | 'hours' | 'reports' | 'users' | 'students'
+  | 'board' | 'sent' | 'held' | 'newTask' | 'timetable' | 'relief' | 'lessons' | 'homework' | 'materials' | 'hours' | 'reports' | 'users' | 'students' | 'guardians'
   | 'schoolData'
   | 'settings' | 'calendar' | 'notifications';
 
@@ -26,6 +26,7 @@ export const STAFF_NAV: readonly StaffNavItem[] = [
   { key: 'reports', href: '/staff/reports', roles: ['admin'] },
   { key: 'users', href: '/staff/users', roles: ['admin'] },
   { key: 'students', href: '/staff/students', roles: ['admin'] },
+  { key: 'guardians', href: '/staff/guardians', roles: ['admin'] },
   { key: 'schoolData', href: '/staff/school-data', roles: ['admin'] },
   { key: 'settings', href: '/staff/settings', roles: ['admin'] },
   { key: 'calendar', href: '/staff/calendar', roles: ['admin'] },

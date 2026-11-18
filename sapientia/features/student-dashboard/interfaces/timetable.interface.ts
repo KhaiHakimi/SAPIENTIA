@@ -1,17 +1,11 @@
-import type { TextOrLocalized } from '@/shared/interfaces/localized-text.interface';
-import type { SchoolSubjectKey } from '@/shared/interfaces/school-subject.interface';
+import type { ClassLesson } from '@/features/timetable/interfaces/timetable.interface';
 
-/** One lesson. Times are "HH:MM" in school time. */
-export interface TimetableSlot {
-  from: string;
-  to: string;
-  subject: SchoolSubjectKey;
-  room: TextOrLocalized;
-  /** A relief teacher covers this lesson. */
-  relief?: boolean;
-}
-
-/** Monday to Friday, each a list of lessons in order. */
-export type SchoolWeek = readonly (readonly TimetableSlot[])[];
+/** A lesson's start and end, "HH:mm" school time: all the now/past rules need. */
+export type LessonTimes = Pick<ClassLesson, 'startTime' | 'endTime'>;
 
 export type SlotStatus = 'past' | 'now' | 'upcoming';
+
+export interface SlotProgress {
+  minutesLeft: number;
+  percent: number;
+}

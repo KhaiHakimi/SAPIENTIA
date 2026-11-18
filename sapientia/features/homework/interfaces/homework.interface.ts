@@ -95,7 +95,17 @@ export interface PupilHomework {
   handedIn: boolean;
 }
 
-/** GET /api/student/homework. */
+/**
+ * The class's hand-ins for homework due this week (Monday to Sunday), counted over the class's current pupils: a shared goal
+ * with no names. expected is pieces of homework times pupils.
+ */
+export interface ClassGoal {
+  handedIn: number;
+  expected: number;
+}
+
+/** GET /api/student/homework. classGoal is null when the class is too small to show it without pointing at anyone. */
 export interface PupilHomeworkList {
   items: PupilHomework[];
+  classGoal: ClassGoal | null;
 }

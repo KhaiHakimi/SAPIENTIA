@@ -21,3 +21,6 @@ export const SEND_RETRY = { attempts: 3, baseDelayMs: 1_000, maxDelayMs: 8_000 }
 
 /** A push the device cannot receive within a day is dropped by the push service; by then the email has done the job. */
 export const PUSH_TTL_SECONDS = 24 * 60 * 60;
+
+/** How long sign-out waits for this device's push to be turned off before going on; a stalled push service must not block it. */
+export const PUSH_OFF_DEADLINE_MS = 5_000;

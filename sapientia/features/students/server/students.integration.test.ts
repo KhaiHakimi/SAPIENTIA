@@ -236,7 +236,7 @@ describe('pupil accounts (Sprint 11)', () => {
       const cookie = cookieFrom(signedIn);
       const before = (await (await call(studentMe, '/api/student/me', { cookie })).json()) as CurrentStudent;
       expect(before).toEqual({
-        student: { id: slip.studentId, name: 'Aisyah binti Rahman', className: '4 Bestari', schoolName: 'Sekolah A001', username: slip.username },
+        student: { id: slip.studentId, name: 'Aisyah binti Rahman', className: '4 Bestari', schoolName: 'Sekolah A001', timeZone: 'Asia/Kuala_Lumpur', username: slip.username },
         mustChangePassword: true,
       });
       const request = new Request(`${TEST_ORIGIN}/api/student/anything`, { headers: { cookie } });

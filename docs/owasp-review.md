@@ -111,3 +111,19 @@ Checked on 16 November 2026 for the new code only.
 | A03 | Injection | Pass | Parameterised SQL; strict schemas with lengths and ranges for every body and query; path ids must be UUIDs. Homework details are shown as text, never as HTML. |
 | A04 | Insecure design | Pass | The class's week shows dates and subjects only, never who set the homework or anything about pupils. No list of who has not handed in is ever shown to pupils. A relief lesson appears on the pupil's timetable only once the relief has been delivered to the relief teacher, so a class does not learn of a teacher's absence earlier than staff do (tested). The load warning never blocks. |
 | A09 | Logging and monitoring failures | Pass | Setting, the load flag, marking, removal and each hand-in tick are audited with ids only (the pupil's id for a tick, never their name; tested). |
+
+## Sprint 13, part 1: guardians
+
+Checked on 18 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | Every guardian-management endpoint requires an administrator (404 for teachers and senders, 401 for pupil and guardian sessions; tested). Another school's administrator sees an empty list, gets 404 on a guardian and cannot link this school's pupils (tested). Links are made by administrators only; no endpoint lets a guardian or pupil claim one. Guardian endpoints take the guardian from the session and reach a child only through one of their own active links, named by the link's id; another guardian's link, a refused or a removed one is 404, and the pupil's id is never sent to a guardian (tested). Guardians have their own table, cookie and session check (staff and pupil sessions get 401 on guardian endpoints; tested). |
+| A03 | Injection | Pass | Parameterised SQL; strict schemas; relationship types and reasons are enums in the schema and the database; path ids must be UUIDs. |
+| A04 | Insecure design | Pass | Data minimisation: a guardian is a name and a sign-in; each link stores a relationship type, and an ended link a reason code from a fixed list, never free text, so no circumstances are written down (database constraints keep refusal codes for guardians and removal codes for administrators). Signing in as staff, pupil or guardian ends the other kinds' sessions in that browser (tested both ways). |
+| A07 | Identification and authentication failures | Pass | The pupil sign-in rules apply: one error for every failure after the same work, throttling per account (own `guardian:` counters) and per address, 14-day slips, sessions ended by a new slip, disabling, a password change or removal (tested). Guardians need 10 characters, as staff do. Sessions: 60 minutes idle, 12 hours at most. |
+| A09 | Logging and monitoring failures | Pass | Adding, changing, new slips, removal, links added and removed, and refusals are audited with ids, relationship types and reason codes only, never names (tested). A refusal records the guardian as the actor with `actorKind: guardian`. |
+
+Open item:
+
+11. A guardian's view loads one homework query per linked child (at most 10). Fine at this size; revisit if the link limit grows.

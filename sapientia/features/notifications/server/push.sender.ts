@@ -1,6 +1,7 @@
 import 'server-only';
 import webpush from 'web-push';
-import { DeadlineError, withDeadline, withRetry } from '@/shared/server/external-call.service';
+import { withRetry } from '@/shared/server/external-call.service';
+import { DeadlineError, withDeadline } from '@/shared/services/deadline.service';
 import { PUSH_TTL_SECONDS, SEND_DEADLINE_MS, SEND_RETRY, SOCKET_TIMEOUT_MS } from '../constants/notification.constants';
 import type { PushConfig, PushPayload, PushSender, PushSubscriptionInput } from '../interfaces/notification.interface';
 import { isAllowedPushEndpoint } from '../services/push-endpoint';

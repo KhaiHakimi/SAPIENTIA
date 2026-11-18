@@ -1,6 +1,6 @@
 -- Up Migration
--- Phase 4, Sprint 11: pupil accounts, their class, and their sessions. Sprint 12: homework and paper hand-ins. See
--- docs/phase-4-students.md.
+-- Phase 4, Sprint 11: pupil accounts, their class, and their sessions. Sprint 12: homework and paper hand-ins. Sprint 13:
+-- guardians, their links to pupils, and their sessions. See docs/phase-4-students.md.
 -- Data minimisation: a pupil is a name, a class and an optional school-issued number. No MyKad number, birth date,
 -- address, contact details, photo or sign-in times are stored.
 
@@ -104,7 +104,84 @@ CREATE TABLE homework_status (
 );
 CREATE INDEX homework_status_student ON homework_status (school_id, student_id);
 
+-- Sprint 13 (folded in before release): guardians. A guardian is a name and a sign-in, like a pupil: no email, phone,
+-- address or MyKad number. Links are made by the administrator only. Each link stores the relationship type, never the
+-- circumstances; a refused or removed link keeps a reason code from a fixed list, never free text.
+CREATE TYPE guardian_relationship AS ENUM ('mother', 'father', 'guardian', 'grandparent', 'relative', 'other');
+CREATE TYPE guardian_link_status AS ENUM ('active', 'refused', 'removed');
+CREATE TYPE guardian_link_end_reason AS ENUM (
+  'not_my_child', 'not_responsible', 'other',
+  'entered_in_error', 'guardian_asked', 'school_decision', 'pupil_left'
+);
+
+CREATE TABLE guardians (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES schools (id),
+  name text NOT NULL,
+  -- "penjaga." then the first-name letters and digits, so the one sign-in box can tell a guardian from a pupil.
+  username text NOT NULL,
+  password_hash text NOT NULL,
+  must_change_password boolean NOT NULL DEFAULT true,
+  starting_password_expires_at timestamptz,
+  status student_status NOT NULL DEFAULT 'active',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT guardians_name_length CHECK (char_length(btrim(name)) BETWEEN 1 AND 120),
+  CONSTRAINT guardians_username_format CHECK (username ~ '^penjaga\.[a-z][a-z0-9]{2,31}$'),
+  CONSTRAINT guardians_starting_password CHECK (must_change_password = (starting_password_expires_at IS NOT NULL)),
+  CONSTRAINT guardians_school_id_id_unique UNIQUE (school_id, id)
+);
+CREATE UNIQUE INDEX guardians_username_unique ON guardians (username);
+CREATE INDEX guardians_school_name ON guardians (school_id, name, id);
+
+CREATE TABLE guardian_links (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL,
+  guardian_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  relationship guardian_relationship NOT NULL,
+  status guardian_link_status NOT NULL DEFAULT 'active',
+  end_reason guardian_link_end_reason,
+  created_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  ended_at timestamptz,
+  FOREIGN KEY (school_id, guardian_id) REFERENCES guardians (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, student_id) REFERENCES students (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, created_by) REFERENCES users (school_id, id),
+  CONSTRAINT guardian_links_end CHECK ((status = 'active') = (end_reason IS NULL AND ended_at IS NULL)),
+  -- Refusal reasons belong to the guardian, removal reasons to the administrator.
+  CONSTRAINT guardian_links_reason_kind CHECK (
+    status <> 'refused' OR end_reason IN ('not_my_child', 'not_responsible', 'other')
+  ),
+  CONSTRAINT guardian_links_removal_kind CHECK (
+    status <> 'removed' OR end_reason IN ('entered_in_error', 'guardian_asked', 'school_decision', 'pupil_left')
+  )
+);
+CREATE UNIQUE INDEX guardian_links_active_unique ON guardian_links (guardian_id, student_id) WHERE status = 'active';
+CREATE INDEX guardian_links_guardian ON guardian_links (school_id, guardian_id);
+CREATE INDEX guardian_links_student ON guardian_links (school_id, student_id);
+
+-- Guardian sessions: their own table and cookie, as for pupils.
+CREATE TABLE guardian_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_hash bytea NOT NULL UNIQUE,
+  school_id uuid NOT NULL,
+  guardian_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  last_seen_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  FOREIGN KEY (school_id, guardian_id) REFERENCES guardians (school_id, id) ON DELETE CASCADE
+);
+CREATE INDEX guardian_sessions_guardian ON guardian_sessions (guardian_id);
+CREATE INDEX guardian_sessions_expires ON guardian_sessions (expires_at);
+
 -- Down Migration
+DROP TABLE guardian_sessions;
+DROP TABLE guardian_links;
+DROP TABLE guardians;
+DROP TYPE guardian_link_end_reason;
+DROP TYPE guardian_link_status;
+DROP TYPE guardian_relationship;
 DROP TABLE homework_status;
 DROP TABLE homework;
 DROP TABLE student_sessions;

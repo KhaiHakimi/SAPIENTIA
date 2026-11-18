@@ -9,6 +9,7 @@ import { hashPassword } from '@/features/auth/server/password.service';
 import { closePool, withTransaction } from '@/shared/server/database.service';
 import { PASSWORD_MIN_LENGTH } from '@/features/auth/constants/password.constants';
 import { seedCapacity } from './capacity-seed';
+import { seedGuardians } from './guardians-seed';
 import { seedStudents } from './students-seed';
 
 interface SeedUser {
@@ -74,6 +75,7 @@ async function main(): Promise<void> {
       if (school.code === CAPACITY_DEMO_SCHOOL) {
         await seedCapacity(client, schoolId);
         await seedStudents(client, schoolId, passwordHash);
+        await seedGuardians(client, schoolId, passwordHash);
       }
     }
   });

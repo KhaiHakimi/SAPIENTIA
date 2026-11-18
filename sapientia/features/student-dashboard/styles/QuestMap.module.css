@@ -32,3 +32,6 @@
   .tile { width: 56px; height: 56px; }
   .mark { grid-column: 2; justify-self: start; }
 }
+
+/* Loading, error and "no homework" lines in place of the rooms. */
+.status { margin: 0 0 12px; color: var(--muted); }

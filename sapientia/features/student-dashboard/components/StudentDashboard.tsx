@@ -10,6 +10,7 @@ import { ShopDialog } from '@/features/shop/components/ShopDialog';
 import { SkinEffects } from '@/features/shop/components/SkinEffects';
 import { burstCoins } from '@/shared/feedback/coin-burst';
 import { useToast } from '@/shared/feedback/ToastProvider';
+import { formatDay } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { useStudentProgress } from '../hooks/useStudentProgress';
 import { DASHBOARD_MESSAGES } from '../i18n/dashboard.messages';
@@ -34,7 +35,7 @@ const LEVEL_UP_DELAY_MS = 500;
 /** The student home: sidebar (profile, menu) and the main grid of cards, plus every dialog they open. */
 export function StudentDashboard() {
   const text = useMessages(DASHBOARD_MESSAGES);
-  const { pick } = useLanguage();
+  const { lang, pick } = useLanguage();
   const showToast = useToast();
   const progress = useStudentProgress();
 
@@ -84,7 +85,8 @@ export function StudentDashboard() {
           <header className={styles.pageHead}>
             <h1>{text.hello(progress.student.name)}</h1>
             <p>
-              {text.dayName} • {progress.student.className}
+              {formatDay(progress.clock.today, lang, { weekday: true })}
+              {progress.student.className && ` • ${progress.student.className}`}
             </p>
           </header>
 

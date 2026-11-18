@@ -35,6 +35,7 @@ export const GUARDIAN_VIEW_MESSAGES: Record<Lang, GuardianViewMessages> = {
     handedInYes: 'Diterima',
     handedInNo: 'Belum direkod',
     handInNote: 'Guru merekod penghantaran apabila buku latihan diterima, jadi rekod mungkin lewat sedikit.',
+    teacherNote: (body) => `Pesanan guru kepada anak anda: ${body}`,
 
     weekTitle: 'Jadual waktu',
     weekPrevious: 'Minggu lepas',
@@ -43,6 +44,8 @@ export const GUARDIAN_VIEW_MESSAGES: Record<Lang, GuardianViewMessages> = {
     dayOff: 'Tiada sekolah',
     noLessons: 'Tiada kelas',
     relief: 'Guru ganti',
+
+    meetingsTitle: 'Pertemuan dengan guru',
 
     refuseOpen: 'Pautan ini salah?',
     refuseTitle: (name) => `Tolak pautan kepada ${name}`,
@@ -92,6 +95,7 @@ export const GUARDIAN_VIEW_MESSAGES: Record<Lang, GuardianViewMessages> = {
     handedInYes: 'Received',
     handedInNo: 'Not recorded yet',
     handInNote: 'Teachers record a hand-in when they receive the exercise book, so the record may lag a little.',
+    teacherNote: (body) => `The teacher's note to your child: ${body}`,
 
     weekTitle: 'Timetable',
     weekPrevious: 'Last week',
@@ -100,6 +104,8 @@ export const GUARDIAN_VIEW_MESSAGES: Record<Lang, GuardianViewMessages> = {
     dayOff: 'No school',
     noLessons: 'No lessons',
     relief: 'Relief teacher',
+
+    meetingsTitle: 'Meetings with teachers',
 
     refuseOpen: 'Is this link wrong?',
     refuseTitle: (name) => `Refuse the link to ${name}`,

@@ -127,3 +127,33 @@ Checked on 18 November 2026 for the new code only.
 Open item:
 
 11. A guardian's view loads one homework query per linked child (at most 10). Fine at this size; revisit if the link limit grows.
+
+## Sprint 13, part 2: printed summary and meeting requests
+
+Checked on 18 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | The summary is for administrators of the guardian's school (404 for teachers and other schools, 401 for guardian sessions; tested). A guardian reaches meeting requests only through their own active link (another guardian's link or request is 404; tested) and may ask only teachers on the child's class timetable (400; tested). Only the teacher asked lists or answers a request, and only once it has reached them (404 for other teachers, administrators, other schools and a request still held; tested). Staff and guardian sessions do not open each other's routes (401; tested). |
+| A03 | Injection | Pass | Parameterised SQL; strict schemas (an extra field such as a note is refused; tested); topics, times of day and decline reasons are enums in the schema and the database; path ids must be UUIDs. |
+| A04 | Insecure design | Pass | No free text anywhere in a request. Requests reach teachers in working hours only (tested at 21:30 and 22:00); at most 3 waiting per guardian, counted under a row lock; one per teacher per child (unique index). A meeting time must be inside working hours on a working day, within 60 days (unit and integration tests). The notice to the teacher names no one, and a request withdrawn or cancelled before it is due sends nothing (tested). The summary leaves out hand-ins. |
+| A09 | Logging and monitoring failures | Pass | Requests, withdrawals, answers and each summary view are audited with ids and codes only, never names (tested). Ending a link records how many waiting requests it cancelled. |
+
+Open item:
+
+12. The summary loads two queries per linked child (homework and the week; at most 10 children). Fine at this size, as item 11.
+
+## Sprint 14: staff logins, reminders and homework notes
+
+Checked on 18 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | Disabling and removing logins is for administrators of the same school (404 for teachers and other schools; tested), never one's own login (409; tested). Sessions are deleted in the same transaction and every staff check needs an active login, so access ends at once (tested). Notes: only the setter writes, lists or hides them (404 for other teachers and administrators; tested), only to a pupil now in the class (tested); a pupil and their guardians see only that pupil's visible notes (tested); pupil sessions cannot write (401; tested). |
+| A03 | Injection | Pass | Parameterised SQL; strict schemas; path ids must be UUIDs. Notes are plain text, rendered by React as text (no HTML). |
+| A04 | Insecure design | Pass | Removal keeps no way back in: no password, a placeholder email, invites revoked, devices deleted; the private hours log is deleted through its own repository (the isolation test still holds). Notes are bounded (300 characters, 10 per pupil per homework) and refuse MyKad-like numbers. The reminder is computed on the board from the school's clock; nothing is pushed or stored. |
+| A09 | Logging and monitoring failures | Pass | Disable, enable, removal, notes added and hidden are audited with ids only, never names or the note's text (tested). |
+
+Open item:
+
+13. A removed or disabled teacher's timetable slots stay until an administrator edits the timetable.

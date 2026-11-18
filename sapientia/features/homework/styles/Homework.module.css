@@ -26,3 +26,9 @@
   display: inline-grid; place-items: center; flex: none; width: 1.4em; height: 1.4em; border: 1px solid currentColor;
   border-radius: .25em; font-weight: 700; color: var(--ok);
 }
+
+/* Notes to pupils (Sprint 14): the teacher's list, a hidden note greyed out. */
+.comments { list-style: none; margin: 0 0 1em; padding: 0; }
+.comments li { display: grid; gap: .25em; justify-items: start; padding: .5em 0; border-bottom: 1px solid var(--bd); }
+.commentBody { white-space: pre-line; overflow-wrap: anywhere; }
+.hiddenComment { color: var(--muted); }

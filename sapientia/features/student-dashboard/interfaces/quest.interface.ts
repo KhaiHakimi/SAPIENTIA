@@ -1,3 +1,5 @@
+import type { PupilComment } from '@/features/homework/interfaces/homework.interface';
+
 /** Where a quest's due date stands against the school's today. */
 export type DueStatus = 'overdue' | 'today' | 'tomorrow' | 'later';
 
@@ -20,6 +22,8 @@ export interface Quest {
    * visit, since it was done before.
    */
   handedIn: boolean;
+  /** The teacher's notes to this pupil on this homework (Sprint 14). The pupil cannot reply. */
+  comments: PupilComment[];
 }
 
 /** The rooms the pupil has ticked on this visit, by quest id: their own checklist, apart from the teacher's record. */

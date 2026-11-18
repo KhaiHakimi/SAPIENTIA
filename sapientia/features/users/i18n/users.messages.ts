@@ -27,6 +27,21 @@ export const USERS_MESSAGES: Record<Lang, UsersMessages> = {
     copy: 'Salin pautan',
     copied: 'Disalin.',
     copyFailed: 'Tidak dapat menyalin. Pilih pautan dan salin secara manual.',
+
+    former: 'Bekas staf',
+    actions: 'Tindakan',
+    manage: (name) => `Tindakan untuk ${name}`,
+    disable: 'Nyahaktifkan',
+    enable: 'Aktifkan semula',
+    remove: 'Buang log masuk',
+    confirmRemove: (name) => `Buang log masuk ${name} secara kekal? Akses tamat serta-merta dan tidak boleh dipulihkan. Rekod tugas dan kerja rumah mengekalkan nama mereka sebagai bekas staf, dan log jam peribadi mereka dipadam. Untuk berhenti sementara, nyahaktifkan sahaja.`,
+    cancel: 'Batal',
+    removed: (name) => `Log masuk ${name} telah dibuang.`,
+
+    fieldErrors: {
+      self: 'Anda tidak boleh mengubah log masuk anda sendiri.',
+      invalid_status: 'Pilih status yang sah.',
+    },
   },
   en: {
     title: 'Users',
@@ -53,5 +68,20 @@ export const USERS_MESSAGES: Record<Lang, UsersMessages> = {
     copy: 'Copy link',
     copied: 'Copied.',
     copyFailed: 'Could not copy. Select the link and copy it by hand.',
+
+    former: 'Former staff',
+    actions: 'Actions',
+    manage: (name) => `Actions for ${name}`,
+    disable: 'Disable',
+    enable: 'Enable again',
+    remove: 'Remove login',
+    confirmRemove: (name) => `Remove ${name}'s login for good? Access ends at once and cannot be restored. Task and homework records keep their name as former staff, and their private hours log is deleted. To pause access, disable instead.`,
+    cancel: 'Cancel',
+    removed: (name) => `${name}'s login has been removed.`,
+
+    fieldErrors: {
+      self: 'You cannot change your own login.',
+      invalid_status: 'Choose a valid status.',
+    },
   },
 };

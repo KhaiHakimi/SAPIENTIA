@@ -5,6 +5,7 @@ import type {
   AddGuardianResult,
   AddLinkRequest,
   GuardianSlip,
+  GuardianSummary,
   LinkRemovalReason,
   SchoolGuardian,
   UpdateGuardianRequest,
@@ -13,6 +14,7 @@ import type {
 /** The administrator's side of guardians. */
 
 export const GUARDIANS_KEY = ['guardians'] as const;
+export const guardianSummaryKey = (id: string, monday: string) => ['guardians', 'summary', id, monday] as const;
 
 const path = (id: string) => `/api/guardians/${encodeURIComponent(id)}`;
 
@@ -44,4 +46,8 @@ export function addGuardianLink(id: string, input: AddLinkRequest): Promise<Scho
 
 export function removeGuardianLink(id: string, linkId: string, reason: LinkRemovalReason): Promise<SchoolGuardian> {
   return apiFetch(`${path(id)}/links/${encodeURIComponent(linkId)}`, { method: 'PATCH', body: { reason } });
+}
+
+export function fetchGuardianSummary(id: string, monday: string): Promise<GuardianSummary> {
+  return apiFetch(`${path(id)}/summary?weekOf=${encodeURIComponent(monday)}`);
 }

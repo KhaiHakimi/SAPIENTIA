@@ -20,6 +20,7 @@ import {
 const TODAY = '2026-11-19'; // a Thursday
 const quest = (id: string, dueOn: string, xp: number, handedIn = false): Quest => ({
   id, subjectName: 'Matematik', title: id, teacherName: 'Cikgu', details: null, dueOn, xp, coins: xp / 3, handedIn,
+  comments: [],
 });
 // Due today, tomorrow, Friday, and one the teacher has already recorded.
 const QUESTS: readonly Quest[] = [quest('math', TODAY, 30), quest('sci', '2026-11-20', 30), quest('bm', '2026-11-20', 60), quest('bi', '2026-11-18', 30, true)];

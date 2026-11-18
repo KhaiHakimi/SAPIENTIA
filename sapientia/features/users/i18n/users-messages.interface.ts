@@ -25,4 +25,17 @@ export interface UsersMessages {
   copy: string;
   copied: string;
   copyFailed: string;
+
+  former: string;
+  actions: string;
+  manage: (name: string) => string;
+  disable: string;
+  enable: string;
+  remove: string;
+  confirmRemove: (name: string) => string;
+  cancel: string;
+  removed: (name: string) => string;
+
+  /** Field reasons worded for this page; anything else falls back to the shared table. */
+  fieldErrors: Record<string, string>;
 }

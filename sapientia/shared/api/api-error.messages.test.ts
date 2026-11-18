@@ -12,11 +12,13 @@ import { REPORTS_MESSAGES } from '@/features/reports/i18n/reports.messages';
 import { SCHOOL_DATA_MESSAGES } from '@/features/school-data/i18n/school-data.messages';
 import { GUARDIAN_VIEW_MESSAGES } from '@/features/guardians/i18n/guardian-view.messages';
 import { GUARDIANS_MESSAGES } from '@/features/guardians/i18n/guardians.messages';
+import { MEETINGS_MESSAGES } from '@/features/meetings/i18n/meetings.messages';
 import { HOMEWORK_MESSAGES } from '@/features/homework/i18n/homework.messages';
 import { CHOOSE_PASSWORD_MESSAGES } from '@/features/students/i18n/choose-password.messages';
 import { STUDENTS_MESSAGES } from '@/features/students/i18n/students.messages';
 import { TASKS_MESSAGES } from '@/features/tasks/i18n/tasks.messages';
 import { TIMETABLE_MESSAGES } from '@/features/timetable/i18n/timetable.messages';
+import { USERS_MESSAGES } from '@/features/users/i18n/users.messages';
 import { API_ERROR_MESSAGES } from './api-error.messages';
 
 /**
@@ -47,7 +49,7 @@ function serverReasonCodes(): string[] {
 const featureFieldTexts = [
   DELIVERY_MESSAGES, TASKS_MESSAGES, SCHOOL_DATA_MESSAGES, TIMETABLE_MESSAGES, EXTENSIONS_MESSAGES, RELIEF_MESSAGES, LESSONS_MESSAGES,
   HOURS_MESSAGES, REPORTS_MESSAGES, MATERIALS_MESSAGES, STUDENTS_MESSAGES, CHOOSE_PASSWORD_MESSAGES, HOMEWORK_MESSAGES,
-  GUARDIANS_MESSAGES, GUARDIAN_VIEW_MESSAGES,
+  GUARDIANS_MESSAGES, GUARDIAN_VIEW_MESSAGES, MEETINGS_MESSAGES, USERS_MESSAGES,
 ];
 
 describe('API error messages', () => {

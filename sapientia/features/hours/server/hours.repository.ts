@@ -117,3 +117,8 @@ export async function listSchoolShares(db: Queryable, schoolId: string, month: s
   );
   return rows.map((row) => ({ userId: row.user_id, name: row.name, minutes: row.minutes, sharedAt: row.shared_at.toISOString() }));
 }
+
+/** Deletes one owner's whole log when their login is removed (Sprint 14). Totals they chose to share stay for the report. */
+export async function deleteAllOwnEntries(db: Queryable, schoolId: string, ownerId: string): Promise<void> {
+  await db.query('DELETE FROM private_hours_log WHERE school_id = $1 AND user_id = $2', [schoolId, ownerId]);
+}

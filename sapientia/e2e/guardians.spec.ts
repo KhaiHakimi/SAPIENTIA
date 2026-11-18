@@ -40,6 +40,17 @@ test('an administrator links a guardian, who signs in with the slip, sees the ch
   expect(startingPassword).toMatch(/^[a-z2-9]{4}-[a-z2-9]{4}$/);
   expect(await violationsOn(page)).toEqual([]);
   await slip.getByRole('button', { name: 'Selesai' }).click();
+
+  // The printed summary for a guardian without a smartphone: the child's class homework and week, no hand-ins.
+  await page.getByRole('button', { name: `Urus ${guardianName}` }).click();
+  await page.getByRole('link', { name: `Ringkasan bercetak untuk ${guardianName}` }).click();
+  const sheet = page.getByRole('article', { name: `Ringkasan sekolah untuk ${guardianName}` });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: `${child.name} (${child.className})` })).toBeVisible();
+  await expect(sheet).not.toContainText('Belum direkod');
+  await page.getByRole('button', { name: 'Minggu depan' }).click();
+  await expect(page.getByRole('button', { name: 'Minggu depan' })).toHaveAttribute('aria-pressed', 'true');
+  expect(await violationsOn(page)).toEqual([]);
   await signOut(page);
 
   // The guardian: slip, own password, then the child's homework and week.
@@ -56,6 +67,18 @@ test('an administrator links a guardian, who signs in with the slip, sees the ch
   await expect(childSection.getByRole('heading', { name: 'Kerja rumah' })).toBeVisible();
   await expect(childSection.getByRole('heading', { name: 'Jadual waktu' })).toBeVisible();
   expect(await violationsOn(page)).toEqual([]);
+
+  // Ask one of the class's teachers for a meeting, from the fixed lists, then withdraw it. Whether it reaches the teacher now
+  // or at the next working start depends on the real clock, so the teacher's side is tested in the integration tests.
+  const teacher = childSection.getByLabel('Guru', { exact: true });
+  await teacher.selectOption({ index: 1 });
+  await childSection.getByLabel('Perkara').selectOption({ label: 'Kemajuan pelajaran' });
+  await childSection.getByRole('button', { name: 'Hantar permintaan' }).click();
+  await expect(childSection.getByRole('status').filter({ hasText: 'Permintaan dihantar.' })).toBeVisible();
+  await expect(childSection.getByText('Menunggu jawapan', { exact: true })).toBeVisible();
+  expect(await violationsOn(page)).toEqual([]);
+  await childSection.getByRole('button', { name: 'Tarik balik' }).click();
+  await expect(childSection.getByText('Ditarik balik', { exact: true })).toBeVisible();
 
   // The link is wrong: refuse it with a reason.
   await childSection.getByRole('button', { name: 'Pautan ini salah?' }).click();

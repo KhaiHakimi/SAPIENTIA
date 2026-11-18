@@ -49,5 +49,21 @@ export interface HomeworkMessages {
   handInsHelp: string;
   handInsEmpty: string;
 
+  commentsButton: (title: string) => string;
+  hideComments: string;
+  commentsTitle: string;
+  commentsHelp: string;
+  commentsEmpty: string;
+  commentFormerPupil: string;
+  commentPupil: string;
+  commentChoosePupil: string;
+  commentBody: string;
+  commentBodyHelp: (left: number) => string;
+  commentSend: string;
+  commentSending: string;
+  commentSent: string;
+  commentHide: string;
+  commentHidden: string;
+
   fieldErrors: Record<string, string>;
 }

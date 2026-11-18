@@ -11,24 +11,28 @@ import type { Homework } from '../interfaces/homework.interface';
 import type { HomeworkMessages } from '../i18n/homework-messages.interface';
 import { HOMEWORK_ROOT_KEY, removeHomework, setHomeworkMarked } from '../services/homework.client';
 import styles from '../styles/Homework.module.css';
+import { CommentsPanel } from './CommentsPanel';
 import { HandInPanel } from './HandInPanel';
 
 interface HomeworkItemProps {
   text: HomeworkMessages;
   homework: Homework;
+  timeZone: string;
 }
 
 /** One piece of the teacher's homework: when it is due, hand-ins so far, marking, and the actions on it. */
-export function HomeworkItem({ text, homework }: HomeworkItemProps) {
+export function HomeworkItem({ text, homework, timeZone }: HomeworkItemProps) {
   const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const [handInsOpen, setHandInsOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const refresh = () => queryClient.invalidateQueries({ queryKey: HOMEWORK_ROOT_KEY });
   const mark = useMutation({ mutationFn: (marked: boolean) => setHomeworkMarked(homework.id, marked), onSuccess: refresh });
   const remove = useMutation({ mutationFn: () => removeHomework(homework.id), onSuccess: refresh });
   const failure = mark.error ?? remove.error;
   const panelId = `hand-ins-${homework.id}`;
+  const commentsId = `comments-${homework.id}`;
 
   return (
     <li className={styles.item}>
@@ -52,6 +56,10 @@ export function HomeworkItem({ text, homework }: HomeworkItemProps) {
           onClick={() => setHandInsOpen((open) => !open)}>
           {handInsOpen ? text.hideHandIns : text.handInsButton(homework.title)}
         </button>
+        <button type="button" className={`${calm.button} ${calm.small}`} aria-expanded={commentsOpen} aria-controls={commentsId}
+          onClick={() => setCommentsOpen((open) => !open)}>
+          {commentsOpen ? text.hideComments : text.commentsButton(homework.title)}
+        </button>
         {homework.markingMinutes !== null && (
           <button type="button" className={`${calm.button} ${calm.small}`} disabled={mark.isPending} onClick={() => mark.mutate(!homework.marked)}>
             {homework.marked ? text.markUndo : text.markDone}
@@ -71,6 +79,9 @@ export function HomeworkItem({ text, homework }: HomeworkItemProps) {
       </div>
       <div id={panelId} hidden={!handInsOpen}>
         {handInsOpen && <HandInPanel text={text} homeworkId={homework.id} />}
+      </div>
+      <div id={commentsId} hidden={!commentsOpen}>
+        {commentsOpen && <CommentsPanel text={text} homeworkId={homework.id} timeZone={timeZone} />}
       </div>
     </li>
   );

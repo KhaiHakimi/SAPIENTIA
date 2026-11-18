@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useStaffUser } from '@/features/staff/hooks/useStaffUser';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
@@ -12,6 +13,7 @@ import { SetHomeworkForm } from './SetHomeworkForm';
 
 /** Any member of staff who teaches: set homework, see their own, tick hand-ins and marking (plan Phase 4, Sprint 12). */
 export function HomeworkPage() {
+  const user = useStaffUser();
   const text = useMessages(HOMEWORK_MESSAGES);
   const { lang } = useLanguage();
   const mine = useQuery({ queryKey: MY_HOMEWORK_KEY, queryFn: fetchMyHomework });
@@ -37,7 +39,9 @@ export function HomeworkPage() {
               <p className={calm.empty}>{text.empty}</p>
             ) : (
               <ul className={styles.items}>
-                {mine.data.items.map((homework) => <HomeworkItem key={homework.id} text={text} homework={homework} />)}
+                {mine.data.items.map((homework) => (
+                  <HomeworkItem key={homework.id} text={text} homework={homework} timeZone={user.timeZone} />
+                ))}
               </ul>
             )}
           </section>

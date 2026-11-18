@@ -1,5 +1,6 @@
-import type { PupilHomework } from '@/features/homework/interfaces/homework.interface';
+import type { ClassHomework, PupilHomework } from '@/features/homework/interfaces/homework.interface';
 import type { StudentStatus } from '@/features/students/interfaces/student.interface';
+import type { ClassWeek } from '@/features/timetable/interfaces/timetable.interface';
 import type {
   GUARDIAN_RELATIONSHIPS,
   LINK_REFUSAL_REASONS,
@@ -120,4 +121,26 @@ export interface GuardianChild {
 /** GET /api/guardian/children. */
 export interface GuardianChildren {
   children: GuardianChild[];
+}
+
+/** One child on the printed summary: the class's homework (no hand-ins) and one week's timetable. */
+export interface GuardianSummaryChild {
+  name: string;
+  className: string | null;
+  homework: ClassHomework[];
+  week: ClassWeek;
+}
+
+/**
+ * GET /api/guardians/:id/summary: a sheet an administrator prints for a guardian without a smartphone. Hand-ins are left out:
+ * they stay with the teacher who set the work, and the guardian sees them when they sign in.
+ */
+export interface GuardianSummary {
+  guardianName: string;
+  schoolName: string;
+  timeZone: string;
+  generatedAt: string;
+  homeworkFrom: string;
+  homeworkTo: string;
+  children: GuardianSummaryChild[];
 }

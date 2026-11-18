@@ -1,5 +1,5 @@
 import type { Lang } from '@/shared/interfaces/localized-text.interface';
-import { HOMEWORK_DUE_DAYS_AHEAD, MARK_BY_DAYS_AFTER_DUE } from '../constants/homework.constants';
+import { HOMEWORK_COMMENTS_PER_PUPIL_MAX, HOMEWORK_DUE_DAYS_AHEAD, MARK_BY_DAYS_AFTER_DUE } from '../constants/homework.constants';
 import type { HomeworkMessages } from './homework-messages.interface';
 
 export const HOMEWORK_MESSAGES: Record<Lang, HomeworkMessages> = {
@@ -54,11 +54,30 @@ export const HOMEWORK_MESSAGES: Record<Lang, HomeworkMessages> = {
     handInsHelp: 'Ketik nama murid yang menghantar kertas. Ketik sekali lagi untuk batal. Hanya anda melihat senarai ini.',
     handInsEmpty: 'Belum ada murid dalam kelas ini.',
 
+    commentsButton: (title) => `Pesanan kepada murid: ${title}`,
+    hideComments: 'Tutup pesanan',
+    commentsTitle: 'Pesanan kepada murid',
+    commentsHelp: 'Nota ringkas kepada seorang murid tentang kerja rumah ini. Murid dan penjaganya melihatnya; murid tidak boleh membalas. Pesanan tidak boleh diubah atau dipadam, tetapi boleh disembunyikan. Jangan tulis maklumat kesihatan, keluarga atau nombor MyKad.',
+    commentsEmpty: 'Belum ada pesanan.',
+    commentFormerPupil: 'Murid yang telah berpindah kelas',
+    commentPupil: 'Murid',
+    commentChoosePupil: 'Pilih murid',
+    commentBody: 'Pesanan',
+    commentBodyHelp: (left) => `${left} aksara lagi.`,
+    commentSend: 'Hantar pesanan',
+    commentSending: 'Menghantar…',
+    commentSent: 'Pesanan dihantar.',
+    commentHide: 'Sembunyikan',
+    commentHidden: 'Disembunyikan',
+
     fieldErrors: {
       not_your_lesson: 'Anda hanya boleh memberi kerja rumah untuk kelas dan subjek dalam jadual waktu anda.',
       too_far: `Terlalu jauh: tarikh hantar paling lewat ${HOMEWORK_DUE_DAYS_AHEAD} hari dari hari ini, dan menyemak paling lewat ${MARK_BY_DAYS_AFTER_DUE} hari selepas itu.`,
       before_due: 'Menyemak tidak boleh siap sebelum tarikh hantar.',
       no_marking_estimate: 'Kerja rumah ini tiada anggaran masa menyemak.',
+      invalid_student: 'Pilih murid daripada kelas ini.',
+      too_many_comments: `Murid ini sudah menerima ${HOMEWORK_COMMENTS_PER_PUPIL_MAX} pesanan tentang kerja rumah ini.`,
+      looks_like_mykad: 'Pesanan ini mengandungi nombor seperti MyKad. Buang nombor itu.',
     },
   },
   en: {
@@ -112,11 +131,30 @@ export const HOMEWORK_MESSAGES: Record<Lang, HomeworkMessages> = {
     handInsHelp: 'Tap the name of each pupil who handed in their paper. Tap again to undo. Only you see this list.',
     handInsEmpty: 'There are no pupils in this class yet.',
 
+    commentsButton: (title) => `Notes to pupils: ${title}`,
+    hideComments: 'Close the notes',
+    commentsTitle: 'Notes to pupils',
+    commentsHelp: 'A short note to one pupil about this homework. The pupil and their guardians see it; the pupil cannot reply. A note cannot be changed or deleted, but it can be hidden. Do not write health or family details, or MyKad numbers.',
+    commentsEmpty: 'No notes yet.',
+    commentFormerPupil: 'A pupil who has moved class',
+    commentPupil: 'Pupil',
+    commentChoosePupil: 'Choose a pupil',
+    commentBody: 'Note',
+    commentBodyHelp: (left) => `${left} characters left.`,
+    commentSend: 'Send the note',
+    commentSending: 'Sending…',
+    commentSent: 'Note sent.',
+    commentHide: 'Hide',
+    commentHidden: 'Hidden',
+
     fieldErrors: {
       not_your_lesson: 'You can set homework only for a class and subject on your own timetable.',
       too_far: `Too far ahead: the due date can be at most ${HOMEWORK_DUE_DAYS_AHEAD} days from today, and marking at most ${MARK_BY_DAYS_AFTER_DUE} days after it.`,
       before_due: 'Marking cannot finish before the due date.',
       no_marking_estimate: 'This homework has no marking estimate.',
+      invalid_student: 'Choose a pupil from this class.',
+      too_many_comments: `This pupil already has ${HOMEWORK_COMMENTS_PER_PUPIL_MAX} notes on this homework.`,
+      looks_like_mykad: 'This note contains a number like a MyKad number. Remove it.',
     },
   },
 };

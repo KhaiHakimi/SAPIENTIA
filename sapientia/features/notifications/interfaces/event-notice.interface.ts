@@ -1,12 +1,14 @@
 /**
  * A message about something other than a new task (plan Phase 2): an extension request reaching the sender, the answer
- * reaching the teacher, and relief given to or taken from a relief teacher. The job carries ids only, except for a
+ * reaching the teacher, relief given to or taken from a relief teacher, and
+ * (Phase 4) a guardian's meeting request reaching the teacher. The job carries ids only, except for a
  * cancelled relief, whose row no longer exists: it carries who, which date and which times, never a reason or a name.
  */
 export type EventNoticeJob =
   | { kind: 'extension.requested'; schoolId: string; extensionId: string }
   | { kind: 'extension.answered'; schoolId: string; extensionId: string }
   | { kind: 'relief.assigned'; schoolId: string; reliefId: string }
+  | { kind: 'meeting.requested'; schoolId: string; meetingId: string }
   | {
     kind: 'relief.cancelled';
     schoolId: string;
@@ -54,4 +56,13 @@ export interface ReliefNotice {
   period: string | null;
 }
 
-export type EventNotice = ExtensionRequestedNotice | ExtensionAnsweredNotice | ReliefNotice;
+/**
+ * "A guardian asks to meet you": to the teacher, in working hours only. It names no one: the guardian's and pupil's names
+ * stay in the app, behind the teacher's sign-in, and never go out by email or push.
+ */
+export interface MeetingRequestedNotice {
+  kind: 'meeting.requested';
+  meetingId: string;
+}
+
+export type EventNotice = ExtensionRequestedNotice | ExtensionAnsweredNotice | ReliefNotice | MeetingRequestedNotice;

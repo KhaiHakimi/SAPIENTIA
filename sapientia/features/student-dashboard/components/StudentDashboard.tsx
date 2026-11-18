@@ -26,6 +26,7 @@ import { LevelUpDialog } from './dialogs/LevelUpDialog';
 import { QuestScrollDialog } from './dialogs/QuestScrollDialog';
 import { WeekTimetableDialog } from './dialogs/WeekTimetableDialog';
 import { Brand } from './sidebar/Brand';
+import { ReminderBanner } from './ReminderBanner';
 import { MenuCard } from './sidebar/MenuCard';
 import { ProfileCard } from './sidebar/ProfileCard';
 
@@ -89,6 +90,8 @@ export function StudentDashboard() {
               {progress.student.className && ` • ${progress.student.className}`}
             </p>
           </header>
+
+          <ReminderBanner onOpenQuest={setOpenQuestId} />
 
           <div className={styles.grid}>
             <TorchStreakCard className={styles.areaWeek} />

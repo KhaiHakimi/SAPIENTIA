@@ -77,6 +77,14 @@ export function QuestScrollDialog({ questId, onClose, onToggle }: QuestScrollDia
           </dl>
           <h4 className={scrollStyles.subhead}>{text.scrollMessage}</h4>
           <p className={scrollStyles.typed}>{quest.details ?? text.scrollNoDetails}</p>
+          {quest.comments.length > 0 && (
+            <>
+              <h4 className={scrollStyles.subhead}>{text.scrollComments(quest.teacherName)}</h4>
+              <ul className={scrollStyles.notes}>
+                {quest.comments.map((comment) => <li key={comment.id} className={scrollStyles.typed}>{comment.body}</li>)}
+              </ul>
+            </>
+          )}
           <h4 className={scrollStyles.subhead}>{text.scrollHandIn}</h4>
           <p>{quest.handedIn ? text.scrollHandedIn : text.scrollHandInNote}</p>
         </>

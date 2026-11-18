@@ -8,3 +8,9 @@ export const inviteUserSchema = z.strictObject({
   name: z.string({ error: 'required' }).trim().min(1, { error: 'required' }).max(120, { error: 'too_long' }),
   role: staffRoleSchema,
 });
+
+export const userIdSchema = z.uuid({ error: 'not_found' });
+
+export const updateUserStatusSchema = z.strictObject({
+  status: z.enum(['active', 'disabled'], { error: 'invalid_status' }),
+});

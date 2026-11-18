@@ -1,6 +1,7 @@
 -- Up Migration
 -- Phase 4, Sprint 11: pupil accounts, their class, and their sessions. Sprint 12: homework and paper hand-ins. Sprint 13:
--- guardians, their links to pupils, and their sessions. See docs/phase-4-students.md.
+-- guardians, their links to pupils, their sessions, and their meeting requests. Sprint 14: removed staff logins and
+-- homework comments. See docs/phase-4-students.md.
 -- Data minimisation: a pupil is a name, a class and an optional school-issued number. No MyKad number, birth date,
 -- address, contact details, photo or sign-in times are stored.
 
@@ -155,7 +156,8 @@ CREATE TABLE guardian_links (
   ),
   CONSTRAINT guardian_links_removal_kind CHECK (
     status <> 'removed' OR end_reason IN ('entered_in_error', 'guardian_asked', 'school_decision', 'pupil_left')
-  )
+  ),
+  CONSTRAINT guardian_links_school_id_id_unique UNIQUE (school_id, id)
 );
 CREATE UNIQUE INDEX guardian_links_active_unique ON guardian_links (guardian_id, student_id) WHERE status = 'active';
 CREATE INDEX guardian_links_guardian ON guardian_links (school_id, guardian_id);
@@ -175,7 +177,73 @@ CREATE TABLE guardian_sessions (
 CREATE INDEX guardian_sessions_guardian ON guardian_sessions (guardian_id);
 CREATE INDEX guardian_sessions_expires ON guardian_sessions (expires_at);
 
+-- Sprint 13 part 2: a guardian asks one of the child's teachers for a meeting. The request reaches the teacher only in working
+-- hours (deliver_at, worked out as for tasks); the teacher sees the guardian's name only. Topic, time of day and the
+-- teacher's decline reason come from fixed lists: no free text, so nothing about a family is written down.
+CREATE TYPE meeting_topic AS ENUM ('homework', 'progress', 'conduct', 'other');
+CREATE TYPE meeting_time_of_day AS ENUM ('morning', 'afternoon', 'any');
+CREATE TYPE meeting_status AS ENUM ('pending', 'accepted', 'declined', 'withdrawn', 'cancelled');
+CREATE TYPE meeting_decline_reason AS ENUM ('see_other_teacher', 'not_available', 'other');
+
+CREATE TABLE meeting_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL,
+  -- Through the guardian's link, so a request ends with the link (status 'cancelled') and goes when the link is deleted.
+  link_id uuid NOT NULL,
+  teacher_id uuid NOT NULL,
+  topic meeting_topic NOT NULL,
+  time_of_day meeting_time_of_day NOT NULL,
+  status meeting_status NOT NULL DEFAULT 'pending',
+  deliver_at timestamptz NOT NULL,
+  meeting_at timestamptz,
+  decline_reason meeting_decline_reason,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  closed_at timestamptz,
+  FOREIGN KEY (school_id, link_id) REFERENCES guardian_links (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, teacher_id) REFERENCES users (school_id, id),
+  CONSTRAINT meeting_requests_accepted CHECK ((status = 'accepted') = (meeting_at IS NOT NULL)),
+  CONSTRAINT meeting_requests_declined CHECK ((status = 'declined') = (decline_reason IS NOT NULL)),
+  CONSTRAINT meeting_requests_closed CHECK ((status = 'pending') = (closed_at IS NULL))
+);
+CREATE UNIQUE INDEX meeting_requests_pending_unique ON meeting_requests (link_id, teacher_id) WHERE status = 'pending';
+CREATE INDEX meeting_requests_teacher ON meeting_requests (school_id, teacher_id, deliver_at);
+CREATE INDEX meeting_requests_link ON meeting_requests (school_id, link_id);
+
+-- Sprint 14: a removed staff login. The school is the institution and its staff logins sit beneath it. Removing one ends
+-- access at once and for good: the row stays, so tasks, homework and records keep the name, but the email, password and
+-- sign-in time are cleared (see features/users/server/users.service.ts).
+ALTER TABLE users ADD COLUMN removed_at timestamptz;
+ALTER TABLE users ADD CONSTRAINT users_removed_disabled CHECK (removed_at IS NULL OR (status = 'disabled' AND password_hash IS NULL));
+
+-- Sprint 14: the teacher who set a piece of homework writes to one pupil about it (plan: teacher to pupil communication only
+-- on homework, logged). The pupil cannot reply. A comment is never edited or deleted on its own; the teacher may hide it,
+-- and it goes only with the homework. The audit log keeps ids, never the text.
+CREATE TABLE homework_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL,
+  homework_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  author_id uuid NOT NULL,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  hidden_at timestamptz,
+  FOREIGN KEY (school_id, homework_id) REFERENCES homework (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, student_id) REFERENCES students (school_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (school_id, author_id) REFERENCES users (school_id, id),
+  CONSTRAINT homework_comments_body_length CHECK (char_length(btrim(body)) BETWEEN 1 AND 300)
+);
+CREATE INDEX homework_comments_pupil ON homework_comments (school_id, student_id, homework_id, created_at);
+CREATE INDEX homework_comments_homework ON homework_comments (school_id, homework_id, created_at);
+
 -- Down Migration
+DROP TABLE homework_comments;
+ALTER TABLE users DROP CONSTRAINT users_removed_disabled;
+ALTER TABLE users DROP COLUMN removed_at;
+DROP TABLE meeting_requests;
+DROP TYPE meeting_decline_reason;
+DROP TYPE meeting_status;
+DROP TYPE meeting_time_of_day;
+DROP TYPE meeting_topic;
 DROP TABLE guardian_sessions;
 DROP TABLE guardian_links;
 DROP TABLE guardians;

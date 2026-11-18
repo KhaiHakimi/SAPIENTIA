@@ -294,13 +294,19 @@ Sprint 12 part 1 was built on 16 November 2026, part 2 on 18 November 2026:
 - [x] Pupil APIs: their class's homework with their own hand-in only, and their class timetable for a week with relief marked
 - [x] Part 2: the student board shows the class's real homework (a hand-in the teacher records clears the room) and timetable on the school's clock, and the class goal as counts only (withheld below 5 pupils)
 
-Sprint 13 part 1 was built on 18 November 2026 (part 2: printable summary and meeting requests). The project owner chose printed slips for guardians (no email or phone stored), refusal by the guardian and removal by the administrator, each with a reason code:
+Sprint 13 was built on 18 November 2026: part 1, then part 2 (printed summary and meeting requests). The project owner chose printed slips for guardians (no email or phone stored), refusal by the guardian and removal by the administrator, each with a reason code:
 - [x] Sprint 13 stories and threat-model rows (`docs/phase-4-students.md`); `guardians`, `guardian_links` and `guardian_sessions` folded into the unreleased Phase 4 migration
 - [x] Administrators add a guardian with a link to a pupil and a relationship type, print the slip, link more children (up to 10), remove a link with a reason code, print a new slip, disable or remove a guardian
 - [x] Guardians sign in with a `penjaga.` username, must replace the slip's password (10 characters at least); signing in as staff, pupil or guardian ends the other kinds' sessions in that browser
 - [x] The read-only guardian view (calm theme): each linked child's homework with that child's own hand-in, and the class week; children are named by the link's id, never the pupil's
 - [x] A guardian refuses a wrong link with a reason code; the administrator sees it
-- [ ] Part 2: printable summary for guardians without smartphones; meeting requests that reach the teacher only in working hours (teachers see the guardian's name only)
+- [x] Part 2: the printed summary for guardians without smartphones (class homework for two weeks and the week, no hand-ins, audited); meeting requests from fixed lists that reach the teacher only in working hours, answered with a time inside working hours or a reason (teachers see the guardian's name only)
+
+Sprint 14 was built on 18 November 2026. The project owner chose the school as the institution, the reminder on the board only, and short teacher notes kept and audited:
+- [x] Administrators disable, enable and remove staff logins; removal ends access at once and keeps records under the name as former staff (no `institutions` tables: the school is the institution)
+- [x] The afternoon reminder on the pupil's board: homework due on the next school day, 2 pm to 6 pm school time only, nothing pushed to pupils
+- [x] Teacher notes to one pupil on homework (300 characters, logged with ids, hidden not deleted); the pupil and their guardians see them, the pupil cannot reply
+- [x] Phase 4 review (`docs/phase-4-students.md`): every plan item built except the legal review request (D7), which keeps gate G6 closed
 
 ### Phase 5: Bullying reporting (S15 to S17, 17 May to 25 June 2027; gated on legal review)
 - Do not start until G6 passes.

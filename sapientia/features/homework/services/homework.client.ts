@@ -1,12 +1,22 @@
 import { apiFetch } from '@/shared/api/api-client';
 import type {
-  HandInList, Homework, HomeworkPreview, HomeworkPreviewRequest, MyHomework, PupilHomeworkList, SetHomeworkRequest,
+  AddHomeworkCommentRequest,
+  HandInList,
+  Homework,
+  HomeworkComment,
+  HomeworkComments,
+  HomeworkPreview,
+  HomeworkPreviewRequest,
+  MyHomework,
+  PupilHomeworkList,
+  SetHomeworkRequest,
 } from '../interfaces/homework.interface';
 
 export const HOMEWORK_ROOT_KEY = ['homework'] as const;
 export const MY_HOMEWORK_KEY = [...HOMEWORK_ROOT_KEY, 'mine'] as const;
 export const homeworkPreviewKey = (input: HomeworkPreviewRequest) => [...HOMEWORK_ROOT_KEY, 'preview', input] as const;
 export const handInsKey = (homeworkId: string) => [...HOMEWORK_ROOT_KEY, 'hand-ins', homeworkId] as const;
+export const commentsKey = (homeworkId: string) => [...HOMEWORK_ROOT_KEY, 'comments', homeworkId] as const;
 /** The signed-in pupil's class homework (pupil session). */
 export const PUPIL_HOMEWORK_KEY = ['student', 'homework'] as const;
 
@@ -42,4 +52,18 @@ export function setHandIn(id: string, studentId: string, handedIn: boolean): Pro
 
 export function fetchPupilHomework(): Promise<PupilHomeworkList> {
   return apiFetch('/api/student/homework');
+}
+
+export function fetchComments(id: string): Promise<HomeworkComments> {
+  return apiFetch(`/api/homework/${encodeURIComponent(id)}/comments`);
+}
+
+export function addComment(id: string, input: AddHomeworkCommentRequest): Promise<HomeworkComment> {
+  return apiFetch(`/api/homework/${encodeURIComponent(id)}/comments`, { method: 'POST', body: input });
+}
+
+export function hideComment(id: string, commentId: string): Promise<void> {
+  return apiFetch(`/api/homework/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, {
+    method: 'PATCH', body: { hidden: true },
+  });
 }

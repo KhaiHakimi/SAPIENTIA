@@ -7,7 +7,8 @@ import type { EventNoticeJob } from '../interfaces/event-notice.interface';
 
 /** Names one event and its row, e.g. "relief.assigned:<id>": the job's singleton key and the key its sends are recorded under. */
 export function noticeKey(job: EventNoticeJob): string {
-  return `${job.kind}:${'extensionId' in job ? job.extensionId : job.reliefId}`;
+  const id = 'extensionId' in job ? job.extensionId : 'meetingId' in job ? job.meetingId : job.reliefId;
+  return `${job.kind}:${id}`;
 }
 
 /**

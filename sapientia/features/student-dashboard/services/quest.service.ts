@@ -15,6 +15,7 @@ export function questFromHomework(homework: PupilHomework): Quest {
     xp: QUEST_XP,
     coins: QUEST_COINS,
     handedIn: homework.handedIn,
+    comments: homework.comments,
   };
 }
 

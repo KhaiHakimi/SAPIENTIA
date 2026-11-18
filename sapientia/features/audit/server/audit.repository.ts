@@ -48,13 +48,23 @@ export type AuditAction =
   | 'guardian.removed'
   | 'guardian.link_added'
   | 'guardian.link_removed'
-  | 'guardian.link_refused';
+  | 'guardian.link_refused'
+  | 'guardian.summary_viewed'
+  | 'meeting.requested'
+  | 'meeting.withdrawn'
+  | 'meeting.accepted'
+  | 'meeting.declined'
+  | 'user.disabled'
+  | 'user.enabled'
+  | 'user.removed'
+  | 'homework.comment_added'
+  | 'homework.comment_hidden';
 
 export interface AuditEntry {
   actorId: string | null;
   action: AuditAction;
   entityType: 'task' | 'school' | 'calendar_event' | 'school_data' | 'timetable_slot' | 'relief_assignment' | 'lesson_record' | 'user'
-    | 'material' | 'student' | 'homework' | 'guardian';
+    | 'material' | 'student' | 'homework' | 'guardian' | 'meeting';
   entityId: string;
   metadata?: Record<string, string | number | boolean | null>;
 }

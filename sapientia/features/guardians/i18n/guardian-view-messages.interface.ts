@@ -31,6 +31,7 @@ export interface GuardianViewMessages {
   handedInYes: string;
   handedInNo: string;
   handInNote: string;
+  teacherNote: (body: string) => string;
 
   weekTitle: string;
   weekPrevious: string;
@@ -39,6 +40,8 @@ export interface GuardianViewMessages {
   dayOff: string;
   noLessons: string;
   relief: string;
+
+  meetingsTitle: string;
 
   refuseOpen: string;
   refuseTitle: (name: string) => string;

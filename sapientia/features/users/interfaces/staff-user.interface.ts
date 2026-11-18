@@ -8,6 +8,8 @@ export interface StaffUser {
   role: StaffRole;
   status: StaffStatus;
   lastSignInAt: string | null;
+  /** A removed login (Sprint 14): kept so records keep the name, shown as former staff, never signed in again. */
+  removed: boolean;
 }
 
 /** A row of GET /api/staff: what a sender needs to pick assignees. No email, no status. */
@@ -28,4 +30,9 @@ export interface InviteUserResult {
   user: StaffUser;
   inviteUrl: string;
   expiresAt: string;
+}
+
+/** PATCH /api/users/:id: disable a login (reversible) or enable it again. */
+export interface UpdateUserStatusRequest {
+  status: 'active' | 'disabled';
 }

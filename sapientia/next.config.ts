@@ -42,6 +42,8 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
+    // Agents offer only security upgrades of Next.js for this app.
+    agentUpgrade: 'security',
   },
   cacheComponents: true,
   partialPrefetching: true,

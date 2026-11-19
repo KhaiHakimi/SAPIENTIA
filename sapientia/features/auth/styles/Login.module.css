@@ -202,3 +202,8 @@
   .pane { padding: 60px 14px 20px; }
   .card { padding: 24px 18px 20px; }
 }
+
+/* Two-step sign-in: the code step after the password. */
+.stepTitle { font: 700 1.05em/1.3 var(--heading); color: #291508; margin: 0 0 10px; }
+.stepHelp { margin: 4px 0 0; font-size: .82em; color: #4a3626; }
+.rowSpread { justify-content: space-between; gap: 12px; }

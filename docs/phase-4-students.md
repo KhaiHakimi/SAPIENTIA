@@ -201,7 +201,7 @@ Checked on 18 November 2026 against the plan's list for Phase 4 (Section 4). The
 
 Still open after Phase 4:
 
-1. **Legal review (D7) and gate G6.** Phase 5 (bullying reporting) must not start until a written legal review is received, the Phase 5 threat model is written and MFA is ready for administrators (OWASP open item 4).
+1. **Legal review (D7) and gate G6.** Phase 5 (bullying reporting) must not start until a written legal review is received and the Phase 5 threat model is written. The third condition, MFA, was built on 18 November 2026 (two-step sign-in; OWASP review).
 2. **No real pupil data** until a legal review covers children's data under the PDPA and a school agrees (Conditions above).
 3. **Phase 0 interviews** are still outstanding: the slip lifetime, the reminder window, the note length and the meeting limits are judgements.
 4. **XP, coins, streak, relics and mastery** on the pupil's board are still sample values kept in the browser.

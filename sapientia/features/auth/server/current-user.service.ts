@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { readCookie } from '@/shared/server/api-handler';
-import { NotFoundError, UnauthenticatedError } from '@/shared/server/app-errors';
+import { MfaSetupRequiredError, NotFoundError, UnauthenticatedError } from '@/shared/server/app-errors';
 import { getPool, type Queryable } from '@/shared/server/database.service';
 import { SESSION_COOKIE } from '../constants/session.constants';
 import type { SessionUser, StaffRole } from '../interfaces/session-user.interface';
@@ -9,9 +9,22 @@ import { resolveSession } from './session.service';
 
 /**
  * The signed-in user, or 401. With roles, anyone else gets 404: deny by default, and do not confirm that the endpoint or
- * record exists to someone who may not use it (plan Section 8).
+ * record exists to someone who may not use it (plan Section 8). An administrator who must set up two-step sign-in first gets
+ * 403 mfa_setup_required everywhere this is used.
  */
 export async function requireUser(
+  request: Request,
+  clock: Clock,
+  roles?: readonly StaffRole[],
+  db: Queryable = getPool(),
+): Promise<SessionUser> {
+  const user = await requireUserAllowingMfaSetup(request, clock, roles, db);
+  if (user.mfaSetupRequired) throw new MfaSetupRequiredError();
+  return user;
+}
+
+/** As requireUser, but lets through an administrator who still has to set up two-step sign-in: /api/me and the setup only. */
+export async function requireUserAllowingMfaSetup(
   request: Request,
   clock: Clock,
   roles?: readonly StaffRole[],

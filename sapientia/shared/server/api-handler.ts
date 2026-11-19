@@ -36,6 +36,12 @@ function errorResponse(request: Request, error: unknown, api: ApiContext, elapse
   if ((error as { code?: unknown })?.code === '23505') error = new ConflictError('This already exists.');
   const path = new URL(request.url).pathname;
   const headers: Record<string, string> = { 'X-Request-Id': api.requestId, 'Cache-Control': 'no-store' };
+  // The browser gave up on the request (a preview replaced by a newer one, a closed tab): nobody reads the answer, and it is
+  // not a server fault, so it is not logged as one.
+  if (request.signal.aborted) {
+    logger.info('api.client_aborted', { path, method: request.method, requestId: api.requestId, ms: Math.round(elapsedMs) });
+    return new Response(null, { status: 499, headers });
+  }
   if (error instanceof AppError) {
     if (error.status >= 500) logger.error('api.error', { path, method: request.method, requestId: api.requestId, error });
     else logger.info('api.refused', { path, method: request.method, requestId: api.requestId, code: error.code, ms: Math.round(elapsedMs) });

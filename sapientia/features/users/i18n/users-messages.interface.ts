@@ -35,6 +35,10 @@ export interface UsersMessages {
   confirmRemove: (name: string) => string;
   cancel: string;
   removed: (name: string) => string;
+  mfaOn: string;
+  resetMfa: string;
+  confirmResetMfa: (name: string) => string;
+  mfaReset: (name: string) => string;
 
   /** Field reasons worded for this page; anything else falls back to the shared table. */
   fieldErrors: Record<string, string>;

@@ -1,0 +1,9 @@
+/* Two-step sign-in (calm scope). The recovery codes print on their own: see the print-area rule in app/globals.css. */
+
+.status { font-weight: 600; }
+.key code { display: inline-block; padding: .4em .6em; font-size: 1.15em; letter-spacing: .08em; word-spacing: .3em;
+  overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--bd); border-radius: .3em; }
+.codeInput { max-width: 10rem; font-size: 1.2em; letter-spacing: .2em; }
+.codes ol { columns: 2; padding-left: 1.5em; }
+.codes li { margin: .2em 0; }
+.codes code { font-size: 1.05em; letter-spacing: .05em; }

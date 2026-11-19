@@ -10,6 +10,8 @@ export interface StaffUser {
   lastSignInAt: string | null;
   /** A removed login (Sprint 14): kept so records keep the name, shown as former staff, never signed in again. */
   removed: boolean;
+  /** Two-step sign-in is on (gate G6); an administrator can reset it for a lost phone. */
+  mfaEnabled: boolean;
 }
 
 /** A row of GET /api/staff: what a sender needs to pick assignees. No email, no status. */

@@ -3,7 +3,7 @@ import type { StaffRole } from '@/features/auth/interfaces/session-user.interfac
 export type StaffNavKey =
   | 'board' | 'sent' | 'held' | 'newTask' | 'timetable' | 'relief' | 'lessons' | 'homework' | 'meetings' | 'materials' | 'hours' | 'reports' | 'users' | 'students' | 'guardians'
   | 'schoolData'
-  | 'settings' | 'calendar' | 'notifications';
+  | 'settings' | 'calendar' | 'notifications' | 'security';
 
 export interface StaffNavItem {
   key: StaffNavKey;
@@ -32,4 +32,5 @@ export const STAFF_NAV: readonly StaffNavItem[] = [
   { key: 'settings', href: '/staff/settings', roles: ['admin'] },
   { key: 'calendar', href: '/staff/calendar', roles: ['admin'] },
   { key: 'notifications', href: '/staff/notifications', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'security', href: '/staff/security', roles: ['admin', 'sender', 'teacher'] },
 ];

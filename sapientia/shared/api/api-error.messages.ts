@@ -21,6 +21,8 @@ export const API_ERROR_MESSAGES: Record<Lang, ApiErrorMessages> = {
       csrf: 'Permintaan ditolak. Muat semula halaman dan cuba lagi.',
       configuration: 'Tetapan sekolah tidak membenarkan tindakan ini. Hubungi pentadbir.',
       password_change_required: 'Pilih kata laluan anda sendiri dahulu.',
+      mfa_setup_required: 'Sekolah anda mewajibkan log masuk dua langkah untuk pentadbir. Sediakannya dahulu.',
+      mfa_unavailable: 'Log masuk dua langkah belum tersedia pada pelayan ini. Hubungi pasukan IT.',
       internal: 'Ralat pelayan. Cuba lagi sebentar lagi.',
     },
     fields: {
@@ -74,6 +76,8 @@ export const API_ERROR_MESSAGES: Record<Lang, ApiErrorMessages> = {
       csrf: 'Request refused. Reload the page and try again.',
       configuration: 'The school settings do not allow this. Contact your administrator.',
       password_change_required: 'Choose your own password first.',
+      mfa_setup_required: 'Your school requires two-step sign-in for administrators. Set it up first.',
+      mfa_unavailable: 'Two-step sign-in is not available on this server yet. Contact IT.',
       internal: 'Server error. Try again shortly.',
     },
     fields: {

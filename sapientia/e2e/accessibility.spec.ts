@@ -14,7 +14,7 @@ const STAFF_SCREENS = [
   '/staff/meetings',
   '/staff/materials', '/staff/hours',
   '/staff/reports', '/staff/users', '/staff/students', '/staff/guardians', '/staff/school-data',
-  '/staff/settings', '/staff/calendar', '/staff/notifications',
+  '/staff/settings', '/staff/calendar', '/staff/notifications', '/staff/security',
 ];
 
 for (const theme of ['dark', 'light']) {

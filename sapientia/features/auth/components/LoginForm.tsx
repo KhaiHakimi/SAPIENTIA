@@ -13,6 +13,7 @@ import { checkLoginFields, isEmailIdentifier, isGuardianIdentifier } from '../se
 import { signInStaff } from '../services/staff-auth.client';
 import styles from '../styles/Login.module.css';
 import { DemoAccounts, type DemoChoice } from './DemoAccounts';
+import { MfaCodeStep } from './MfaCodeStep';
 
 /** Alerts keep what happened, not the words, so switching language re-translates an alert already on screen. */
 type LoginAlert =
@@ -44,6 +45,8 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardian
   const [errors, setErrors] = useState<LoginFieldErrors>({});
   const [alert, setAlert] = useState<LoginAlert | null>(null);
   const [loading, setLoading] = useState(false);
+  /** The password was right and the account wants a code: show the code step instead of the form. */
+  const [codeStep, setCodeStep] = useState(false);
   const identifierInput = useRef<HTMLInputElement>(null);
   const passwordInput = useRef<HTMLInputElement>(null);
 
@@ -69,11 +72,12 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardian
     const trimmed = identifier.trim();
     try {
       if (isEmailIdentifier(trimmed)) {
-        const user = await signInStaff({ email: trimmed, password });
+        const result = await signInStaff({ email: trimmed, password });
         if (!mounted.current) return;
         // Next.js keeps this page alive, hidden, while the board is open; the password must not stay in it.
         setPassword('');
-        onStaffSignedIn(user);
+        if (result.mfaRequired) setCodeStep(true);
+        else onStaffSignedIn(result.user);
       } else if (isGuardianIdentifier(trimmed)) {
         const current = await signInGuardian({ username: trimmed, password });
         if (!mounted.current) return;
@@ -104,6 +108,21 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardian
     setAlert({ kind: 'ok', reason: 'filled', who: account.name });
     passwordInput.current?.focus();
   };
+
+  if (codeStep) {
+    return (
+      <MfaCodeStep
+        onSignedIn={(user) => {
+          setCodeStep(false);
+          onStaffSignedIn(user);
+        }}
+        onBack={() => {
+          setCodeStep(false);
+          passwordInput.current?.focus();
+        }}
+      />
+    );
+  }
 
   return (
     <>

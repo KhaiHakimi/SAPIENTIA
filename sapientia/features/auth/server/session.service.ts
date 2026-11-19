@@ -24,6 +24,7 @@ interface SessionRow {
   email: string;
   name: string;
   role: SessionUser['role'];
+  mfa_setup_required: boolean;
 }
 
 /** Starts a session for an active user and returns the raw token for the cookie; only its hash is stored. */
@@ -45,7 +46,10 @@ export async function createSession(db: Queryable, schoolId: string, userId: str
 export async function resolveSession(db: Queryable, token: string, clock: Clock): Promise<SessionUser | null> {
   const { rows } = await db.query<SessionRow>(
     `SELECT s.id AS session_id, s.last_seen_at, s.expires_at, u.id, u.school_id, sc.name AS school_name, sc.time_zone,
-            u.email, u.name, u.role
+            u.email, u.name, u.role,
+            (u.role = 'admin' AND sc.require_admin_mfa AND NOT EXISTS (
+              SELECT 1 FROM user_mfa m WHERE m.user_id = u.id AND m.confirmed_at IS NOT NULL
+            )) AS mfa_setup_required
        FROM sessions s
        JOIN users u ON u.id = s.user_id AND u.school_id = s.school_id
        JOIN schools sc ON sc.id = u.school_id
@@ -66,7 +70,7 @@ export async function resolveSession(db: Queryable, token: string, clock: Clock)
   }
   return {
     id: row.id, schoolId: row.school_id, schoolName: row.school_name, timeZone: row.time_zone,
-    email: row.email, name: row.name, role: row.role,
+    email: row.email, name: row.name, role: row.role, mfaSetupRequired: row.mfa_setup_required,
   };
 }
 

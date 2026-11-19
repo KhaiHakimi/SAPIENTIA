@@ -1,5 +1,7 @@
 -- Up Migration
--- Phase 6 (AI and open standards). Every request to the language model is counted here so each person can be held to an
+-- Phase 6 (AI and open standards).
+--
+-- Every request to the language model is counted here so each person can be held to an
 -- hourly limit and an administrator can see that the feature is used. Only who, when, which feature and the outcome are
 -- kept: never the instruction, the model's answer or any name.
 
@@ -17,7 +19,28 @@ CREATE TABLE ai_requests (
 );
 CREATE INDEX ai_requests_user_recent ON ai_requests (school_id, user_id, created_at);
 
+-- The weekly digest: one email per person on the first working morning of the week, listing their own work. Each person may
+-- turn it off. digest_sends records each person's week once (sent, nothing to say, or failed for good), so the sweep that
+-- runs every 15 minutes never sends a week twice.
+ALTER TABLE users ADD COLUMN weekly_digest boolean NOT NULL DEFAULT true;
+
+CREATE TYPE digest_outcome AS ENUM ('sent', 'empty', 'failed');
+
+CREATE TABLE digest_sends (
+  school_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  -- The Monday of the week, in the school's calendar.
+  week_of date NOT NULL,
+  outcome digest_outcome NOT NULL,
+  created_at timestamptz NOT NULL,
+  PRIMARY KEY (user_id, week_of),
+  FOREIGN KEY (school_id, user_id) REFERENCES users (school_id, id) ON DELETE CASCADE
+);
+
 -- Down Migration
+DROP TABLE digest_sends;
+DROP TYPE digest_outcome;
+ALTER TABLE users DROP COLUMN weekly_digest;
 DROP TABLE ai_requests;
 DROP TYPE ai_outcome;
 DROP TYPE ai_feature;

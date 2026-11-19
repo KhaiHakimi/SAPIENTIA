@@ -65,7 +65,9 @@ export type AuditAction =
   | 'mfa.recovery_code_used'
   | 'mfa.reset'
   | 'school.mfa_required'
-  | 'school.mfa_optional';
+  | 'school.mfa_optional'
+  | 'api_token.created'
+  | 'api_token.revoked';
 
 export interface AuditEntry {
   actorId: string | null;

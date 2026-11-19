@@ -2,9 +2,8 @@ import 'server-only';
 import type { PoolClient } from 'pg';
 import { writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
-import { verifyPassword } from '@/features/auth/server/password.service';
+import { confirmPassword } from '@/features/auth/server/password-check.service';
 import { revokeUserSessions } from '@/features/auth/server/session.service';
-import { assertNotThrottled, emailThrottleKey, recordFailure } from '@/features/auth/server/throttle.service';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, MfaUnavailableError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
@@ -17,7 +16,6 @@ import {
   countRecoveryCodesLeft,
   deleteMfa,
   findMfa,
-  findPasswordHash,
   findSchoolRequirement,
   replaceRecoveryCodes,
   setSchoolRequirement,
@@ -36,18 +34,6 @@ function requireKey(): Buffer {
   const key = readMfaKey();
   if (!key) throw new MfaUnavailableError();
   return key;
-}
-
-/** Checks the password again; a wrong one counts against the account's sign-in throttle. */
-async function checkPassword(actor: SessionUser, password: string, clock: Clock): Promise<void> {
-  const db = getPool();
-  const keys = { account: emailThrottleKey(actor.email), address: `user:${actor.id}` };
-  await assertNotThrottled(db, keys, clock);
-  const hash = await findPasswordHash(db, actor.schoolId, actor.id);
-  if (!hash || !(await verifyPassword(hash, password))) {
-    await recordFailure(db, keys, clock);
-    throw new ValidationError({ password: 'wrong_password' });
-  }
 }
 
 async function newRecoveryCodes(client: PoolClient, actor: SessionUser): Promise<string[]> {
@@ -71,7 +57,7 @@ export async function getMfaStatus(actor: SessionUser): Promise<MfaStatus> {
 /** Starts setup: a new secret, kept encrypted until the first code confirms it. 409 if an authenticator is already on. */
 export async function startMfaSetup(actor: SessionUser, password: string, clock: Clock): Promise<MfaSetup> {
   const key = requireKey();
-  await checkPassword(actor, password, clock);
+  await confirmPassword(actor, password, clock);
   const secret = generateTotpSecret();
   if (!(await upsertPendingMfa(getPool(), actor.schoolId, actor.id, encryptSecret(secret, key), clock.now()))) {
     throw new ConflictError('Two-step sign-in is already on.', { password: 'already_enabled' });
@@ -99,7 +85,7 @@ export async function confirmMfaSetup(actor: SessionUser, code: string, clock: C
 
 /** New recovery codes; the old ones stop working. */
 export async function replaceMyRecoveryCodes(actor: SessionUser, password: string, clock: Clock): Promise<MfaRecoveryCodes> {
-  await checkPassword(actor, password, clock);
+  await confirmPassword(actor, password, clock);
   return withTransaction(async (client) => {
     const row = await findMfa(client, actor.schoolId, actor.id, true);
     if (!row?.confirmed_at) throw new ConflictError('Two-step sign-in is not on.', { password: 'not_enabled' });
@@ -113,7 +99,7 @@ export async function replaceMyRecoveryCodes(actor: SessionUser, password: strin
 
 /** Turns it off. An administrator cannot while the school requires it (409). */
 export async function disableMyMfa(actor: SessionUser, password: string, clock: Clock): Promise<void> {
-  await checkPassword(actor, password, clock);
+  await confirmPassword(actor, password, clock);
   await withTransaction(async (client) => {
     if (actor.role === 'admin' && (await findSchoolRequirement(client, actor.schoolId))) {
       throw new ConflictError('The school requires two-step sign-in for administrators.', { password: 'required_for_admins' });

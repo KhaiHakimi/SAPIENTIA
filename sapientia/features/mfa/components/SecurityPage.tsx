@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { useStaffUser, CURRENT_USER_KEY } from '@/features/staff/hooks/useStaffUser';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
+import { ApiTokensSection } from '@/features/mcp/components/ApiTokensSection';
 import calm from '@/shared/calm/Calm.module.css';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { MFA_MESSAGES } from '../i18n/mfa.messages';
@@ -64,6 +65,7 @@ export function SecurityPage({ required = false }: { required?: boolean }) {
           {user.role === 'admin' && !required && (
             <AdminRequirement text={text} required={status.data.requiredForAdmins} />
           )}
+          {!required && <ApiTokensSection />}
         </div>
       )}
     </>

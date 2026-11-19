@@ -13,6 +13,7 @@ import { SCHOOL_DATA_MESSAGES } from '@/features/school-data/i18n/school-data.me
 import { GUARDIAN_VIEW_MESSAGES } from '@/features/guardians/i18n/guardian-view.messages';
 import { GUARDIANS_MESSAGES } from '@/features/guardians/i18n/guardians.messages';
 import { MEETINGS_MESSAGES } from '@/features/meetings/i18n/meetings.messages';
+import { MCP_MESSAGES } from '@/features/mcp/i18n/mcp.messages';
 import { MFA_MESSAGES } from '@/features/mfa/i18n/mfa.messages';
 import { HOMEWORK_MESSAGES } from '@/features/homework/i18n/homework.messages';
 import { CHOOSE_PASSWORD_MESSAGES } from '@/features/students/i18n/choose-password.messages';
@@ -50,7 +51,7 @@ function serverReasonCodes(): string[] {
 const featureFieldTexts = [
   DELIVERY_MESSAGES, TASKS_MESSAGES, SCHOOL_DATA_MESSAGES, TIMETABLE_MESSAGES, EXTENSIONS_MESSAGES, RELIEF_MESSAGES, LESSONS_MESSAGES,
   HOURS_MESSAGES, REPORTS_MESSAGES, MATERIALS_MESSAGES, STUDENTS_MESSAGES, CHOOSE_PASSWORD_MESSAGES, HOMEWORK_MESSAGES,
-  GUARDIANS_MESSAGES, GUARDIAN_VIEW_MESSAGES, MEETINGS_MESSAGES, USERS_MESSAGES, MFA_MESSAGES,
+  GUARDIANS_MESSAGES, GUARDIAN_VIEW_MESSAGES, MEETINGS_MESSAGES, USERS_MESSAGES, MFA_MESSAGES, MCP_MESSAGES,
 ];
 
 describe('API error messages', () => {

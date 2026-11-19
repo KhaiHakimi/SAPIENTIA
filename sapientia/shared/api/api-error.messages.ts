@@ -23,6 +23,8 @@ export const API_ERROR_MESSAGES: Record<Lang, ApiErrorMessages> = {
       password_change_required: 'Pilih kata laluan anda sendiri dahulu.',
       mfa_setup_required: 'Sekolah anda mewajibkan log masuk dua langkah untuk pentadbir. Sediakannya dahulu.',
       mfa_unavailable: 'Log masuk dua langkah belum tersedia pada pelayan ini. Hubungi pasukan IT.',
+      ai_unavailable: 'Pembantu AI tidak tersedia sekarang. Isi borang seperti biasa.',
+      ai_bad_output: 'Pembantu AI tidak dapat membuat draf daripada arahan ini. Cuba tulis semula atau isi borang seperti biasa.',
       internal: 'Ralat pelayan. Cuba lagi sebentar lagi.',
     },
     fields: {
@@ -78,6 +80,8 @@ export const API_ERROR_MESSAGES: Record<Lang, ApiErrorMessages> = {
       password_change_required: 'Choose your own password first.',
       mfa_setup_required: 'Your school requires two-step sign-in for administrators. Set it up first.',
       mfa_unavailable: 'Two-step sign-in is not available on this server yet. Contact IT.',
+      ai_unavailable: 'The AI assistant is not available right now. Fill in the form as usual.',
+      ai_bad_output: 'The AI assistant could not draft a task from this instruction. Try rewording it, or fill in the form as usual.',
       internal: 'Server error. Try again shortly.',
     },
     fields: {

@@ -78,6 +78,20 @@ export class MfaSetupRequiredError extends AppError {
   }
 }
 
+/** AI is switched off on this server, or the model could not be reached: the form works without it. */
+export class AiUnavailableError extends AppError {
+  constructor() {
+    super(503, 'ai_unavailable', 'The AI assistant is not available.');
+  }
+}
+
+/** The model answered, but nothing usable survived validation. Its answer is untrusted and is never passed on. */
+export class AiBadOutputError extends AppError {
+  constructor() {
+    super(502, 'ai_bad_output', 'The AI assistant could not draft from this instruction.');
+  }
+}
+
 /** The server has no MFA_ENCRYPTION_KEY, so it cannot keep an authenticator secret safely. */
 export class MfaUnavailableError extends AppError {
   constructor() {

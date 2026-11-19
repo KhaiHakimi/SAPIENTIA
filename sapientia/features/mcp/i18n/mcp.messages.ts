@@ -1,0 +1,58 @@
+import type { Lang } from '@/shared/interfaces/localized-text.interface';
+import { API_TOKEN_DAYS, API_TOKENS_MAX } from '../constants/mcp.constants';
+import type { McpMessages } from './mcp-messages.interface';
+
+export const MCP_MESSAGES: Record<Lang, McpMessages> = {
+  ms: {
+    heading: 'Akses pembantu AI (MCP)',
+    intro: `Token akses membenarkan pembantu AI yang menyokong MCP membaca tugas dan kelas ganti anda sendiri. Token tamat selepas ${API_TOKEN_DAYS} hari; anda boleh membatalkannya pada bila-bila masa.`,
+    scope: 'Baca sahaja: pembantu tidak boleh mengubah atau menghantar apa-apa, dan tidak boleh melihat rekod murid atau penjaga. Sesiapa yang memegang token boleh membaca apa yang anda boleh baca, jadi simpan token seperti kata laluan.',
+    endpoint: 'Alamat pelayan MCP',
+    none: 'Tiada token aktif.',
+    created: (day) => `Dibuat ${day}`,
+    lastUsed: (day) => `terakhir digunakan ${day}`,
+    neverUsed: 'belum digunakan',
+    expires: (day) => `tamat ${day}`,
+    revoke: (name) => `Batalkan ${name}`,
+    revoked: 'Token telah dibatalkan.',
+    newHeading: 'Token baharu',
+    name: 'Nama (contohnya nama pembantu atau peranti)',
+    nameHelp: `Paling banyak ${API_TOKENS_MAX} token aktif.`,
+    password: 'Kata laluan anda',
+    create: 'Buat token',
+    creating: 'Membuat…',
+    shownOnce: 'Salin token ini sekarang. Ia tidak akan ditunjukkan lagi.',
+    tokenLabel: 'Token akses',
+    done: 'Sudah disalin',
+    fieldErrors: {
+      wrong_password: 'Kata laluan tidak betul.',
+      too_many_tokens: `Anda sudah mempunyai ${API_TOKENS_MAX} token aktif. Batalkan satu dahulu.`,
+    },
+  },
+  en: {
+    heading: 'AI assistant access (MCP)',
+    intro: `An access token lets an AI assistant that supports MCP read your own tasks and relief classes. Tokens expire after ${API_TOKEN_DAYS} days; you can revoke one at any time.`,
+    scope: 'Read only: the assistant cannot change or send anything, and cannot see pupil or guardian records. Whoever holds the token can read what you can read, so keep it like a password.',
+    endpoint: 'MCP server address',
+    none: 'No active tokens.',
+    created: (day) => `Made ${day}`,
+    lastUsed: (day) => `last used ${day}`,
+    neverUsed: 'not used yet',
+    expires: (day) => `expires ${day}`,
+    revoke: (name) => `Revoke ${name}`,
+    revoked: 'The token has been revoked.',
+    newHeading: 'New token',
+    name: 'Name (for example the assistant or device)',
+    nameHelp: `At most ${API_TOKENS_MAX} active tokens.`,
+    password: 'Your password',
+    create: 'Make token',
+    creating: 'Making…',
+    shownOnce: 'Copy this token now. It will not be shown again.',
+    tokenLabel: 'Access token',
+    done: 'I have copied it',
+    fieldErrors: {
+      wrong_password: 'The password is not correct.',
+      too_many_tokens: `You already have ${API_TOKENS_MAX} active tokens. Revoke one first.`,
+    },
+  },
+};

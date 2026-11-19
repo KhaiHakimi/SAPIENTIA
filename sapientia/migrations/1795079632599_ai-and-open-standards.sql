@@ -37,7 +37,25 @@ CREATE TABLE digest_sends (
   FOREIGN KEY (school_id, user_id) REFERENCES users (school_id, id) ON DELETE CASCADE
 );
 
+-- Personal access tokens for the read-only MCP server: an AI assistant acts as the person who made the token, with that
+-- person's own access and nothing more. Only the SHA-256 of a token is stored; it is shown once. Tokens expire, can be
+-- revoked, and end with the account (signing out everywhere revokes them too).
+CREATE TABLE api_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
+  token_hash bytea NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL,
+  last_used_at timestamptz,
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  FOREIGN KEY (school_id, user_id) REFERENCES users (school_id, id) ON DELETE CASCADE
+);
+CREATE INDEX api_tokens_user ON api_tokens (school_id, user_id);
+
 -- Down Migration
+DROP TABLE api_tokens;
 DROP TABLE digest_sends;
 DROP TYPE digest_outcome;
 ALTER TABLE users DROP COLUMN weekly_digest;

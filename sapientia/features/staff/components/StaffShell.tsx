@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { signOutStaff } from '@/features/auth/services/staff-auth.client';
+import { WebMcpTools } from '@/features/mcp/components/WebMcpTools';
 import { SecurityPage } from '@/features/mfa/components/SecurityPage';
 import { PUSH_OFF_DEADLINE_MS } from '@/features/notifications/constants/notification.constants';
 import { disablePush } from '@/features/notifications/services/push-device.client';
@@ -110,6 +111,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
         {/* The school requires two-step sign-in for administrators: nothing else opens until it is set up. */}
         {user.mfaSetupRequired ? <SecurityPage required /> : children}
       </main>
+      {!user.mfaSetupRequired && <WebMcpTools />}
     </StaffUserContext.Provider>
   );
 }

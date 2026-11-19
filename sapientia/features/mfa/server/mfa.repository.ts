@@ -88,14 +88,6 @@ export async function setSchoolRequirement(db: Queryable, schoolId: string, requ
   await db.query('UPDATE schools SET require_admin_mfa = $2 WHERE id = $1', [schoolId, required]);
 }
 
-export async function findPasswordHash(db: Queryable, schoolId: string, userId: string): Promise<string | null> {
-  const { rows } = await db.query<{ password_hash: string | null }>(
-    `SELECT password_hash FROM users WHERE school_id = $1 AND id = $2 AND status = 'active'`,
-    [schoolId, userId],
-  );
-  return rows[0]?.password_hash ?? null;
-}
-
 export interface ChallengeRow {
   id: string;
   school_id: string;

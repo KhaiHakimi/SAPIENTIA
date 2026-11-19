@@ -78,9 +78,13 @@ export async function revokeSession(db: Queryable, token: string): Promise<void>
   await db.query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(token)]);
 }
 
-/** Signs a user out everywhere (password set, account disabled). */
+/**
+ * Signs a user out everywhere (password set, account disabled or removed, two-step sign-in changed), including any access
+ * token an AI assistant holds for them (Phase 6), so a new password always ends every way in.
+ */
 export async function revokeUserSessions(db: Queryable, schoolId: string, userId: string): Promise<void> {
   await db.query('DELETE FROM sessions WHERE school_id = $1 AND user_id = $2', [schoolId, userId]);
+  await db.query('UPDATE api_tokens SET revoked_at = now() WHERE school_id = $1 AND user_id = $2 AND revoked_at IS NULL', [schoolId, userId]);
 }
 
 export function sessionCookie(request: Request, token: string): string {

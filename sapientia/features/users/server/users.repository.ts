@@ -13,6 +13,7 @@ interface UserRow {
   status: StaffStatus;
   last_sign_in_at: Date | null;
   removed_at: Date | null;
+  mfa_enabled: boolean;
 }
 
 export const toStaffUser = (row: UserRow): StaffUser => ({
@@ -23,11 +24,13 @@ export const toStaffUser = (row: UserRow): StaffUser => ({
   status: row.status,
   lastSignInAt: row.last_sign_in_at?.toISOString() ?? null,
   removed: row.removed_at !== null,
+  mfaEnabled: row.mfa_enabled,
 });
 
 export async function listUsers(db: Queryable, schoolId: string, limit: number, after: { name: string; id: string } | null) {
   const { rows } = await db.query<UserRow>(
-    `SELECT id, name, email, role, status, last_sign_in_at, removed_at FROM users
+    `SELECT id, name, email, role, status, last_sign_in_at, removed_at,
+            EXISTS (SELECT 1 FROM user_mfa m WHERE m.user_id = users.id AND m.confirmed_at IS NOT NULL) AS mfa_enabled FROM users
       WHERE school_id = $1 AND ($2::text IS NULL OR (name, id) > ($2, $3::uuid))
       ORDER BY name, id LIMIT $4`,
     [schoolId, after?.name ?? null, after?.id ?? null, limit + 1],
@@ -37,7 +40,8 @@ export async function listUsers(db: Queryable, schoolId: string, limit: number, 
 
 export async function findUserByEmail(db: Queryable, email: string) {
   const { rows } = await db.query<UserRow & { school_id: string }>(
-    'SELECT id, school_id, name, email, role, status, last_sign_in_at, removed_at FROM users WHERE lower(email) = lower($1)',
+    `SELECT id, school_id, name, email, role, status, last_sign_in_at, removed_at,
+            EXISTS (SELECT 1 FROM user_mfa m WHERE m.user_id = users.id AND m.confirmed_at IS NOT NULL) AS mfa_enabled FROM users WHERE lower(email) = lower($1)`,
     [email],
   );
   return rows[0] ?? null;
@@ -46,7 +50,7 @@ export async function findUserByEmail(db: Queryable, email: string) {
 export async function insertInvitedUser(db: Queryable, schoolId: string, input: { email: string; name: string; role: StaffRole }) {
   const { rows } = await db.query<UserRow>(
     `INSERT INTO users (school_id, email, name, role, status) VALUES ($1, $2, $3, $4, 'invited')
-     RETURNING id, name, email, role, status, last_sign_in_at, removed_at`,
+     RETURNING id, name, email, role, status, last_sign_in_at, removed_at, false AS mfa_enabled`,
     [schoolId, input.email, input.name, input.role],
   );
   return rows[0];
@@ -66,7 +70,8 @@ export async function listActiveStaff(db: Queryable, schoolId: string, ids?: rea
 /** One of the school's accounts that has not been removed, locked until the transaction ends. */
 export async function findUserForUpdate(db: Queryable, schoolId: string, id: string) {
   const { rows } = await db.query<UserRow & { has_password: boolean }>(
-    `SELECT id, name, email, role, status, last_sign_in_at, removed_at, (password_hash IS NOT NULL) AS has_password FROM users
+    `SELECT id, name, email, role, status, last_sign_in_at, removed_at, (password_hash IS NOT NULL) AS has_password,
+            EXISTS (SELECT 1 FROM user_mfa m WHERE m.user_id = users.id AND m.confirmed_at IS NOT NULL) AS mfa_enabled FROM users
       WHERE school_id = $1 AND id = $2 AND removed_at IS NULL
       FOR UPDATE`,
     [schoolId, id],

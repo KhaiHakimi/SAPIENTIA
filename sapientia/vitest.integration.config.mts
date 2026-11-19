@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,9 @@ else if (process.env.CI !== 'true') throw new Error('Set TEST_DATABASE_URL in .e
 
 // Uploaded files from tests go to a scratch folder, never the development uploads.
 process.env.UPLOAD_DIR ??= join(tmpdir(), 'sapientia-integration-uploads');
+
+// Two-step sign-in needs an encryption key; tests make a throwaway one, since every table is emptied anyway.
+process.env.MFA_ENCRYPTION_KEY ??= randomBytes(32).toString('base64');
 
 /** Tests that need a real, migrated PostgreSQL. Named *.integration.test.ts and kept out of the unit run. */
 export default defineConfig({

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { defineConfig, devices } from '@playwright/test';
 import { E2E_ORIGIN, E2E_PORT, e2eDatabaseUrl } from './e2e/support/e2e-env';
 
@@ -37,7 +38,11 @@ export default defineConfig({
     url: `${E2E_ORIGIN}/health`,
     reuseExistingServer: false,
     timeout: 300_000,
-    // Uploads from the journeys go to their own folder, never the development uploads.
-    env: { DATABASE_URL: databaseUrl, APP_ORIGIN: '', NEXT_TELEMETRY_DISABLED: '1', UPLOAD_DIR: '.data/e2e-uploads' },
+    // Uploads from the journeys go to their own folder, never the development uploads. Two-step sign-in gets a throwaway key:
+    // the database is emptied before every run, so nothing encrypted with it outlives the run.
+    env: {
+      DATABASE_URL: databaseUrl, APP_ORIGIN: '', NEXT_TELEMETRY_DISABLED: '1', UPLOAD_DIR: '.data/e2e-uploads',
+      MFA_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
+    },
   },
 });

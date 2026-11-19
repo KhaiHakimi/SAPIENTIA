@@ -308,6 +308,10 @@ Sprint 14 was built on 18 November 2026. The project owner chose the school as t
 - [x] Teacher notes to one pupil on homework (300 characters, logged with ids, hidden not deleted); the pupil and their guardians see them, the pupil cannot reply
 - [x] Phase 4 review (`docs/phase-4-students.md`): every plan item built except the legal review request (D7), which keeps gate G6 closed
 
+Toward gate G6, built on 18 November 2026 while Phase 5 waits for the legal review (the project owner chose this over starting Phase 5):
+- [x] Two-step sign-in for staff (authenticator app, TOTP; recovery codes; secret encrypted under MFA_ENCRYPTION_KEY). Any member of staff may turn it on; a school can require it for administrators; an administrator can reset a colleague's for a lost phone. This meets G6's "MFA ready for committee members" once Phase 5 names the committee role
+- [ ] G6: written legal review (D7) and the Phase 5 threat model are still outstanding
+
 ### Phase 5: Bullying reporting (S15 to S17, 17 May to 25 June 2027; gated on legal review)
 - Do not start until G6 passes.
 - Tables: `bullying_reports`, `report_escalations`, `report_view_log`. Append-only: no UPDATE or DELETE of report content (enforce with database permissions or triggers as well as code).

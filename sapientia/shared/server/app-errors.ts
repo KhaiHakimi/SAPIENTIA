@@ -70,3 +70,17 @@ export class PasswordChangeRequiredError extends AppError {
     super(403, 'password_change_required', 'Choose your own password first.');
   }
 }
+
+/** The school requires two-step sign-in for administrators and this one has not set it up: only the setup opens. */
+export class MfaSetupRequiredError extends AppError {
+  constructor() {
+    super(403, 'mfa_setup_required', 'Set up two-step sign-in first.');
+  }
+}
+
+/** The server has no MFA_ENCRYPTION_KEY, so it cannot keep an authenticator secret safely. */
+export class MfaUnavailableError extends AppError {
+  constructor() {
+    super(503, 'mfa_unavailable', 'Two-step sign-in is not available on this server.');
+  }
+}

@@ -1,4 +1,5 @@
 import 'server-only';
+import { hasMfa, startChallenge } from '@/features/mfa/server/mfa-sign-in.service';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { InvalidCredentialsError, NotFoundError } from '@/shared/server/app-errors';
 import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
@@ -16,11 +17,15 @@ interface CredentialRow {
   password_hash: string | null;
 }
 
+/** A session, or (for an account with an authenticator) the code step: a challenge token for its own short-lived cookie. */
+export type SignInOutcome = { kind: 'session'; token: string } | { kind: 'mfa'; challenge: string };
+
 /**
- * Checks the password and starts a session. Unknown email, wrong password, an invited or a disabled account all give the
- * same error after the same amount of work, so the response reveals nothing about which accounts exist.
+ * Checks the password and starts a session, or the code step when the account has two-step sign-in. Unknown email, wrong
+ * password, an invited or a disabled account all give the same error after the same amount of work, so the response reveals
+ * nothing about which accounts exist.
  */
-export async function signIn(input: SignInRequest, address: string, clock: Clock, db: Queryable = getPool()): Promise<string> {
+export async function signIn(input: SignInRequest, address: string, clock: Clock, db: Queryable = getPool()): Promise<SignInOutcome> {
   const keys = { account: emailThrottleKey(input.email), address };
   await assertNotThrottled(db, keys, clock);
 
@@ -37,9 +42,13 @@ export async function signIn(input: SignInRequest, address: string, clock: Clock
   }
 
   await clearAccountFailures(db, keys.account);
+  if (await hasMfa(db, user.school_id, user.id)) {
+    logger.info('auth.password_ok_mfa_next', { userId: user.id, schoolId: user.school_id });
+    return { kind: 'mfa', challenge: await startChallenge(db, user.school_id, user.id, clock) };
+  }
   await db.query('UPDATE users SET last_sign_in_at = $2 WHERE id = $1', [user.id, clock.now()]);
   logger.info('auth.signed_in', { userId: user.id, schoolId: user.school_id });
-  return createSession(db, user.school_id, user.id, clock);
+  return { kind: 'session', token: await createSession(db, user.school_id, user.id, clock) };
 }
 
 /**

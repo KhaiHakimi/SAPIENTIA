@@ -9,6 +9,8 @@ export type ApiErrorCode =
   | 'csrf'
   | 'configuration'
   | 'password_change_required'
+  | 'mfa_setup_required'
+  | 'mfa_unavailable'
   | 'internal';
 
 /** Body of every error response: { error: ApiErrorBody }. */

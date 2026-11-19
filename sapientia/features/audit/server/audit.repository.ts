@@ -58,7 +58,14 @@ export type AuditAction =
   | 'user.enabled'
   | 'user.removed'
   | 'homework.comment_added'
-  | 'homework.comment_hidden';
+  | 'homework.comment_hidden'
+  | 'mfa.enabled'
+  | 'mfa.disabled'
+  | 'mfa.recovery_codes_replaced'
+  | 'mfa.recovery_code_used'
+  | 'mfa.reset'
+  | 'school.mfa_required'
+  | 'school.mfa_optional';
 
 export interface AuditEntry {
   actorId: string | null;

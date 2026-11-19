@@ -70,11 +70,12 @@ export function UsersPage() {
                         {user.removed
                           ? <span className={calm.badge}>{text.former}</span>
                           : <span className={`${calm.badge} ${STATUS_BADGE[user.status]}`}>{text.statuses[user.status]}</span>}
+                        {user.mfaEnabled && <> <span className={calm.badge}>{text.mfaOn}</span></>}
                       </td>
                       <td>{user.lastSignInAt ? formatDate(user.lastSignInAt, lang, { withTime: true }) : text.never}</td>
                       <td>
                         {!user.removed && user.id !== me.id && (
-                          <UserActions text={text} user={user} onRemoved={() => setNotice(text.removed(user.name))} />
+                          <UserActions text={text} user={user} onNotice={setNotice} />
                         )}
                       </td>
                     </tr>

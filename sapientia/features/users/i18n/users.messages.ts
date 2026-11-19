@@ -37,6 +37,10 @@ export const USERS_MESSAGES: Record<Lang, UsersMessages> = {
     confirmRemove: (name) => `Buang log masuk ${name} secara kekal? Akses tamat serta-merta dan tidak boleh dipulihkan. Rekod tugas dan kerja rumah mengekalkan nama mereka sebagai bekas staf, dan log jam peribadi mereka dipadam. Untuk berhenti sementara, nyahaktifkan sahaja.`,
     cancel: 'Batal',
     removed: (name) => `Log masuk ${name} telah dibuang.`,
+    mfaOn: 'Dua langkah',
+    resetMfa: 'Set semula log masuk dua langkah',
+    confirmResetMfa: (name) => `Set semula log masuk dua langkah ${name}? Lakukan ini hanya jika telefon mereka hilang dan anda telah mengesahkan identiti mereka secara bersemuka. Mereka akan dilog keluar dan boleh log masuk dengan kata laluan sahaja sehingga menyediakannya semula.`,
+    mfaReset: (name) => `Log masuk dua langkah ${name} telah ditetapkan semula.`,
 
     fieldErrors: {
       self: 'Anda tidak boleh mengubah log masuk anda sendiri.',
@@ -78,6 +82,10 @@ export const USERS_MESSAGES: Record<Lang, UsersMessages> = {
     confirmRemove: (name) => `Remove ${name}'s login for good? Access ends at once and cannot be restored. Task and homework records keep their name as former staff, and their private hours log is deleted. To pause access, disable instead.`,
     cancel: 'Cancel',
     removed: (name) => `${name}'s login has been removed.`,
+    mfaOn: 'Two-step',
+    resetMfa: 'Reset two-step sign-in',
+    confirmResetMfa: (name) => `Reset ${name}'s two-step sign-in? Do this only if their phone is lost and you have checked who they are in person. They are signed out and can sign in with their password alone until they set it up again.`,
+    mfaReset: (name) => `${name}'s two-step sign-in has been reset.`,
 
     fieldErrors: {
       self: 'You cannot change your own login.',

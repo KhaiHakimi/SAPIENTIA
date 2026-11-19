@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { signOutStaff } from '@/features/auth/services/staff-auth.client';
+import { SecurityPage } from '@/features/mfa/components/SecurityPage';
 import { PUSH_OFF_DEADLINE_MS } from '@/features/notifications/constants/notification.constants';
 import { disablePush } from '@/features/notifications/services/push-device.client';
 import { ApiError } from '@/shared/api/api-client';
@@ -84,7 +85,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
           <span className={calm.muted}>{user.schoolName}</span>
         </div>
         <nav aria-label={text.mainNav} className={styles.nav}>
-          {STAFF_NAV.filter((item) => item.roles.includes(user.role)).map((item) => (
+          {!user.mfaSetupRequired && STAFF_NAV.filter((item) => item.roles.includes(user.role)).map((item) => (
             <Link key={item.key} href={item.href} className={styles.navLink} aria-current={isCurrent(item.href) ? 'page' : undefined}>
               {text.nav[item.key]}
             </Link>
@@ -106,7 +107,8 @@ export function StaffShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main id="staff-main" className={calm.page}>
-        {children}
+        {/* The school requires two-step sign-in for administrators: nothing else opens until it is set up. */}
+        {user.mfaSetupRequired ? <SecurityPage required /> : children}
       </main>
     </StaffUserContext.Provider>
   );

@@ -14,7 +14,7 @@ Status words: **Pass** (checked in code and by a test), **Fixed** (changed in th
 | A04 | Insecure design | Pass | Held tasks are hidden by the service, not the screen; delivery is a conditional update, so a repeated job is harmless; urgent override needs a reason (database CHECK and schema); `Idempotency-Key` on task creation. |
 | A05 | Security misconfiguration | Fixed | CSP, HSTS (production), `Cross-Origin-Opener-Policy`, and `X-Powered-By` removed, on top of the existing `nosniff`, frame denial, referrer and permissions policies. Unexpected errors return a request id and no detail. |
 | A06 | Vulnerable components | Pass, one Open | Exact versions pinned for runtime packages; lockfile committed; CI fails on high or critical advisories. `npm audit --omit=dev`: 0. **Open:** 11 moderate advisories in development tools only (Vitest's mocker, `glob`, `minimatch` under ESLint). They do not ship. Update when the fixed releases are two weeks old. |
-| A07 | Identification and authentication failures | Pass, two Open | One answer for wrong email, wrong password and inactive account; 5 failures per account and 30 per address in 15 minutes; passwords 10 to 128 characters; sessions end after 60 minutes idle or 12 hours. **Open:** no check against breached-password lists; no MFA (planned before Phase 5). |
+| A07 | Identification and authentication failures | Pass, two Open | One answer for wrong email, wrong password and inactive account; 5 failures per account and 30 per address in 15 minutes; passwords 10 to 128 characters; sessions end after 60 minutes idle or 12 hours. **Open:** no check against breached-password lists. Two-step sign-in was added on 18 November 2026 (gate G6). |
 | A08 | Software and data integrity failures | Pass | GitHub Actions pinned by commit SHA; branch protection on `main`; the audit log refuses UPDATE and DELETE by trigger. |
 | A09 | Logging and monitoring failures | Pass, one Open | JSON logs with secrets and personal fields redacted by key name at any depth; refusals and failures are logged with a request id. **Open:** no alerting or log retention yet; they arrive with hosting. |
 | A10 | Server-side request forgery | Pass | The only outbound calls are SMTP (from `.env`) and Web Push, whose endpoints must be HTTPS on an allowlisted push service (`PUSH_SERVICE_HOSTS`); tested against internal addresses and look-alike hosts. |
@@ -32,7 +32,7 @@ Trade-off: scripts keep `'unsafe-inline'`. A nonce-based policy needs every page
 1. Choose hosting (D5) and confirm TLS, a proxy that overwrites `X-Forwarded-For` (the per-address sign-in limit trusts it), log retention and uptime monitoring.
 2. Update the development tools with moderate advisories.
 3. Breached-password check on accept-invite (for example a k-anonymity range query) or a documented decision not to.
-4. MFA for administrators before Phase 5 (gate G6).
+4. ~~MFA for administrators before Phase 5 (gate G6).~~ Built on 18 November 2026 (see "Two-step sign-in" below). Still to decide with hosting (D5): where MFA_ENCRYPTION_KEY is kept, and switching the requirement on for real schools.
 5. Invite links are shown to the administrator, not emailed; anyone who sees the screen can use the link within 48 hours.
 6. Demo student accounts are a browser-only gate with passwords in the page source. They must be replaced before any student data is real (Phase 4).
 
@@ -157,3 +157,18 @@ Checked on 18 November 2026 for the new code only.
 Open item:
 
 13. A removed or disabled teacher's timetable slots stay until an administrator edits the timetable.
+
+## Two-step sign-in (gate G6)
+
+Checked on 18 November 2026 for the new code only.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A02 | Cryptographic failures | Pass | TOTP per RFC 6238 (HMAC-SHA1, 6 digits, 30 seconds), checked against the RFC test values. The shared secret is stored with AES-256-GCM under MFA_ENCRYPTION_KEY from the environment (never the repository or database; a changed record fails the tag check; tested). Recovery codes are 10 random characters (about 49 bits) stored as SHA-256 only. Without a key, two-step sign-in is off rather than stored in clear. |
+| A04 | Insecure design | Pass | A correct password for an account with an authenticator gives a 5-minute challenge cookie, never a session; the session starts only after a current code or an unused recovery code (tested). A code's time step cannot be used twice (replay refused; tested). Turning it on, off, or making new recovery codes asks for the password again. A school can require it for administrators; an administrator must have it before switching the rule on, and cannot switch their own off while it is required (tested). |
+| A07 | Identification and authentication failures | Pass | Wrong codes count 5 per challenge (then sign in again) and against the same account and address throttle as passwords (`mfa:` counters). An administrator can reset a colleague's authenticator for a lost phone, which signs them out everywhere (tested); not their own. |
+| A09 | Logging and monitoring failures | Pass | Turning it on or off, new recovery codes, a recovery code used to sign in, a reset by an administrator, and the school rule changing are audited with ids only (tested). |
+
+Open item:
+
+14. Setup shows a key to type into the app and an otpauth:// link; there is no QR code, to avoid a new dependency. Add one if schools find typing the key hard (Phase 0).

@@ -11,6 +11,11 @@ export interface SessionUser {
   email: string;
   name: string;
   role: StaffRole;
+  /**
+   * The school requires two-step sign-in for administrators and this administrator has not set it up: every staff endpoint
+   * but /api/me and the setup refuses them until they do.
+   */
+  mfaSetupRequired: boolean;
 }
 
 export interface SignInRequest {

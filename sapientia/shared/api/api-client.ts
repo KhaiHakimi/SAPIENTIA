@@ -23,6 +23,8 @@ export interface ApiRequest {
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  /** Overrides the usual limit for a call known to be slow (a language model). */
+  timeoutMs?: number;
 }
 
 /**
@@ -31,7 +33,7 @@ export interface ApiRequest {
  */
 export async function apiFetch<T>(path: string, request: ApiRequest = {}): Promise<T> {
   const isForm = request.body instanceof FormData;
-  const timeout = AbortSignal.timeout(isForm ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS);
+  const timeout = AbortSignal.timeout(request.timeoutMs ?? (isForm ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS));
   let response: Response;
   try {
     response = await fetch(path, {

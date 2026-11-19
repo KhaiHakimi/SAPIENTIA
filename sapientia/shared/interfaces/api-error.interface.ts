@@ -11,6 +11,8 @@ export type ApiErrorCode =
   | 'password_change_required'
   | 'mfa_setup_required'
   | 'mfa_unavailable'
+  | 'ai_unavailable'
+  | 'ai_bad_output'
   | 'internal';
 
 /** Body of every error response: { error: ApiErrorBody }. */

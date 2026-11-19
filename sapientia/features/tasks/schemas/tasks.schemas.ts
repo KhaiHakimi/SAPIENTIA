@@ -7,11 +7,16 @@ import {
 
 const statusSchema = z.enum(ASSIGNMENT_STATUSES, { error: 'invalid_status' });
 
+/** The task's own fields, shared with anything else that proposes a task (Phase 6 drafts), so both obey the same rules. */
+export const taskTitleSchema = z.string({ error: 'required' }).trim().min(1, { error: 'required' }).max(TASK_TITLE_MAX, { error: 'too_long' });
+export const taskDescriptionSchema = z.string().trim().max(TASK_DESCRIPTION_MAX, { error: 'too_long' }).optional()
+  .transform((value) => value || undefined);
+export const taskDueOnSchema = z.iso.date({ error: 'invalid_date' });
+
 export const createTaskSchema = z.strictObject({
-  title: z.string({ error: 'required' }).trim().min(1, { error: 'required' }).max(TASK_TITLE_MAX, { error: 'too_long' }),
-  description: z.string().trim().max(TASK_DESCRIPTION_MAX, { error: 'too_long' }).optional()
-    .transform((value) => value || undefined),
-  dueOn: z.iso.date({ error: 'invalid_date' }),
+  title: taskTitleSchema,
+  description: taskDescriptionSchema,
+  dueOn: taskDueOnSchema,
   assigneeIds: z.array(z.uuid({ error: 'invalid_assignee' }), { error: 'required' })
     .min(1, { error: 'required' }).max(ASSIGNEES_MAX, { error: 'too_many' })
     .transform((ids) => [...new Set(ids)]),

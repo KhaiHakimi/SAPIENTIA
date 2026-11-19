@@ -9,9 +9,12 @@ import type { FeasibilityRequest } from '@/features/capacity/interfaces/capacity
 import { fetchWorkload, WORKLOAD_KEY } from '@/features/capacity/services/capacity.client';
 import { formatDuration } from '@/features/capacity/services/duration-text';
 import { URGENT_REASON_MAX } from '@/features/delivery/constants/delivery.constants';
+import { SimilarTasksNotice } from '@/features/duplicates/components/SimilarTasksNotice';
 import { fetchDeliveryPreview, PREVIEW_KEY } from '@/features/delivery/services/delivery.client';
 import { describeDeliveryTime } from '@/features/delivery/services/delivery-text';
 import { fetchSchoolData, schoolDataKey } from '@/features/school-data/services/school-data.client';
+import { TaskDraftPanel } from '@/features/task-drafts/components/TaskDraftPanel';
+import type { TaskDraft } from '@/features/task-drafts/interfaces/task-draft.interface';
 import { fetchStaffDirectory, STAFF_DIRECTORY_KEY } from '@/features/users/services/users.client';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError, describeFieldError } from '@/shared/api/api-error.messages';
@@ -35,7 +38,8 @@ const PREVIEW_REFRESH_MS = 60_000;
  * Senders and administrators: title, assignees and due date first (plan Sprint 3); details are optional. Outside working
  * hours the form says when the task will arrive and offers the urgent override, which needs a reason (plan Sprint 4).
  * With a time estimate it also warns when an assignee does not have the time by the due date, and each name carries the
- * work that person already has this week, so the sender can spread tasks before choosing (plan Phase 2).
+ * work that person already has this week, so the sender can spread tasks before choosing (plan Phase 2). Open tasks that look
+ * like this one are listed as the title is typed, and with AI switched on an instruction can fill the form (plan Phase 6).
  */
 export function CreateTaskPage() {
   const text = useMessages(TASKS_MESSAGES);
@@ -91,6 +95,14 @@ export function CreateTaskPage() {
     ? { assigneeIds, dueOn, estimatedMinutes: estimate, urgent: held && urgent }
     : null;
 
+  // An AI draft fills only what it proposed; the person checks everything, chooses the people and sends (plan Phase 6).
+  const applyDraft = (draft: TaskDraft) => {
+    setTitle(draft.title);
+    if (draft.description) setDescription(draft.description);
+    if (draft.dueOn) setDueOn(draft.dueOn);
+    if (draft.estimatedMinutes) setMinutes(String(draft.estimatedMinutes));
+  };
+
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     create.mutate();
@@ -104,6 +116,7 @@ export function CreateTaskPage() {
           <p>{text.createIntro}</p>
         </div>
       </div>
+      <TaskDraftPanel onDraft={applyDraft} />
       <form className={calm.card} onSubmit={onSubmit} noValidate>
         {create.isError && (
           <div className={`${calm.alert} ${calm.alertError}`} role="alert">{describeApiError(create.error, lang)}</div>
@@ -115,6 +128,8 @@ export function CreateTaskPage() {
             aria-invalid={Boolean(fields.title)} aria-describedby="task-title-error" />
           <div id="task-title-error" className={calm.fieldError}>{fieldText(fields.title, text, lang)}</div>
         </div>
+
+        <SimilarTasksNotice title={title} assigneeIds={assigneeIds} />
 
         <fieldset className={calm.fieldset} aria-describedby="task-assignees-help task-assignees-error">
           <legend>{text.assignees} <span className={calm.muted}>({text.selectedCount(assigneeIds.length)})</span></legend>

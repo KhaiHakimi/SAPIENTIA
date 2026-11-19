@@ -11,6 +11,10 @@ export function saveEmailChoice(email: boolean): Promise<NotificationSettings> {
   return apiFetch('/api/me/notifications', { method: 'PATCH', body: { email } });
 }
 
+export function saveDigestChoice(weeklyDigest: boolean): Promise<NotificationSettings> {
+  return apiFetch('/api/me/notifications', { method: 'PATCH', body: { weeklyDigest } });
+}
+
 export function saveSubscription(subscription: PushSubscriptionInput): Promise<void> {
   return apiFetch('/api/me/push-subscriptions', { method: 'POST', body: subscription });
 }

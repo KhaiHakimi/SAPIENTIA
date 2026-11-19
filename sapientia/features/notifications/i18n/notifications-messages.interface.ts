@@ -7,6 +7,9 @@ export interface NotificationsMessages {
   emailLabel: string;
   emailHelp: string;
   emailSaved: (on: boolean) => string;
+  digestLabel: string;
+  digestHelp: string;
+  digestSaved: (on: boolean) => string;
   // Push
   pushHeading: string;
   pushHelp: string;

@@ -1,12 +1,14 @@
 /**
  * Background worker (plan D1, Sprint 4): a separate long-running process beside the web app. It delivers held tasks when
  * their job comes due, sweeps every minute for anything due whose job went missing, and sends the notifications (Sprint 5;
- * extension and relief messages from Phase 2). Run with `npm run worker`.
+ * extension and relief messages from Phase 2) and the weekly digest (Phase 6). Run with `npm run worker`.
  */
 import { PgBoss } from 'pg-boss';
 import {
   DELIVER_DUE_QUEUE, DELIVER_TASK_QUEUE, type DeliverTaskJob, NOTIFY_EVENT_QUEUE, NOTIFY_TASK_QUEUE, type NotifyTaskJob,
 } from '@/features/delivery/constants/queue.constants';
+import { DIGEST_SWEEP_QUEUE } from '@/features/digest/constants/digest.constants';
+import { sendWeeklyDigests } from '@/features/digest/server/digest.service';
 import { closeQueue, ensureQueues } from '@/features/delivery/server/delivery-queue.service';
 import { deliverDueTasks, deliverTask } from '@/features/delivery/server/delivery.service';
 import type { NotificationSenders } from '@/features/notifications/interfaces/notification.interface';
@@ -58,6 +60,11 @@ async function main(): Promise<void> {
       const result = await notifyEvent(parsed.data, systemClock, senders, appOrigin);
       if (result.failed > 0) throw new Error(`${result.failed} notification(s) not sent yet; retrying later.`);
     }
+  });
+
+  // The Monday-morning digest (Phase 6): each sweep sends whatever has come due and is not yet recorded for the week.
+  await boss.work(DIGEST_SWEEP_QUEUE, async () => {
+    await sendWeeklyDigests(systemClock, senders.email, appOrigin);
   });
 
   // Anything that came due while the worker was stopped goes out now rather than at the next sweep.

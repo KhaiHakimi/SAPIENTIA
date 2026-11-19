@@ -2,6 +2,8 @@
 export interface NotificationSettings {
   /** Email when a task reaches me. */
   email: boolean;
+  /** The Monday-morning summary of my own week (Phase 6). Independent of email. */
+  weeklyDigest: boolean;
   push: {
     /** False when the server has no VAPID keys; the page then hides the push switch. */
     available: boolean;
@@ -9,8 +11,10 @@ export interface NotificationSettings {
   };
 }
 
+/** Either switch, or both. */
 export interface NotificationSettingsPatch {
-  email: boolean;
+  email?: boolean;
+  weeklyDigest?: boolean;
 }
 
 /** What a browser's PushSubscription.toJSON() gives, as POSTed to /api/me/push-subscriptions. */

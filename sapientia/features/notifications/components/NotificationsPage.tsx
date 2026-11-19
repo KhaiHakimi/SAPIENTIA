@@ -10,7 +10,7 @@ import type { NotificationsMessages } from '../i18n/notifications-messages.inter
 import { NOTIFICATIONS_MESSAGES } from '../i18n/notifications.messages';
 import type { NotificationSettings } from '../interfaces/notification.interface';
 import { currentSubscription, disablePush, enablePush, supportsPush } from '../services/push-device.client';
-import { fetchNotificationSettings, NOTIFICATION_SETTINGS_KEY, saveEmailChoice } from '../services/notifications.client';
+import { fetchNotificationSettings, NOTIFICATION_SETTINGS_KEY, saveDigestChoice, saveEmailChoice } from '../services/notifications.client';
 
 type PushState = 'checking' | 'unsupported' | 'on' | 'off';
 
@@ -19,6 +19,10 @@ function EmailCard({ settings, text }: { settings: NotificationSettings; text: N
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: saveEmailChoice,
+    onSuccess: (saved) => queryClient.setQueryData(NOTIFICATION_SETTINGS_KEY, saved),
+  });
+  const saveDigest = useMutation({
+    mutationFn: saveDigestChoice,
     onSuccess: (saved) => queryClient.setQueryData(NOTIFICATION_SETTINGS_KEY, saved),
   });
   return (
@@ -32,6 +36,15 @@ function EmailCard({ settings, text }: { settings: NotificationSettings; text: N
       <p id="email-help" className={calm.help}>{text.emailHelp}</p>
       {save.isError && <div className={`${calm.alert} ${calm.alertError}`} role="alert">{describeApiError(save.error, lang)}</div>}
       {save.isSuccess && <div className={`${calm.alert} ${calm.alertOk}`} role="status">{text.emailSaved(settings.email)}</div>}
+
+      <label className={calm.checkbox}>
+        <input type="checkbox" checked={settings.weeklyDigest} disabled={saveDigest.isPending} aria-describedby="digest-help"
+          onChange={(event) => saveDigest.mutate(event.target.checked)} />
+        <span>{text.digestLabel}</span>
+      </label>
+      <p id="digest-help" className={calm.help}>{text.digestHelp}</p>
+      {saveDigest.isError && <div className={`${calm.alert} ${calm.alertError}`} role="alert">{describeApiError(saveDigest.error, lang)}</div>}
+      {saveDigest.isSuccess && <div className={`${calm.alert} ${calm.alertOk}`} role="status">{text.digestSaved(settings.weeklyDigest)}</div>}
     </section>
   );
 }

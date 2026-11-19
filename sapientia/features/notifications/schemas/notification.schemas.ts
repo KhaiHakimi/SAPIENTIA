@@ -10,8 +10,9 @@ const endpointSchema = z.string({ error: 'required' }).max(PUSH_ENDPOINT_MAX, { 
   .refine(isAllowedPushEndpoint, { error: 'push_service_not_allowed' });
 
 export const notificationSettingsPatchSchema = z.strictObject({
-  email: z.boolean({ error: 'required' }),
-});
+  email: z.boolean({ error: 'invalid_boolean' }).optional(),
+  weeklyDigest: z.boolean({ error: 'invalid_boolean' }).optional(),
+}).refine((patch) => patch.email !== undefined || patch.weeklyDigest !== undefined, { error: 'required', path: ['email'] });
 
 /** PushSubscription.toJSON() also carries expirationTime; it is accepted and ignored. */
 export const pushSubscriptionSchema = z.strictObject({

@@ -19,7 +19,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // In CI, 'github' turns each failure into an annotation on the run, which can be read without opening the full log.
+  reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: E2E_ORIGIN,
     channel: process.env.CI ? undefined : 'msedge',

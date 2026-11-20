@@ -107,3 +107,12 @@ jobs:
       # The journeys and the accessibility scan drive Chromium here; locally they use the installed Microsoft Edge.
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      # On failure, keep the HTML report and traces (screenshots, network, console) for a week. All data in them is fictional.
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            sapientia/playwright-report/
+            sapientia/test-results/
+          retention-days: 7

@@ -39,6 +39,10 @@ for (const theme of ['dark', 'light']) {
         // Lists and forms load after the heading; wait for them so the scan sees the real screen.
         await expect(page.getByRole('status').filter({ hasText: 'Memuatkan' })).toHaveCount(0);
         expect(await violationsOn(page), path).toEqual([]);
+        // WCAG 1.4.10 Reflow: nothing may make the page wider than the screen. On a phone a wider page moves sideways under
+        // the finger (taps land on the wrong control); a wide table must scroll inside its own box instead.
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, `${path} is wider than the screen`).toBeLessThanOrEqual(0);
       }
     });
   });

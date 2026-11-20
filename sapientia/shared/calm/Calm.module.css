@@ -49,7 +49,10 @@
 .alertOk { border-color: var(--ok); color: var(--ok); }
 .alertInfo { border-color: var(--accent); }
 
-.tableWrap { overflow-x: auto; }
+/* position: relative makes this box the containing block of absolutely positioned children (the .sr-only header labels),
+   so they are clipped here too. Without it they were placed against the page and, on a phone, made the whole page wider
+   than the screen whenever a table scrolled sideways. */
+.tableWrap { position: relative; overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: .95em; }
 .table th, .table td { padding: .6em .5em; border-bottom: 1px solid var(--bd); text-align: left; vertical-align: top; }
 .table th { font-size: .85em; color: var(--muted); font-weight: 600; }

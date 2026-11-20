@@ -55,7 +55,7 @@ export function ApiTokensSection() {
       <h2 id="mcp-heading">{text.heading}</h2>
       <p>{text.intro}</p>
       <p className={calm.help}>{text.scope}</p>
-      <p>{text.endpoint}: <code>{tokens.data.endpoint}</code></p>
+      <p>{text.endpoint}: <code className={calm.code}>{tokens.data.endpoint}</code></p>
 
       {tokens.data.items.length === 0 ? <p className={calm.muted}>{text.none}</p> : (
         <ul>
@@ -79,7 +79,8 @@ export function ApiTokensSection() {
       {made ? (
         <div className={`${calm.alert} ${calm.alertInfo}`} role="status">
           <strong>{text.shownOnce}</strong>
-          <p>{text.tokenLabel}: <code>{made.token}</code></p>
+          {/* calm.code breaks anywhere: a 47-character token has no other place to wrap on a phone. */}
+          <p>{text.tokenLabel}: <code className={calm.code}>{made.token}</code></p>
           <button type="button" className={calm.button} onClick={() => setMade(null)}>{text.done}</button>
         </div>
       ) : (

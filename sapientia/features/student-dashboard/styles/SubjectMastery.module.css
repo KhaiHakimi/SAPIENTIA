@@ -1,0 +1,17 @@
+.subjects { display: grid; gap: 14px; }
+.subject { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: baseline; font-size: .95rem; }
+.subject b { font-weight: 600; }
+.subject span { color: var(--muted); font-weight: 600; font-size: .88rem; }
+.subject > div { grid-column: 1 / -1; }
+
+/* Suggested practice: the weakest subject's monster. */
+.suggested { margin-top: 4px; padding-top: 16px; border-top: 2px solid var(--bd); }
+.suggestedHead { margin: 0 0 10px; font: 600 .8rem var(--heading); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.suggestedRow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px; background: var(--panel-2); border: 2px solid var(--bd); }
+.suggestedRow b { display: block; font: 600 .95rem/1.2 var(--heading); letter-spacing: .06em; text-transform: uppercase; }
+.suggestedRow span { display: block; margin-top: 2px; font-size: .85rem; color: var(--muted); }
+.fight { margin: 0; }
+@media (max-width: 420px) {
+  .suggestedRow { grid-template-columns: auto minmax(0, 1fr); }
+  .fight { grid-column: 1 / -1; justify-self: start; }
+}

@@ -1,0 +1,59 @@
+/* Guardians: the administrator's page and the guardian's own view, both in the calm scope (plan D8). Slips print on their own:
+   see the print-area rule in app/globals.css. */
+
+/* The guardian's header: brand and the three tools, no menu (one page). */
+.header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75em 1.25em; padding: .75em 1em;
+  background: var(--panel); border-bottom: 1px solid var(--bd); }
+.brand { display: flex; flex-direction: column; line-height: 1.2; }
+.brand strong { font-size: 1.1em; }
+.brand span { font-size: .85em; }
+
+/* One child: name, relationship, homework, the week, and the refusal at the end. */
+.child h2 { margin-bottom: .25em; }
+.child h3 { margin: 1.25em 0 .5em; font-size: 1em; }
+.weekNav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; margin-bottom: .75em; }
+.weekNav p { margin: 0; font-weight: 600; }
+.days { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .75em; }
+.day { border: 1px solid var(--bd); border-radius: .35em; padding: .6em .75em; }
+.day h4 { margin: 0 0 .4em; font-size: .9em; }
+.day ul { list-style: none; margin: 0; padding: 0; }
+.day li { padding: .2em 0; font-size: .9em; }
+.today { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.note { margin-top: .3em; padding-left: .6em; border-left: 3px solid var(--accent); font-size: .9em; white-space: pre-line;
+  overflow-wrap: anywhere; }
+.refusal { margin-top: 1.25em; padding-top: 1em; border-top: 1px solid var(--bd); }
+
+/* Administrator: the links under each guardian. */
+.links { list-style: none; margin: 0; padding: 0; }
+.links li { padding: .15em 0; }
+.ended { color: var(--muted); }
+.panel { background: var(--bg); }
+.panelForm { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0 16px; align-items: end; margin-bottom: 12px; }
+.linkRow { display: flex; flex-wrap: wrap; align-items: end; gap: .5em 1em; padding: .5em 0; border-bottom: 1px solid var(--bd); }
+
+.slipActions { margin-bottom: 12px; }
+.slip { max-width: 24rem; border: 2px dashed currentColor; border-radius: 6px; padding: 12px 14px; break-inside: avoid; }
+.slip p { margin: 4px 0; }
+.slipHeading { font-size: .85em; opacity: .8; }
+.slipName { font-weight: 700; font-size: 1.1em; }
+.slipCredentials { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 8px 0; }
+.slipCredentials dt { opacity: .8; }
+.slipCredentials dd { margin: 0; font-size: 1.15em; font-weight: 700; letter-spacing: .04em; }
+
+/* Administrator: the printed summary for a guardian without a smartphone. Only the sheet prints. */
+.summaryTools { margin-bottom: 12px; }
+.summaryTools [aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.summary h2 { margin: .1em 0; }
+.summaryChild { margin-top: 1.25em; padding-top: .75em; border-top: 1px solid var(--bd); break-inside: avoid-page; }
+.summaryChild h3 { margin: 0 0 .5em; }
+.summaryChild h4 { margin: 1em 0 .4em; font-size: .95em; }
+.summaryDetails { white-space: pre-line; overflow-wrap: anywhere; }
+.summaryLesson { display: inline-block; margin-right: 1.25em; }
+.summaryFooter { margin-top: 1.5em; font-size: .9em; }
+
+@media print {
+  .slipActions { display: none; }
+  .slip { color: #000; background: #fff; border-color: #000; border-radius: 0; }
+  .summary { box-shadow: none; }
+  .summary table, .summary th, .summary td { color: #000; border-color: #000; }
+}

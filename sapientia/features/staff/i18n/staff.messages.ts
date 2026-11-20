@@ -1,0 +1,37 @@
+import type { Lang } from '@/shared/interfaces/localized-text.interface';
+import type { StaffMessages } from './staff-messages.interface';
+
+export const STAFF_MESSAGES: Record<Lang, StaffMessages> = {
+  ms: {
+    skipToContent: 'Langkau ke kandungan',
+    mainNav: 'Menu utama',
+    nav: {
+      board: 'Papan Tugas', sent: 'Tugas Dihantar', held: 'Ditahan', newTask: 'Tugas Baharu', timetable: 'Jadual Waktu', relief: 'Guru Ganti',
+      lessons: 'Rekod Kelas', homework: 'Kerja Rumah', meetings: 'Pertemuan', materials: 'Bank Bahan', hours: 'Log Jam Peribadi', reports: 'Laporan Bulanan', users: 'Pengguna', students: 'Murid', guardians: 'Penjaga', schoolData: 'Data Sekolah', settings: 'Waktu Bekerja', calendar: 'Kalendar', notifications: 'Pemberitahuan', security: 'Keselamatan',
+    },
+    roles: { admin: 'Pentadbir', sender: 'Pengirim tugas', teacher: 'Guru' },
+    switchLanguage: 'Tukar bahasa / Switch language',
+    theme: 'Tema',
+    signOut: 'Log Keluar',
+    signingOut: 'Log keluar…',
+    loading: 'Memuatkan…',
+    loadFailed: 'Tidak dapat memuatkan akaun anda.',
+    retry: 'Cuba lagi',
+  },
+  en: {
+    skipToContent: 'Skip to content',
+    mainNav: 'Main menu',
+    nav: {
+      board: 'Task Board', sent: 'Sent Tasks', held: 'Held', newTask: 'New Task', timetable: 'Timetable', relief: 'Relief',
+      lessons: 'Lesson Records', homework: 'Homework', meetings: 'Meetings', materials: 'Material Bank', hours: 'Private Hours Log', reports: 'Monthly Report', users: 'Users', students: 'Pupils', guardians: 'Guardians', schoolData: 'School Data', settings: 'Working Hours', calendar: 'Calendar', notifications: 'Notifications', security: 'Security',
+    },
+    roles: { admin: 'Administrator', sender: 'Task sender', teacher: 'Teacher' },
+    switchLanguage: 'Tukar bahasa / Switch language',
+    theme: 'Theme',
+    signOut: 'Sign Out',
+    signingOut: 'Signing out…',
+    loading: 'Loading…',
+    loadFailed: 'Could not load your account.',
+    retry: 'Try again',
+  },
+};

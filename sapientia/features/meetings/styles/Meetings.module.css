@@ -1,0 +1,10 @@
+/* Meeting requests: the guardian's section under each child and the teacher's page, both in the calm scope (plan D8). */
+
+.requests { list-style: none; margin: 0 0 1em; padding: 0; }
+.request { display: grid; gap: .25em; padding: .6em 0; border-bottom: 1px solid var(--bd); }
+.request button { justify-self: start; margin-top: .25em; }
+
+.formGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0 16px; align-items: start; }
+
+.panel { background: var(--bg); }
+.answer { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0 24px; align-items: start; }

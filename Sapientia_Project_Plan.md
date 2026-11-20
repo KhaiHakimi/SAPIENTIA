@@ -1,6 +1,7 @@
-# Meja Guru: Master Project Plan
+# Sapientia: Master Project Plan
 
-Version 1.0, 16 October 2026. Prepared for Khairul Hakimi Bin Ma'amor.
+Version 1.1, 30 October 2026 (1.0: 16 October 2026). Prepared for Khairul Hakimi Bin Ma'amor.
+The app was called Meja Guru until 19 October 2026. Version 1.1 changes the stack (D1 to D4) to the Next.js app already built.
 Source documents: *Meja Guru Project Proposal Report* and *Meja Guru Development Guide* (both 15 October 2026).
 
 Independent portfolio project. Fictional data only. Not affiliated with KPM or any school.
@@ -26,10 +27,10 @@ Independent portfolio project. Fictional data only. Not affiliated with KPM or a
 
 | # | Decision | Recommendation | Why |
 |---|----------|----------------|-----|
-| D1 | Stack | Follow the guide: Node.js LTS, Fastify, PostgreSQL 16+, pg-boss, React with Vite (PWA), Zod, Luxon, Vitest, Playwright | pg-boss needs a long-running worker. That fits Fastify plus a worker better than a Next.js app. Confirm the Node LTS version at nodejs.org on day one. |
-| D2 | Package manager | pnpm workspaces (the guide says npm workspaces) | pnpm is fast, strict about dependencies and handles workspaces well. Pin exact versions, commit the lockfile, and prefer releases at least two weeks old. |
-| D3 | Language | JavaScript with JSDoc, as in the guide | Matches the Google JavaScript Style Guide. Switch to TypeScript only if you are already faster in it. |
-| D4 | Repository | One GitHub monorepo `meja-guru` with `apps/api`, `apps/web`, `packages/shared`, `seeds` | As in the guide, Section 6. |
+| D1 | Stack | **Changed 30 October 2026.** Next.js 16 (App Router; route handlers are the API), PostgreSQL 16 through `pg`, node-pg-migrate, pg-boss, Zod, Luxon, Vitest, Playwright. Node 26 (`.nvmrc`). | The student home and sign-in were already built in Next.js, so porting them to Fastify plus Vite would cost more than it saves. pg-boss still needs a long-running process: add a small separate worker (`worker/`, same repository and database code) before Sprint 4. Route handlers are tested by calling them directly, not with Fastify `inject`. |
+| D2 | Package manager | **Changed.** npm, one package (no workspaces yet) | One app needs no workspaces; add them when the worker arrives if sharing code gets awkward. Pin exact versions, commit the lockfile, and prefer releases at least two weeks old. |
+| D3 | Language | **Changed.** TypeScript | The app is already TypeScript. ESLint carries the Google style rules (see `eslint.config.mjs` for the two deliberate departures). |
+| D4 | Repository | **Changed.** GitHub `KhaiHakimi/SAPIENTIA`: the app in `sapientia/` (by-feature folders under `features/`, shared code in `shared/`, server-only code in `shared/server/`, migrations in `migrations/`), the plan and prototypes beside it | Matches what exists. Seeds will go in `sapientia/seeds/`. |
 | D5 | Demo hosting | Decide in Sprint 5, after checking current free-tier terms | Free tiers change often. Docker keeps the move cheap. |
 | D6 | Project tracking | GitHub Projects: one board, one milestone per phase | Free, and it sits next to the code and pull requests. |
 | D7 | Legal reviewer for Act 876 | Identify before Phase 4 starts (see Section 8) | Phase 5 cannot start without it. |
@@ -54,7 +55,7 @@ Sprints are two weeks, Monday to Friday. Dates assume you start on Monday 19 Oct
 | S9 to S10 | 22 Feb to 19 Mar 2027 | 3 Evidence | Lesson records, monthly reports, wellbeing, private log, material bank |
 | S11 to S14 | 22 Mar to 14 May 2027 | 4 Students and guardians | Student and guardian views, homework, marking load |
 | S15 to S17 | 17 May to 25 Jun 2027 | 5 Bullying reporting | Only after legal review (Section 8) |
-| S18 onwards | from 28 Jun 2027 | 6 AI and open standards | Instruction-to-task, duplicates, digest, MCP |
+| S18 onwards | from 28 Jun 2027 | 6 AI and open standards | Instruction-to-task, duplicates, digest, MCP (built early, 19 November 2026, while Phase 5 waits for G6) |
 
 Notes:
 - S4 and S5 fall over year-end and school holidays. Treat both as having 20% less capacity, and do not schedule anything critical for the last week of December.
@@ -113,70 +114,71 @@ Notes:
 ## 6. Phase 1: Foundation and task core (S1 to S5)
 
 ### Sprint 1 (2 to 13 November): skeleton
-- [ ] Create GitHub repo; README, `.gitignore` (including `.env`), `.env.example`
-- [ ] Monorepo with workspaces: `apps/api`, `apps/web`, `packages/shared`
-- [ ] `docker-compose.yml` for PostgreSQL 16 (password from `.env`)
-- [ ] `node-pg-migrate` set up; first migration (`schools`)
-- [ ] Fastify app: `app.js` (builds the app for tests) and `server.js` (starts it)
-- [ ] `GET /health` checks the database; one passing Vitest test
-- [ ] React plus Vite shell; React Router; TanStack Query; `i18n` folder (`ms.json`, `en.json`) from the first screen
-- [ ] Theme foundation (Section 14): design tokens as CSS variables, a `data-theme-scope` attribute (`magic` or `calm`) set per route group, and light and dark values for both scopes
-- [ ] Port the approved login prototype (`prototypes/login/index.html`, style D) to React; wire it to the auth endpoints in Sprint 2
-- [ ] ESLint with the Google style; Prettier only if it does not conflict
-- [ ] GitHub Actions: lint, test and dependency audit on every pull request
-- [ ] Branch protection on `main`
+Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the sprint.
+- [x] Create GitHub repo; README, `.gitignore` (including `.env`), `.env.example`
+- [x] ~~Monorepo with workspaces~~ One Next.js app in `sapientia/` (D2, D4)
+- [x] `docker-compose.yml` for PostgreSQL 16 (password from `.env`; port 55432 on 127.0.0.1)
+- [x] `node-pg-migrate` set up; first migration (`schools`, SQL), reversible
+- [x] ~~Fastify app~~ Database pool in `shared/server/database.service.ts`, used by route handlers
+- [x] `GET /health` checks the database (200 or 503, no error detail); unit tests plus an integration test against PostgreSQL
+- [x] Next.js shell (App Router replaces React Router); i18n as typed per-feature `*.messages.ts` files instead of `ms.json`/`en.json`. TanStack Query deferred to Sprint 2, when there is server data to fetch
+- [x] Theme foundation (Section 14): tokens as CSS variables, `data-theme-scope` set by the `(magic)` route group layout, light and dark values for both scopes. The `(calm)` group arrives with the first teacher screen
+- [x] Port the approved login prototype (style D) to `/login`; wire it to the auth endpoints in Sprint 2
+- [x] ESLint with the Google style rules (no Prettier)
+- [x] GitHub Actions: lint, type check, unit tests, migrations (up, down, up), integration tests, build and dependency audit on every pull request
+- [x] Branch protection on `main` (repository ruleset: pull request required, both CI checks required, no force push or deletion)
 
 **Done when:** G1 passes.
 
 ### Sprint 2 (16 to 27 November): accounts and roles
-- [ ] Migrations: `users`, `sessions` (store a hash of the session token, never the token)
-- [ ] Fictional seed school (for example SMK Taman Contoh) and fictional users
-- [ ] argon2id password hashing; one-time invite tokens that expire after 48 hours
-- [ ] Endpoints: `POST /auth/login`, `POST /auth/logout`, `POST /auth/invites/accept`, `GET /me`, `GET` and `POST /users`
-- [ ] Cookies: HttpOnly, Secure, SameSite=Lax; session expiry on inactivity; CSRF protection
-- [ ] Rate limiting per account and per IP; identical error for wrong email or wrong password
-- [ ] Central error handler; error classes (`NotFoundError`, `ValidationError`, `ConflictError`)
-- [ ] Logger redacts cookies, authorisation headers and request bodies
-- [ ] Web: sign in, accept invite, admin user list and invite form
-- [ ] **Refusal tests:** a teacher cannot list users; School A cannot read School B
+- [x] Migrations: `users`, `sessions` (store a hash of the session token, never the token)
+- [x] Fictional seed school (for example SMK Taman Contoh) and fictional users
+- [x] argon2id password hashing; one-time invite tokens that expire after 48 hours
+- [x] Endpoints: `POST /auth/login`, `POST /auth/logout`, `POST /auth/invites/accept`, `GET /me`, `GET` and `POST /users`
+- [x] Cookies: HttpOnly, Secure, SameSite=Lax; session expiry on inactivity; CSRF protection
+- [x] Rate limiting per account and per IP; identical error for wrong email or wrong password
+- [x] Central error handler; error classes (`NotFoundError`, `ValidationError`, `ConflictError`)
+- [x] Logger redacts cookies, authorisation headers and request bodies
+- [x] Web: sign in, accept invite, admin user list and invite form
+- [x] **Refusal tests:** a teacher cannot list users; School A cannot read School B
 
 **Done when:** G2 passes.
 
 ### Sprint 3 (30 November to 11 December): tasks
-- [ ] Migrations: `tasks`, `task_assignments`, `task_comments`, `audit_logs`
-- [ ] Repository functions take `schoolId` as a required first argument
-- [ ] Endpoints: `GET` and `POST /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/assignments/me`, `POST /tasks/:id/comments`
-- [ ] `Idempotency-Key` support on `POST /tasks`; cursor pagination (default 25, maximum 100)
-- [ ] Audit log writes for create, assign, status change, comment (metadata contains no personal data)
-- [ ] Web: teacher board (four columns), task detail with comments, sender create-task form (title, assignees, due date first; the rest optional)
-- [ ] All four states on every screen: loading, empty, error, success
-- [ ] **Refusal tests:** a non-assignee gets 404 on a task; a teacher cannot update another teacher's assignment
+- [x] Migrations: `tasks`, `task_assignments`, `task_comments`, `audit_logs`
+- [x] Repository functions take `schoolId` as a required first argument
+- [x] Endpoints: `GET` and `POST /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/assignments/me`, `POST /tasks/:id/comments`
+- [x] `Idempotency-Key` support on `POST /tasks`; cursor pagination (default 25, maximum 100)
+- [x] Audit log writes for create, assign, status change, comment (metadata contains no personal data)
+- [x] Web: teacher board (four columns), task detail with comments, sender create-task form (title, assignees, due date first; the rest optional)
+- [x] All four states on every screen: loading, empty, error, success (built into each staff page; not yet audited screen by screen by a person)
+- [x] **Refusal tests:** a non-assignee gets 404 on a task; a teacher cannot update another teacher's assignment
 
 **Done when:** G3 passes.
 
 ### Sprint 4 (14 to 25 December): held delivery
-- [ ] Migrations: `calendar_events`; school settings fields; partial index on pending delivery
-- [ ] `lib/workingTime.js`: `isWorkingDay`, `nextWorkingStart`, with the clock passed in as a parameter (never `Date.now()` in business logic)
-- [ ] Unit tests for every case in the guide: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override; a calendar with no working days (expect `ConfigurationError`)
-- [ ] pg-boss worker: job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
-- [ ] Urgent override: reason mandatory (database CHECK plus validation); logged; counted for reports later
-- [ ] Held tasks invisible to assignees until delivered (service-level rule, with a test)
-- [ ] Sender sees the delivery time in plain language ("Akan dihantar: Isnin, 7:30 pagi")
-- [ ] Endpoints: `GET` and `PATCH /school/settings`, `GET` and `POST /calendar/events`
-- [ ] Web: school settings, holiday calendar, held-tasks list for senders
-- [ ] Test the weekend setting for Kelantan and Terengganu (Friday to Saturday). Note that the guide's default is `{6,7}`, so confirm that `{5,6}` works end to end.
+- [x] Migrations: `calendar_events`; school settings fields; partial index on pending delivery
+- [x] ~~`lib/workingTime.js`~~ `features/delivery/services/working-time.service.ts`: `isWorkingDay`, `nextWorkingStart`, with the clock passed in as a parameter (never `Date.now()` in business logic)
+- [x] Unit tests for every case in the guide: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override; a calendar with no working days (expect `ConfigurationError`)
+- [x] pg-boss worker (separate process, see D1): job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
+- [x] Urgent override: reason mandatory (database CHECK plus validation); logged; counted for reports later
+- [x] Held tasks invisible to assignees until delivered (service-level rule, with a test)
+- [x] Sender sees the delivery time in plain language ("Akan dihantar: Isnin, 7:30 pagi")
+- [x] Endpoints: `GET` and `PATCH /school/settings`, `GET` and `POST /calendar/events`
+- [x] Web: school settings, holiday calendar, held-tasks list for senders
+- [x] Test the weekend setting for Kelantan and Terengganu (Friday to Saturday). Note that the guide's default is `{6,7}`, so confirm that `{5,6}` works end to end.
 
 **Done when:** the Section 15.2 acceptance criteria all pass as automated tests.
 
 ### Sprint 5 (28 December to 8 January): notifications, polish, MVP
-- [ ] Web Push (VAPID keys from environment variables) and email (local mail catcher in development)
-- [ ] Notifications sent only by the worker after the conditional update succeeds
-- [ ] External calls have timeouts and retry with exponential backoff
-- [ ] PWA manifest, icons, install prompt (`vite-plugin-pwa`)
-- [ ] Bahasa Melayu by default, English available; check every string is in the i18n files
-- [ ] Accessibility pass to WCAG 2.2 AA: contrast, labels, keyboard use, status shown by text as well as colour
-- [ ] Playwright journeys: invite and sign in; create a task at night and see it held; teacher completes it
-- [ ] OWASP Top 10 checklist review (Section 8 of this plan, Security)
+- [x] Web Push (VAPID keys from environment variables) and email (Mailpit in `docker-compose.yml` in development)
+- [x] Notifications sent only by the worker after the conditional update succeeds (notify job queued in the delivering transaction; `notification_sends` stops repeats)
+- [x] External calls have timeouts and retry with exponential backoff (`shared/server/external-call.service.ts`, then pg-boss job retries)
+- [x] PWA manifest (`app/manifest.ts`), icons, service worker, install prompt (Notifications page)
+- [x] Bahasa Melayu by default, English available; check every string is in the i18n files (audit test for the server's reason codes; no hard-coded text found in the screens)
+- [x] Accessibility pass to WCAG 2.2 AA: contrast, labels, keyboard use, status shown by text as well as colour (token contrast test and axe scan automated; form-control edges and the language button's name fixed; a manual keyboard and screen-reader pass is still worth doing before the demo)
+- [x] Playwright journeys: invite and sign in; create a task outside working hours and see it held; teacher completes it (desktop and phone-sized; "outside working hours" is made by marking today a holiday, because a browser test cannot move the server's clock; the 10 pm Friday case is in the integration tests)
+- [x] OWASP Top 10 checklist review (Section 8 of this plan, Security): `docs/owasp-review.md`; Content-Security-Policy and HSTS added; six open items listed there
 - [ ] Choose demo hosting (D5); deploy staging; smoke test
 - [ ] Record a demo video using fictional data only
 
@@ -198,6 +200,31 @@ Notes:
 Before each phase: write user stories with acceptance criteria and a short threat model (what could go wrong with the new data, who could misuse it, how the design prevents it).
 
 ### Phase 2: Capacity (S6 to S8, 11 January to 19 February 2027)
+User stories, the threat model and the sprint split are in `docs/phase-2-capacity.md`. Sprint 6 was built ahead of its dates on 11 November 2026:
+- [x] Tables `subjects`, `classes`, `task_types`, `timetable_slots` (overlaps refused by the database); estimate and flagged-deadline marker on `tasks`
+- [x] `freeMinutes` and `checkFeasibility` as pure functions with unit tests (evening, weekend, Friday to Saturday weekend, holidays, replacement days, overlapping periods, overdue and later work)
+- [x] `POST /api/tasks/feasibility` (dry run); warning on the new-task form with the earliest realistic date; sending anyway sets the marker and writes the audit log
+- [x] Web: School Data (subjects, classes, task types), Timetable (own week for everyone, editing for administrators)
+- [x] Refusal tests for every new endpoint; Playwright journeys; both new screens in the accessibility scan
+
+Sprint 7 was built on 12 November 2026:
+- [x] Table `extension_requests` and a per-assignee due date on `task_assignments` (in the Sprint 6 migration, which has not been released)
+- [x] Request pre-filled from the teacher's own capacity figures and the earliest realistic date; one open request per person per task
+- [x] The sender approves or sets another date; only that teacher's due date moves; the exchange is listed on the task and in the audit log
+- [x] Workload view: estimated unfinished work due this week beside each name on the new-task form (`GET /api/staff/workload`, totals only)
+- [x] Refusal tests for every new endpoint; a Playwright journey with an accessibility scan of the request and answer screens
+- [x] Notifying the sender of a request and the teacher of the answer (added 12 November 2026, with held delivery)
+
+Sprint 8 was built on 12 November 2026:
+- [x] Table `relief_assignments` (one relief per period per date; a relief teacher cannot be in two places at once) and the completion answer on `task_assignments` (in the same unreleased migration)
+- [x] Relief suggestions as a pure, unit-tested ranking: free in the period, fewest relief classes this month, least committed work this week, top three; an administrator decides
+- [x] Relief follows held delivery; a relief class counts as teaching time in the deadline check
+- [x] Optional completion question on a finished task; counts per task type for administrators, from three answers up
+- [x] Web: Relief (own relief classes for everyone, arranging for administrators); refusal tests; Playwright journeys; the new screen in the accessibility scan
+- [x] Notifications for relief, assigned or cancelled (added 12 November 2026, at the relief's delivery time)
+- [x] Gate G4: passed on 12 November 2026, when the project owner asked for the work to continue into Phase 3. The evidence is in `docs/phase-2-capacity.md`; teacher interviews (G0) are still outstanding
+
+Scope for the phase:
 - Tables: `task_types`, `classes`, `subjects`, `timetable_slots`, `extension_requests`, `relief_assignments`
 - Store the timetable as weekly recurring slots and expand them into busy periods in code (do not store every week)
 - `freeMinutes` and `checkFeasibility` as pure functions. Time outside working hours is never free. Return conflicts and an earliest realistic due date.
@@ -209,6 +236,22 @@ Before each phase: write user stories with acceptance criteria and a short threa
 - **Risk to watch:** the "committed work as a single total" simplification. Keep it, and record in the README that it is deliberate.
 
 ### Phase 3: Evidence (S9 to S10, 22 February to 19 March 2027)
+User stories, the threat model and the sprint split are in `docs/phase-3-evidence.md`. No blank report templates were gathered in Phase 0, so the monthly report will use a generic format. Sprint 9 was built ahead of its dates on 12 November 2026:
+- [x] Tables `lesson_records` (a copy of the period's time, class and teacher, so records outlive timetable changes), `private_hours_log` and `private_hours_shares` (new migration `evidence`)
+- [x] One-tap lesson record for each period that has started, up to 30 days back; a reason when not held; optional https e-RPH link; the relief teacher records a covered class
+- [x] Private hours log: entries, a monthly total, sharing the total only (as a snapshot) and withdrawing it
+- [x] Owner-only access proved three ways: refusal tests on every endpoint, the owner always taken from the session, and a test that fails if any file but the hours repository names the log's tables or if any statement there skips the owner filter
+- [x] Web: Lesson Records and Private Hours Log for every role; Playwright journeys; both screens in the accessibility scan
+- [x] A photo on a lesson record: built with file uploads in Sprint 10
+
+Sprint 10, part 1 was built on 13 November 2026 (stories and threat model in `docs/phase-3-evidence.md`):
+- [x] Monthly principal report for administrators: lessons scheduled against held, not held (with reasons) and not recorded, by subject; relief; tasks delivered, due and done on time; flagged deadlines; urgent sends with reasons; extension requests; shared hours totals by name
+- [x] PDF and Excel export (pdfkit 0.20.2, write-excel-file 4.1.1) in BM or English, each export audited
+- [x] School-level wellbeing indicators: average free working time and estimated task work per teacher (withheld below five teaching staff), flagged deadlines, extension requests
+- [x] Part 2 (13 November 2026): file uploads (type from the bytes, metadata stripped, stored outside the web root, served after an authorisation check), a photo on a lesson record, the shared material bank with subject, year or form, and topic tags
+- [x] Gate G5: passed on 16 November 2026 by the project owner (evidence in `docs/phase-3-evidence.md`)
+
+Scope for the phase:
 - Tables: `lesson_records`, `materials`, `private_hours_log`
 - One-tap lesson record ("held" or "not held" plus reason); optional e-RPH link or photo. Do not rebuild e-RPH.
 - Monthly principal report: classes held against scheduled, reasons, relief covered, tasks completed, flagged deadlines, overrides. Export PDF and Excel. Design the layout from the real templates gathered in Phase 0.
@@ -233,6 +276,43 @@ Before each phase: write user stories with acceptance criteria and a short threa
 - **Start the legal review request in S11** so it is ready by S15.
 - **Tests:** a student cannot see another student's records; late-submission lists are never visible to other students; guardian sees only linked children.
 
+Phase 4 started on 16 November 2026 with fictional data only. Decision D7 (a legal reviewer for Act 876) was still open; the project owner chose to continue and log it as a risk (Section 9). Stories, threat model and sprint split: `docs/phase-4-students.md`.
+
+Sprint 11 was built on 16 November 2026:
+- [x] Threat model for the whole phase, and the Sprint 11 stories
+- [x] `students`, `class_enrolments` and separate `student_sessions`: a pupil is a name, a class and an optional school number; MyKad-like numbers refused; no sign-in times stored
+- [x] Administrators add a class list (up to 50 at once) and print sign-in slips; manage pupils (correct details, move class, new slip, disable, remove)
+- [x] Pupils sign in with a username, must replace the slip's password first; signing in as a pupil or as staff ends the other kind of session in that browser
+- [x] The student board opens for the real signed-in pupil; the browser-only demo pupils are gone (seeded pupils instead)
+- [ ] Legal review request (due in S11): needs a named reviewer, which is the project owner's to arrange
+
+Sprint 12 part 1 was built on 16 November 2026, part 2 on 18 November 2026:
+- [x] Sprint 12 stories (`docs/phase-4-students.md`); `homework` and `homework_status` folded into the unreleased Phase 4 migration
+- [x] Teachers set homework for a class and subject on their own timetable; the class's week (dates and subjects only) and a warning at the third piece due on one day, saved as flagged, never refused
+- [x] Marking time: an optional estimate and finish day, checked against the setter's working time and counted in capacity until marked
+- [x] Paper hand-in by tapping names on the class list; only the setter sees it
+- [x] Pupil APIs: their class's homework with their own hand-in only, and their class timetable for a week with relief marked
+- [x] Part 2: the student board shows the class's real homework (a hand-in the teacher records clears the room) and timetable on the school's clock, and the class goal as counts only (withheld below 5 pupils)
+
+Sprint 13 was built on 18 November 2026: part 1, then part 2 (printed summary and meeting requests). The project owner chose printed slips for guardians (no email or phone stored), refusal by the guardian and removal by the administrator, each with a reason code:
+- [x] Sprint 13 stories and threat-model rows (`docs/phase-4-students.md`); `guardians`, `guardian_links` and `guardian_sessions` folded into the unreleased Phase 4 migration
+- [x] Administrators add a guardian with a link to a pupil and a relationship type, print the slip, link more children (up to 10), remove a link with a reason code, print a new slip, disable or remove a guardian
+- [x] Guardians sign in with a `penjaga.` username, must replace the slip's password (10 characters at least); signing in as staff, pupil or guardian ends the other kinds' sessions in that browser
+- [x] The read-only guardian view (calm theme): each linked child's homework with that child's own hand-in, and the class week; children are named by the link's id, never the pupil's
+- [x] A guardian refuses a wrong link with a reason code; the administrator sees it
+- [x] Part 2: the printed summary for guardians without smartphones (class homework for two weeks and the week, no hand-ins, audited); meeting requests from fixed lists that reach the teacher only in working hours, answered with a time inside working hours or a reason (teachers see the guardian's name only)
+
+Sprint 14 was built on 18 November 2026. The project owner chose the school as the institution, the reminder on the board only, and short teacher notes kept and audited:
+- [x] Administrators disable, enable and remove staff logins; removal ends access at once and keeps records under the name as former staff (no `institutions` tables: the school is the institution)
+- [x] The afternoon reminder on the pupil's board: homework due on the next school day, 2 pm to 6 pm school time only, nothing pushed to pupils
+- [x] Teacher notes to one pupil on homework (300 characters, logged with ids, hidden not deleted); the pupil and their guardians see them, the pupil cannot reply
+- [x] Phase 4 review (`docs/phase-4-students.md`): every plan item built except the legal review request (D7), which keeps gate G6 closed
+
+Toward gate G6, built on 18 November 2026 while Phase 5 waits for the legal review (the project owner chose this over starting Phase 5):
+- [x] Two-step sign-in for staff (authenticator app, TOTP; recovery codes; secret encrypted under MFA_ENCRYPTION_KEY). Any member of staff may turn it on; a school can require it for administrators; an administrator can reset a colleague's for a lost phone. This meets G6's "MFA ready for committee members" once Phase 5 names the committee role
+- [x] Phase 5 threat model (`docs/phase-5-bullying.md`, 19 November 2026), written before any Phase 5 code, with the questions the legal reviewer must answer first
+- [ ] G6: the written legal review (D7) is still outstanding, so Phase 5 stays blocked. On 19 November 2026 the project owner chose to build Phase 6 meanwhile, as it never touches pupil or bullying data
+
 ### Phase 5: Bullying reporting (S15 to S17, 17 May to 25 June 2027; gated on legal review)
 - Do not start until G6 passes.
 - Tables: `bullying_reports`, `report_escalations`, `report_view_log`. Append-only: no UPDATE or DELETE of report content (enforce with database permissions or triggers as well as code).
@@ -255,6 +335,15 @@ Before each phase: write user stories with acceptance criteria and a short threa
 - WebMCP: experiment behind a feature flag
 - Send task text only. Never names, and never anything from student or bullying records.
 
+Built on 19 November 2026, ahead of Phase 5, because Phase 5 is blocked by gate G6 and Phase 6 touches no pupil or bullying data (the project owner's choice). Stories, threat model and review in `docs/phase-6-ai.md`:
+- [x] One LLM client (`shared/server/llm/llm-client.service.ts`, TypeScript to match the app) with one `complete()`; Ollama only; off unless `AI_PROVIDER=ollama` and `OLLAMA_MODEL` are set; timeouts and one retry
+- [x] Instruction to task: names the school holds and common identifiers removed before sending; the answer checked field by field with the task schemas; it only fills the form and the person sends; 20 requests per person per hour
+- [x] Duplicate detection while writing a task, without a language model; warns, never blocks
+- [x] Monday-morning weekly digest by email, without a language model; each person can turn it off
+- [x] Read-only MCP server at `/api/mcp` (official SDK, pinned) with personal access tokens made on the Security page; off unless `MCP_SERVER=on`
+- [x] WebMCP experiment behind `NEXT_PUBLIC_WEBMCP=on`
+- [ ] Try candidate Ollama models with fictional Bahasa Melayu instructions before switching AI on anywhere (no model on the development PC)
+
 ---
 
 ## 8. Cross-cutting workstreams
@@ -268,7 +357,7 @@ Before each phase: write user stories with acceptance criteria and a short threa
 - Optional hardening later: PostgreSQL row-level security for the school boundary, as a second layer
 
 ### Testing
-- Target mix: about 70% unit, 25% integration (Fastify `inject` plus a test database), 5% end-to-end
+- Target mix: about 70% unit, 25% integration (route handlers called directly, plus a test database; `npm run test:integration`), 5% end-to-end
 - Every endpoint gets at least one "wrong person is refused" test
 - Inject the clock everywhere. A test that uses the real clock is a bug.
 - Seeds use fictional names only. Check before every commit.
@@ -304,7 +393,8 @@ Before each phase: write user stories with acceptance criteria and a short threa
 | Perceived as surveillance | Medium | High | No monitoring features; teachers see everything about themselves; private hours log | Any story that measures activity rather than work |
 | Duplicate notifications after a crash | Medium | Medium | Idempotent jobs; `singletonKey`; conditional updates; crash-recovery test | Two notifications for one task |
 | Inaccurate effort estimates | High at first | Low | Optional completion feedback; warn rather than block | Many flagged deadlines the sender overrides |
-| Phase 5 starts before legal review | Low | High | Gate G6; request review in S11 | No reviewer identified by S12 |
+| Phase 5 starts before legal review | Medium | High | Gate G6; request review in S11 | **Triggered:** S12 started on 16 November 2026 with no reviewer named (D7 open). Phase 5 stays blocked; name a reviewer before S13. S13 started on 18 November 2026, still with no reviewer: the project owner accepted the risk again, fictional data only |
+| Children's data held without a legal basis | Low (fictional data only) | High | No real pupils until a PDPA review and school agreement; data minimisation; no activity tracking | Anyone proposing a pilot with a real class |
 | Real data enters seeds, screenshots or demos | Low | High | Fictional seeds; pre-commit check; reviewing the diff before every merge | Names that look real |
 | Free-tier hosting limits or changes | Medium | Low | Docker packaging; worker can run inside the API for a demo | Provider terms change |
 | Burnout on a solo project | Medium | Medium | Two-week sprints with a demo; small visible wins; stop at any phase boundary with a complete product | Skipping sprint reviews |

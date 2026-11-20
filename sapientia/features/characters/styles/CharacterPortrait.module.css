@@ -1,0 +1,3 @@
+.portrait { display: block; flex: none; object-fit: contain; object-position: 50% 100%; }
+/* Dark-outlined pictures vanish on dark panels at icon size; a faint rim keeps them readable. */
+.rim { filter: drop-shadow(0 0 1px rgba(255, 255, 255, .45)); }

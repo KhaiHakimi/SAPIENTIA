@@ -47,9 +47,10 @@ The defining feature is **held delivery**. A task created outside working hours 
 | `prototypes/login` | Sign-in screen prototype (Bahasa Melayu and English) | Static HTML, no real authentication |
 | `prototypes/landing` | Landing page prototype with several design directions | Static HTML |
 | `prototypes/student-dashboard` | Gamified student home (see below) | Static HTML, data kept in the browser only |
-| `sapientia/` | Next.js application skeleton | Created from the starter template, not yet built on |
+| `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable, deadline check, extension requests, the workload view, relief suggestions, lesson records, the private hours log, the monthly report, the material bank, pupil and guardian accounts, homework, two-step sign-in, and the Phase 6 AI and MCP features (all off by default) are built and tested with fictional data. See `sapientia/README.md` |
+| `docs/` | OWASP review; stories and threat models for Phases 2, 3, 4 and 6, and the Phase 5 threat model | Written |
 
-There is no database, API or real sign-in yet.
+Nothing is deployed: the app runs locally against a Docker database. Pupil accounts (Phase 4, Sprint 11) and homework (Sprint 12) are real but hold fictional data only. The student board shows the class's real homework and timetable; XP, coins, the streak, relics and subject mastery are still sample data.
 
 ## The student dashboard prototype
 
@@ -65,14 +66,17 @@ A single HTML file that shows what the student side could feel like. It is built
 - **Weekly guardian:** a boss whose health falls as the week's quests are finished.
 
 **Monster Lair (quiz battles)**
-- Each subject has its own monster, with its own difficulty: Number Golem (Maths), Lab Slime (Science), Language Tiger (Malay) and Grammar Dragon (English).
-- The battle screen is laid out like a classic handheld RPG: the monster at the top right, the student's knight at the bottom left, name and HP plates, typed text and an answer menu.
-- A right answer damages the monster. A wrong answer damages the knight, and that question comes back until it is answered correctly.
-- If the knight's health runs out, the student retries with the questions and answers in a **new order**. The screen lists the topics to revisit.
+- The quiz is organised by **subject, chapter and level**. Each subject has chapters, and every chapter has four levels, each guarded by its own monster: Orang Bunian (Easy), Naga Laut (Medium), Harimau Jin (Hard) and Hantu Lelaki (Very Hard). Within a chapter, a level opens once the one before it is beaten. The student fights as a pahlawan; the pictures are in `prototypes/student-dashboard/art/`.
+- Each monster speaks as a villain: a taunt as it enters, a jeer when the student answers wrongly, a cry when it is hit, last words as it falls, and a gloat (ending with "go and study") if the pahlawan falls.
+- The questions are a Year 4 sample (two chapters per subject, three questions per level). The chapter titles have not been checked against the syllabus and no teacher has reviewed the questions.
+- The battle screen is laid out like a classic handheld RPG: the monster at the top right, the student's pahlawan at the bottom left, name and HP plates, typed text and an answer menu.
+- A right answer damages the monster. A wrong answer damages the pahlawan, and that question comes back until it is answered correctly.
+- If the pahlawan's health runs out, the student retries with the questions and answers in a **new order**. After a fight with wrong answers, the screen names the chapter to revise.
+- The characters are animated frame by frame from a sprite atlas (`art/sheet-*.png`): idle, attack, hit and die frames for the pendekar and each monster (the keris swing, the naga's water strike, the harimau's leap, the hantu's sword wave). On top of the frames: the attacker lunges across the arena, a hit flashes the figure white, the orang bunian's blow shakes the arena, and the pendekar hops when a monster falls. With reduced motion the figures hold still frames and the movement is switched off. The lair, icons and the Pahlawan Saya preview use the larger still pictures.
 - Keyboard play works (keys 1 to 4 and the arrow keys), and animations switch off for people who ask for reduced motion.
 
 **Personalisation**
-- **My Knight:** choose armour colour, cape and plume colour, helmet (plume, horns, crest), weapon (sword, axe, spear) and a name.
+- **My Warrior (Pahlawan Saya):** give the pahlawan a name and choose two outfit colours: one for the baju, trousers and tengkolok, one for the sampin (black, red, blue, white, green or purple). The colour shows in every battle frame, the menu icon and the preview; the swatches are the item pictures from the Malay warrior sheet (`art/outfit/`).
 - **Profile photo:** upload a picture, which is cropped, shrunk and stored in the browser.
 - **Shop:** coins buy cosmetic skins, card frames and avatars. Items are cosmetic only and never affect marks. Skins are Stone Keep, Royal Hall, Forest Ruins, Ember Forge and Sakura Garden, each with its own pixel-art background.
 - **Languages and themes:** Bahasa Melayu and English, light and dark.
@@ -107,9 +111,7 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 
 **Prototypes:** plain HTML, CSS and JavaScript (no build step). Pixel art is drawn from letter grids as SVG. All text uses the VT323 pixel font from Google Fonts, chosen because its digits and letters (5 and S, 0 and 8) are easy to tell apart.
 
-**Planned back end and web app** (decisions are in the plan and may change): Node.js LTS, Fastify, PostgreSQL 16 or later, pg-boss for scheduled jobs, React with Vite as an installable web app, Zod for validation, Luxon for time zones, Vitest and Playwright for tests. Argon2id password hashing, HttpOnly cookies and rate limiting are planned for sign-in.
-
-**Application skeleton in `sapientia/`:** Next.js, React and Tailwind CSS, created from the starter template.
+**Web app in `sapientia/`** (decisions D1 to D4 in the plan): Next.js 16 with TypeScript, PostgreSQL 16, pg-boss for scheduled jobs, Zod for validation, Luxon for time zones, Vitest and Playwright for tests. Sign-in uses Argon2id password hashing, HttpOnly cookies and rate limiting.
 
 ## Running it
 
@@ -119,17 +121,9 @@ The plan splits the work into phases. Each phase is useful on its own, and the m
 - `prototypes/landing/index.html`
 - `prototypes/student-dashboard/index.html`
 
-An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, knight, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
+An internet connection is needed for the Google Fonts file. Student dashboard progress (photo, pahlawan name and outfit colours, shop purchases and battle records) is saved in the browser's local storage, so clearing site data resets it.
 
-**Application skeleton.**
-
-```bash
-cd sapientia
-npm install
-npm run dev
-```
-
-Then open http://localhost:3000.
+**Web app.** It needs Node 26 and Docker Desktop; the steps (database, migrations, seed, worker) are in `sapientia/README.md`.
 
 ## Roadmap
 
@@ -145,7 +139,7 @@ Sprints are two weeks, worked part-time. These dates are estimates and are re-es
 | S15 to S17 | 17 May to 25 June 2027 | 5 Bullying reporting (after legal review) |
 | S18 onwards | from 28 June 2027 | 6 AI and open standards |
 
-Each phase ends with a go/no-go gate. The next phase does not start until the gate passes.
+Each phase ends with a go/no-go gate. The next phase does not start until the gate passes. The one exception: Phase 6 was built early (November 2026) while Phase 5 waits for its legal review, because Phase 6 touches no pupil or bullying data.
 
 ## Data protection and legal notes
 
@@ -157,7 +151,7 @@ Each phase ends with a go/no-go gate. The next phase does not start until the ga
 
 ## Status and licence
 
-Early stage. The plan and prototypes are the current deliverables, and the first working milestone is the Phase 1 MVP.
+Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, Phase 2 (capacity) is built and its gate (G4) passed, and Phase 3 (evidence) is built and its gate (G5) passed. Phase 4 (students and guardians) is built with fictional data only; the legal review it asked for is still outstanding, so Phase 5 has not started (its threat model is written). Phase 6 (AI drafts, duplicate warnings, the weekly digest and a read-only MCP server) is built, with every AI feature off by default. Nothing is deployed and all data is fictional.
 
 Licence: to be decided. Until a licence file is added, all rights are reserved by the author.
 

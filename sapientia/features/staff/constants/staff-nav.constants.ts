@@ -1,0 +1,36 @@
+import type { StaffRole } from '@/features/auth/interfaces/session-user.interface';
+
+export type StaffNavKey =
+  | 'board' | 'sent' | 'held' | 'newTask' | 'timetable' | 'relief' | 'lessons' | 'homework' | 'meetings' | 'materials' | 'hours' | 'reports' | 'users' | 'students' | 'guardians'
+  | 'schoolData'
+  | 'settings' | 'calendar' | 'notifications' | 'security';
+
+export interface StaffNavItem {
+  key: StaffNavKey;
+  href: string;
+  roles: readonly StaffRole[];
+}
+
+/** The menu shows only what the role may use; the API refuses the rest anyway. */
+export const STAFF_NAV: readonly StaffNavItem[] = [
+  { key: 'board', href: '/staff', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'sent', href: '/staff/sent', roles: ['admin', 'sender'] },
+  { key: 'held', href: '/staff/held', roles: ['admin', 'sender'] },
+  { key: 'newTask', href: '/staff/tasks/new', roles: ['admin', 'sender'] },
+  { key: 'timetable', href: '/staff/timetable', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'relief', href: '/staff/relief', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'lessons', href: '/staff/lessons', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'homework', href: '/staff/homework', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'meetings', href: '/staff/meetings', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'materials', href: '/staff/materials', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'hours', href: '/staff/hours', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'reports', href: '/staff/reports', roles: ['admin'] },
+  { key: 'users', href: '/staff/users', roles: ['admin'] },
+  { key: 'students', href: '/staff/students', roles: ['admin'] },
+  { key: 'guardians', href: '/staff/guardians', roles: ['admin'] },
+  { key: 'schoolData', href: '/staff/school-data', roles: ['admin'] },
+  { key: 'settings', href: '/staff/settings', roles: ['admin'] },
+  { key: 'calendar', href: '/staff/calendar', roles: ['admin'] },
+  { key: 'notifications', href: '/staff/notifications', roles: ['admin', 'sender', 'teacher'] },
+  { key: 'security', href: '/staff/security', roles: ['admin', 'sender', 'teacher'] },
+];

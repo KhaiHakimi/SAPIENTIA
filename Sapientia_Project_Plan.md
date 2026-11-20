@@ -55,7 +55,7 @@ Sprints are two weeks, Monday to Friday. Dates assume you start on Monday 19 Oct
 | S9 to S10 | 22 Feb to 19 Mar 2027 | 3 Evidence | Lesson records, monthly reports, wellbeing, private log, material bank |
 | S11 to S14 | 22 Mar to 14 May 2027 | 4 Students and guardians | Student and guardian views, homework, marking load |
 | S15 to S17 | 17 May to 25 Jun 2027 | 5 Bullying reporting | Only after legal review (Section 8) |
-| S18 onwards | from 28 Jun 2027 | 6 AI and open standards | Instruction-to-task, duplicates, digest, MCP |
+| S18 onwards | from 28 Jun 2027 | 6 AI and open standards | Instruction-to-task, duplicates, digest, MCP (built early, 19 November 2026, while Phase 5 waits for G6) |
 
 Notes:
 - S4 and S5 fall over year-end and school holidays. Treat both as having 20% less capacity, and do not schedule anything critical for the last week of December.
@@ -131,42 +131,42 @@ Revised 30 October 2026 for the Next.js stack (D1 to D4); done ahead of the spri
 **Done when:** G1 passes.
 
 ### Sprint 2 (16 to 27 November): accounts and roles
-- [ ] Migrations: `users`, `sessions` (store a hash of the session token, never the token)
-- [ ] Fictional seed school (for example SMK Taman Contoh) and fictional users
-- [ ] argon2id password hashing; one-time invite tokens that expire after 48 hours
-- [ ] Endpoints: `POST /auth/login`, `POST /auth/logout`, `POST /auth/invites/accept`, `GET /me`, `GET` and `POST /users`
-- [ ] Cookies: HttpOnly, Secure, SameSite=Lax; session expiry on inactivity; CSRF protection
-- [ ] Rate limiting per account and per IP; identical error for wrong email or wrong password
-- [ ] Central error handler; error classes (`NotFoundError`, `ValidationError`, `ConflictError`)
-- [ ] Logger redacts cookies, authorisation headers and request bodies
-- [ ] Web: sign in, accept invite, admin user list and invite form
-- [ ] **Refusal tests:** a teacher cannot list users; School A cannot read School B
+- [x] Migrations: `users`, `sessions` (store a hash of the session token, never the token)
+- [x] Fictional seed school (for example SMK Taman Contoh) and fictional users
+- [x] argon2id password hashing; one-time invite tokens that expire after 48 hours
+- [x] Endpoints: `POST /auth/login`, `POST /auth/logout`, `POST /auth/invites/accept`, `GET /me`, `GET` and `POST /users`
+- [x] Cookies: HttpOnly, Secure, SameSite=Lax; session expiry on inactivity; CSRF protection
+- [x] Rate limiting per account and per IP; identical error for wrong email or wrong password
+- [x] Central error handler; error classes (`NotFoundError`, `ValidationError`, `ConflictError`)
+- [x] Logger redacts cookies, authorisation headers and request bodies
+- [x] Web: sign in, accept invite, admin user list and invite form
+- [x] **Refusal tests:** a teacher cannot list users; School A cannot read School B
 
 **Done when:** G2 passes.
 
 ### Sprint 3 (30 November to 11 December): tasks
-- [ ] Migrations: `tasks`, `task_assignments`, `task_comments`, `audit_logs`
-- [ ] Repository functions take `schoolId` as a required first argument
-- [ ] Endpoints: `GET` and `POST /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/assignments/me`, `POST /tasks/:id/comments`
-- [ ] `Idempotency-Key` support on `POST /tasks`; cursor pagination (default 25, maximum 100)
-- [ ] Audit log writes for create, assign, status change, comment (metadata contains no personal data)
-- [ ] Web: teacher board (four columns), task detail with comments, sender create-task form (title, assignees, due date first; the rest optional)
-- [ ] All four states on every screen: loading, empty, error, success
-- [ ] **Refusal tests:** a non-assignee gets 404 on a task; a teacher cannot update another teacher's assignment
+- [x] Migrations: `tasks`, `task_assignments`, `task_comments`, `audit_logs`
+- [x] Repository functions take `schoolId` as a required first argument
+- [x] Endpoints: `GET` and `POST /tasks`, `GET /tasks/:id`, `PATCH /tasks/:id/assignments/me`, `POST /tasks/:id/comments`
+- [x] `Idempotency-Key` support on `POST /tasks`; cursor pagination (default 25, maximum 100)
+- [x] Audit log writes for create, assign, status change, comment (metadata contains no personal data)
+- [x] Web: teacher board (four columns), task detail with comments, sender create-task form (title, assignees, due date first; the rest optional)
+- [x] All four states on every screen: loading, empty, error, success (built into each staff page; not yet audited screen by screen by a person)
+- [x] **Refusal tests:** a non-assignee gets 404 on a task; a teacher cannot update another teacher's assignment
 
 **Done when:** G3 passes.
 
 ### Sprint 4 (14 to 25 December): held delivery
-- [ ] Migrations: `calendar_events`; school settings fields; partial index on pending delivery
-- [ ] `lib/workingTime.js`: `isWorkingDay`, `nextWorkingStart`, with the clock passed in as a parameter (never `Date.now()` in business logic)
-- [ ] Unit tests for every case in the guide: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override; a calendar with no working days (expect `ConfigurationError`)
-- [ ] pg-boss worker (separate process, see D1): job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
-- [ ] Urgent override: reason mandatory (database CHECK plus validation); logged; counted for reports later
-- [ ] Held tasks invisible to assignees until delivered (service-level rule, with a test)
-- [ ] Sender sees the delivery time in plain language ("Akan dihantar: Isnin, 7:30 pagi")
-- [ ] Endpoints: `GET` and `PATCH /school/settings`, `GET` and `POST /calendar/events`
-- [ ] Web: school settings, holiday calendar, held-tasks list for senders
-- [ ] Test the weekend setting for Kelantan and Terengganu (Friday to Saturday). Note that the guide's default is `{6,7}`, so confirm that `{5,6}` works end to end.
+- [x] Migrations: `calendar_events`; school settings fields; partial index on pending delivery
+- [x] ~~`lib/workingTime.js`~~ `features/delivery/services/working-time.service.ts`: `isWorkingDay`, `nextWorkingStart`, with the clock passed in as a parameter (never `Date.now()` in business logic)
+- [x] Unit tests for every case in the guide: 10pm weekday; 2am; 3pm Friday in a Friday to Saturday state; eve of a public holiday; exactly at `work_start` and `work_end`; urgent override; a calendar with no working days (expect `ConfigurationError`)
+- [x] pg-boss worker (separate process, see D1): job with `startAfter = deliverAt` and `singletonKey = task id`; delivery by conditional `UPDATE ... WHERE delivered_at IS NULL RETURNING`
+- [x] Urgent override: reason mandatory (database CHECK plus validation); logged; counted for reports later
+- [x] Held tasks invisible to assignees until delivered (service-level rule, with a test)
+- [x] Sender sees the delivery time in plain language ("Akan dihantar: Isnin, 7:30 pagi")
+- [x] Endpoints: `GET` and `PATCH /school/settings`, `GET` and `POST /calendar/events`
+- [x] Web: school settings, holiday calendar, held-tasks list for senders
+- [x] Test the weekend setting for Kelantan and Terengganu (Friday to Saturday). Note that the guide's default is `{6,7}`, so confirm that `{5,6}` works end to end.
 
 **Done when:** the Section 15.2 acceptance criteria all pass as automated tests.
 
@@ -334,6 +334,15 @@ Toward gate G6, built on 18 November 2026 while Phase 5 waits for the legal revi
 - MCP server: read-only tools (for example `list_my_tasks`) acting strictly as the signed-in user with the same authorisation checks
 - WebMCP: experiment behind a feature flag
 - Send task text only. Never names, and never anything from student or bullying records.
+
+Built on 19 November 2026, ahead of Phase 5, because Phase 5 is blocked by gate G6 and Phase 6 touches no pupil or bullying data (the project owner's choice). Stories, threat model and review in `docs/phase-6-ai.md`:
+- [x] One LLM client (`shared/server/llm/llm-client.service.ts`, TypeScript to match the app) with one `complete()`; Ollama only; off unless `AI_PROVIDER=ollama` and `OLLAMA_MODEL` are set; timeouts and one retry
+- [x] Instruction to task: names the school holds and common identifiers removed before sending; the answer checked field by field with the task schemas; it only fills the form and the person sends; 20 requests per person per hour
+- [x] Duplicate detection while writing a task, without a language model; warns, never blocks
+- [x] Monday-morning weekly digest by email, without a language model; each person can turn it off
+- [x] Read-only MCP server at `/api/mcp` (official SDK, pinned) with personal access tokens made on the Security page; off unless `MCP_SERVER=on`
+- [x] WebMCP experiment behind `NEXT_PUBLIC_WEBMCP=on`
+- [ ] Try candidate Ollama models with fictional Bahasa Melayu instructions before switching AI on anywhere (no model on the development PC)
 
 ---
 

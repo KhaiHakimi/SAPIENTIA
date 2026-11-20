@@ -47,8 +47,8 @@ The defining feature is **held delivery**. A task created outside working hours 
 | `prototypes/login` | Sign-in screen prototype (Bahasa Melayu and English) | Static HTML, no real authentication |
 | `prototypes/landing` | Landing page prototype with several design directions | Static HTML |
 | `prototypes/student-dashboard` | Gamified student home (see below) | Static HTML, data kept in the browser only |
-| `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable, deadline check, extension requests, the workload view, relief suggestions, lesson records, the private hours log, the monthly report, the material bank and pupil accounts are built and tested with fictional data. See `sapientia/README.md` |
-| `docs/` | OWASP review; stories and threat models for Phases 2, 3 and 4 | Written |
+| `sapientia/` | The web app (Next.js, PostgreSQL) | Staff accounts, tasks, held delivery, notifications, timetable, deadline check, extension requests, the workload view, relief suggestions, lesson records, the private hours log, the monthly report, the material bank, pupil and guardian accounts, homework, two-step sign-in, and the Phase 6 AI and MCP features (all off by default) are built and tested with fictional data. See `sapientia/README.md` |
+| `docs/` | OWASP review; stories and threat models for Phases 2, 3, 4 and 6, and the Phase 5 threat model | Written |
 
 Nothing is deployed: the app runs locally against a Docker database. Pupil accounts (Phase 4, Sprint 11) and homework (Sprint 12) are real but hold fictional data only. The student board shows the class's real homework and timetable; XP, coins, the streak, relics and subject mastery are still sample data.
 
@@ -139,7 +139,7 @@ Sprints are two weeks, worked part-time. These dates are estimates and are re-es
 | S15 to S17 | 17 May to 25 June 2027 | 5 Bullying reporting (after legal review) |
 | S18 onwards | from 28 June 2027 | 6 AI and open standards |
 
-Each phase ends with a go/no-go gate. The next phase does not start until the gate passes.
+Each phase ends with a go/no-go gate. The next phase does not start until the gate passes. The one exception: Phase 6 was built early (November 2026) while Phase 5 waits for its legal review, because Phase 6 touches no pupil or bullying data.
 
 ## Data protection and legal notes
 
@@ -151,7 +151,7 @@ Each phase ends with a go/no-go gate. The next phase does not start until the ga
 
 ## Status and licence
 
-Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, Phase 2 (capacity) is built and its gate (G4) passed, and Phase 3 (evidence) is built and its gate (G5) passed. Phase 4 (students and guardians) is built with fictional data only; the legal review it asked for is still outstanding, so Phase 5 has not started. Nothing is deployed and all data is fictional.
+Early stage. Phase 1 (the MVP) is built except for hosting and the demo video, Phase 2 (capacity) is built and its gate (G4) passed, and Phase 3 (evidence) is built and its gate (G5) passed. Phase 4 (students and guardians) is built with fictional data only; the legal review it asked for is still outstanding, so Phase 5 has not started (its threat model is written). Phase 6 (AI drafts, duplicate warnings, the weekly digest and a read-only MCP server) is built, with every AI feature off by default. Nothing is deployed and all data is fictional.
 
 Licence: to be decided. Until a licence file is added, all rights are reserved by the author.
 

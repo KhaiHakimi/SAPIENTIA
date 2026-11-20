@@ -43,6 +43,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: databaseUrl, APP_ORIGIN: '', NEXT_TELEMETRY_DISABLED: '1', UPLOAD_DIR: '.data/e2e-uploads',
       MFA_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
+      // Phase 6: the MCP server is on so the access-token journey can use it; AI stays off (no model in CI).
+      MCP_SERVER: 'on', AI_PROVIDER: 'off',
     },
   },
 });

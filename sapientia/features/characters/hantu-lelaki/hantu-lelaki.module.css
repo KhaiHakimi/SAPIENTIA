@@ -1,0 +1,9 @@
+/* Glides forward and turns half see-through. */
+.attack { animation: hantuAttack .5s ease-in-out; }
+@keyframes hantuAttack { 0%, 100% { transform: translate(0, 0); opacity: 1; } 45%, 60% { transform: translate(-28%, 10%); opacity: .55; } }
+
+/* A ghost does not flash white when hit; it fades almost away and comes back. */
+.hit { animation: hantuHit .62s steps(1, end); }
+@keyframes hantuHit { 0%, 50% { opacity: .15; transform: translateX(6%); } 25%, 75% { opacity: .8; transform: translateX(3%); } 100% { opacity: 1; transform: none; } }
+
+.glow { filter: drop-shadow(0 0 5px rgba(90, 200, 255, .5)); }

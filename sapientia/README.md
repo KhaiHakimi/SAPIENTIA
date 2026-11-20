@@ -1,36 +1,178 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sapientia web app
 
-## Getting Started
+Next.js 16 (App Router), React 19, TypeScript, CSS Modules, PostgreSQL 16, pg-boss. Staff accounts, tasks, held delivery, notifications, the timetable, the deadline check, extension requests, relief, lesson records with photos, the private hours log, the monthly report, the material bank and pupil accounts run against the database (plan Sprints 2 to 11). The student board from `../prototypes/student-dashboard` opens for the signed-in pupil and shows their class's real homework and timetable (Sprint 12); XP, coins, the streak, relics and subject mastery are still sample data. All people in the seed data are fictional.
 
-First, run the development server:
+## Run
+
+Needs Node 26 (`.nvmrc`) and Docker Desktop.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env     # set a long random password (both places), a SEED_PASSWORD, and the test database URL
+npm run db:up            # PostgreSQL 16 on 127.0.0.1:55432 (creates sapientia and sapientia_test) and Mailpit (inbox http://localhost:8025)
+npm run db:migrate       # SQL migrations in migrations/, then pg-boss's schema and queues
+npm run db:seed          # two fictional schools and their staff, all with SEED_PASSWORD; the first school also gets subjects, classes, task types and a timetable
+npm run dev              # http://localhost:3000 (redirects to /login)
+npm run worker           # in a second terminal: delivers held tasks and sends notifications (see below)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@guru.sapientia.test` (administrator), `pk.pentadbiran@guru.sapientia.test` (task sender), and `cikgu.aminah@`, `cikgu.ravi@`, `cikgu.meiling@guru.sapientia.test` (teachers). Seeded pupils, listed on the sign-in page, use the same password: `aisyah0001` and `daniel0002` (4 Dedikasi) and `kavitha0003` (3 Cekal). They sign in with the username, not an email. The seeded guardian `penjaga.rahman0001` (Aisyah's father) uses the same password.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | Does |
+|---|---|
+| `npm test` | Unit tests (Vitest), no database needed |
+| `npm run db:migrate:test` | Migrates the test database (`TEST_DATABASE_URL`) |
+| `npm run test:integration` | `*.integration.test.ts` against the test database: it is emptied between tests, so never point it at real data |
+| `npm run test:e2e` | Playwright: the MVP, capacity, extension, relief and completion-question journeys and an accessibility scan (axe, WCAG 2.2 AA) of the sign-in and staff screens, on a desktop window and a phone-sized screen. Builds the app and starts it on port 3100 against the test database, which it empties and seeds first (about five minutes in all). Uses the installed Microsoft Edge |
+| `npm run lint` | ESLint: Next.js rules plus the Google style rules |
+| `npm run typecheck` | Generates route types, then `tsc --noEmit` |
+| `npm run build` | Production build |
+| `npm run worker` | Background worker: held-task delivery jobs, a sweep every minute, and email and push notifications (tasks, extension requests and answers, relief) |
+| `node scripts/make-app-icons.mjs` | Remakes the app icons in `public/icons/` from the logo |
+| `npm run db:migrate:down` | Rolls back the last migration |
+| `npm run db:migrate:create -- <name>` | New SQL migration in `migrations/`. Never edit one that has been released; add another |
+| `npm run db:down` | Stops the database (data is kept in the `db-data` volume) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+CI (`../.github/workflows/ci.yml`) runs lint, type check, unit tests, migrations (up, down, up), integration tests and the build on every pull request, plus `npm audit --audit-level=high` and the end-to-end journeys (in Chromium; that job is new and has not yet run on GitHub).
 
-## Learn More
+## How it fits together
 
-To learn more about Next.js, take a look at the following resources:
+- **API**: route handlers under `app/api/`, each wrapped in `withApi` (`shared/server/api-handler.ts`): it refuses cross-site writes (Origin check), turns the error classes in `shared/server/app-errors.ts` into JSON, and hides anything unexpected behind a 500 with a request id. Bodies are validated with Zod schemas that refuse unknown fields.
+- **Sign-in**: an HttpOnly, SameSite=Lax session cookie; the database keeps only a SHA-256 of the token. Sessions end after 60 minutes idle or 12 hours in total. Wrong email, wrong password and inactive accounts all get the same answer. Failed attempts are counted per account and per address.
+- **Refusals**: `requireUser(request, clock, roles)` answers 401 when signed out and 404 for the wrong role. Repositories take `schoolId` first, so no query can reach another school. Someone who may not see a task gets 404, exactly as if it did not exist.
+- **Held delivery**: creating a task works out its delivery time from the school's working hours, weekend and calendar (`features/delivery/services/working-time.service.ts`, pure and fully unit-tested). Inside working hours it is delivered at once. Outside them it is held, and a pg-boss job for its delivery time is saved in the same transaction. The worker delivers it with a conditional update, so a repeated job is harmless, and a one-minute sweep catches any task whose job went missing. An urgent override delivers at once and needs a reason.
+- **Capacity** (plan Phase 2, stories and threat model in `../docs/phase-2-capacity.md`): administrators keep the school's subjects, classes and task types (School Data) and each teacher's weekly timetable. A task may carry a time estimate for one person, from its task type or typed in. With one, the new-task form asks `POST /api/tasks/feasibility` whether each assignee has that much free working time between delivery and the end of the due day: working hours on working days, less timetable periods, less the estimates of their unfinished tasks due by then. It shows who is short, the arithmetic and the earliest realistic date. It warns and never blocks: sending anyway marks the task "tight deadline" and logs it. The rules are pure functions in `features/capacity/services/capacity.service.ts`.
+- **Extensions and workload** (plan Sprint 7): an assignee asks for a later date on their own unfinished task. The form opens with their own capacity figures and the earliest realistic date (`GET /api/tasks/:id/extension-suggestion`); the request (`POST /api/tasks/:id/extension-requests`) stores two totals worked out on the server, time needed and free time, so the sender sees why without seeing the teacher's other work. The task's sender approves or sets another later date (`PATCH /api/tasks/:id/extension-requests/:requestId`). That moves the one assignee's due date (`task_assignments.due_on`; null means the task's own date) and nothing else, and the capacity check follows it. The exchange stays on the task. On the new-task form each name carries that person's estimated unfinished work due by Sunday (`GET /api/staff/workload`, senders and administrators, totals only).
+- **Notifications**: whenever a task is delivered (at once, by its job, or by the sweep) a `notify-task-delivered` job is queued in the same transaction, so a held task is never announced early and only the worker sends. It emails each active assignee who has email on, and sends Web Push to each device they turned it on for. Every send has a timeout and up to three tries with backoff; a temporary failure makes pg-boss retry the job later (over about an hour), and `notification_sends` records what went out so a retry sends only what is missing. A device the push service reports gone is removed. Push addresses must be on a known push service (`PUSH_SERVICE_HOSTS`), so the worker cannot be pointed at other servers. Email is bilingual (BM first); push is in BM. A channel without its `.env` settings is off. Signing out turns push off for that device.
+- **Extension and relief messages** (Phase 2): an extension request tells the task's sender, the answer tells the teacher who asked, and relief tells the relief teacher when it is given and, if they had already been told, when it is cancelled. Each is a `notify-event` job queued in the transaction that saves the event, due at the next working moment (relief: at its own delivery time), so nothing goes out at night. When the job runs, the event is read again and a message that no longer applies is dropped. Sends are recorded in `event_notice_sends`; the sending itself is shared with task messages (`notice-dispatch.service.ts`). Messages carry names, titles, dates and times only, never a reason or capacity figures.
+- **App install**: `app/manifest.ts` and `public/sw.js` (shows push notices, caches nothing). The Notifications page has the install button where the browser offers one, and the Add to Home Screen steps on iPhone and iPad.
+- **Audit log**: `audit_logs` records ids and states only, never names or text. A database trigger blocks UPDATE and DELETE.
+- **Relief** (plan Sprint 8): an administrator picks an absent teacher and a date, and for each of that teacher's periods asks `GET /api/relief/suggestions` for up to three people who are free then (no lesson, duty or other relief in the period, and not away themselves), ordered by fewest relief classes this month and then least committed work that week. The ordering is a pure function in `features/relief/services/relief-ranking.service.ts`. The administrator chooses (`POST /api/relief`) and can cancel (`DELETE /api/relief/:id`); the database refuses a second relief for a period and a relief teacher in two places at once. Relief follows held delivery: the relief teacher sees it under `GET /api/relief/mine` from its `deliver_at`, never outside working hours. A relief class counts as teaching time on its date in the deadline check.
+- **Lesson records** (plan Sprint 9): `GET /api/lessons?onDate=` lists the caller's periods that day, their own and the colleagues' they cover, and `PUT /api/lessons/records` marks one held or not held (a reason is required when not held; an e-RPH link must be https). Only the period's teacher records it, or the relief teacher once relief is delivered to them; anyone else gets 404. A period can be recorded once it has started, on its own weekday, a working day, up to 30 days back. Each record copies the period's time, class and teacher, so deleting the period keeps the record. The audit log has who, which period, which date and held or not; never the note or the link.
+- **Pupil accounts** (plan Sprint 11): pupils are not users. `students`, `class_enrolments` and `student_sessions` are separate tables, the pupil cookie (`sapientia_student`) is separate from the staff one, and `requireUser` and `requireStudent` each read only their own, so neither kind of session can pass the other's check. A pupil is a name, a class and an optional school number (a MyKad-like number is refused); no sign-in times are stored. Administrators only: `GET /api/students?classId=`, `POST /api/students` (`{ classId, students: [{ name, schoolNumber? }] }`, up to 50, all or nothing; the response carries a slip per pupil with a username and a starting password, never shown again), `PATCH /api/students/:id` (name, number, class, status), `POST /api/students/:id/password-reset` (a new slip; signs the pupil out) and `DELETE /api/students/:id`. Pupils: `POST /api/auth/student-login` (`{ username, password }`), `GET /api/student/me`, `PUT /api/student/password` and `POST /api/auth/student-logout`. Until a pupil replaces the slip's password (valid 14 days), every other pupil endpoint answers 403 `password_change_required`. Signing in as a pupil ends any staff session in that browser, and the other way round. Pupil sessions end after 30 minutes idle and 8 hours at most. The sign-in page takes an email (staff) or a username (pupils) in one box.
+- **Homework** (plan Sprint 12): any member of staff sets homework for a class and subject on their own timetable (`GET /api/homework` lists their lessons and their homework; `POST /api/homework` with `{ classId, subjectId, title, details?, dueOn, markingMinutes?, markBy? }`). `POST /api/homework/preview` is the dry run behind the form: the class's homework that week (date and subject only), a warning when this would be the third or more due that day (saved as flagged and logged, never refused), and the capacity check for the marking estimate. Until the setter marks it as marked (`PATCH /api/homework/:id` `{ marked }`), the marking estimate counts as committed work in every capacity check and in the workload totals. Paper hand-ins: `GET /api/homework/:id/hand-ins` and `PUT /api/homework/:id/hand-ins/:studentId` `{ handedIn }`. Only the setter reads or changes their homework (404 for anyone else, administrators included). Pupils: `GET /api/student/homework` (their class's homework from a week ago, with their own hand-in only, plus `classGoal`: the class's hand-ins for homework due this week as two counts, withheld below 5 pupils) and `GET /api/student/timetable?weekOf=` (their class's lessons each school day, relief marked once it is delivered). The pupil board (part 2) shows each piece of homework as a quest room: a hand-in the teacher recorded clears the room for good; the pupil's own "mark as done" is a checklist for this visit only and never reaches the teacher. Its timetable card, weekly scroll (with last/next week), "now" lesson and due labels follow the school's clock (`timeZone` from `GET /api/student/me`).
+- **Guardians** (plan Sprint 13, part 1): administrators manage guardians at `/staff/guardians` (`GET/POST /api/guardians`, `PATCH/DELETE /api/guardians/:id`, `POST /api/guardians/:id/password-reset`, `POST /api/guardians/:id/links`, `PATCH /api/guardians/:id/links/:linkId` `{ reason }` to remove one). A guardian is a name and a printed slip, no contact details; each link keeps a relationship type, and an ended link a reason code from a fixed list, never free text. Guardians sign in on the same page with a `penjaga.` username (`POST /api/auth/guardian-login`, own cookie and session table), replace the slip's password (`PUT /api/guardian/password`) and see `/guardian`: `GET /api/guardian/children` (each linked child's homework with that child's own hand-in), `GET /api/guardian/children/:linkId/timetable?weekOf=`, and `POST /api/guardian/links/:linkId/refusal` `{ reason }`. A child is always named by the link's id. Signing in as staff, pupil or guardian ends the other kinds' sessions in that browser.
+- **Two-step sign-in** (gate G6): any member of staff turns it on at `/staff/security` with an authenticator app (`POST /api/me/mfa/setup` `{ password }`, then `POST /api/me/mfa/confirm` `{ code }`, which returns 10 recovery codes once). After that, `POST /api/auth/login` answers 200 `{ mfaRequired: true }` with a 5-minute challenge cookie, and `POST /api/auth/mfa` `{ code }` or `{ recoveryCode }` starts the session. Administrators can require it for every administrator (`PUT /api/school/mfa`) and reset a colleague's for a lost phone (`DELETE /api/users/:id/mfa`). Set `MFA_ENCRYPTION_KEY` (32 random bytes, base64) in `.env`; without it the feature is off.
+- **Staff logins, reminders and notes** (plan Sprint 14): administrators disable or enable a login with `PATCH /api/users/:id` `{ status }` and remove it for good with `DELETE /api/users/:id` (access ends at once; records keep the name as former staff). The setter of a piece of homework writes short notes to one pupil (`GET/POST /api/homework/:id/comments` `{ studentId, body }`, `PATCH /api/homework/:id/comments/:commentId` `{ hidden: true }`); pupils and their guardians see them with the homework. The pupil's board shows an afternoon reminder (2 pm to 6 pm school time) of homework due on the next school day.
+- **Printed summary and meeting requests** (plan Sprint 13, part 2): `GET /api/guardians/:id/summary?weekOf=` gives an administrator one sheet per guardian (each linked child's class homework for two weeks, no hand-ins, and a week's timetable), printed from `/staff/guardians/:id/summary` and audited. Guardians ask a teacher of the child's class for a meeting under each child: `GET/POST /api/guardian/children/:linkId/meetings` `{ teacherId, topic, timeOfDay }` (codes only, no free text; at most 3 waiting) and `POST /api/guardian/meetings/:id/withdrawal`. A request reaches the teacher in working hours only, like a task; teachers see the guardian's name only at `/staff/meetings` (`GET /api/meetings`) and answer with `PATCH /api/meetings/:id` `{ answer: 'accept', date, time }` (inside working hours) or `{ answer: 'decline', reason }`.
+- **Private hours log** (plan Sprint 9): under `/api/me/hours` only, so the owner is always the signed-in person. Entries (date, minutes, kind, optional note) are never in the audit log and never readable by anyone else. A teacher may share a month's total (`PUT /api/me/hours/share`), stored as the figure at that moment, and withdraw it. `features/hours/server/hours.repository.ts` is the only code that names the log's tables; `private-hours-isolation.test.ts` fails if that changes or if a statement there skips the owner filter.
+- **Monthly report** (plan Sprint 10): administrators only. `GET /api/reports/monthly?month=YYYY-MM` returns a month that has started: the whole month once it is over, the current month up to yesterday. Lessons scheduled (each lesson period on each working day of its weekday, from the day the period was added) against held, not held (with reasons) and not recorded, by subject; relief arranged and recorded as held; tasks delivered, due (by each assignee's own date) and how they stand, flagged deadlines, urgent sends with their reasons, extension requests; school-level wellbeing indicators; and the hours totals staff chose to share, by name. `GET /api/reports/monthly/export?month=&format=pdf|xlsx&lang=ms|en` returns the same report as a PDF (pdfkit) or Excel file (write-excel-file); each export is in the audit log. The page, the PDF and the Excel file all render one document built by `features/reports/services/report-document.service.ts`, so they always agree. The counting rules are pure functions in `features/reports/services/monthly-report.service.ts`. Nothing in it is per teacher apart from the shared hours totals, and the wellbeing averages are withheld when fewer than five people teach.
+- **Uploads** (plan Sprint 10): files are recognised from their bytes, never from the name or the browser's type (`shared/server/files/file-type.service.ts`): JPEG, PNG, PDF and Office files (Word, Excel, PowerPoint), within a size limit checked before the body is read. EXIF, comments and PNG text chunks are removed from pictures, so a phone photo's GPS position is never stored; the page also redraws photos (upright, at most 1600 pixels, JPEG) before sending them. Bytes are written outside the web root under `UPLOAD_DIR` (default `.data/uploads`, refused if inside `public/`) with random 64-character names; the database keeps the cleaned name, type, size and SHA-256. If the database step fails the bytes are removed again. Files are served only by `GET /api/files/:id`, after a check that depends on what the file is for, with `nosniff`, a sandbox CSP, and `attachment` for anything that is not a picture. Each school may store 2 GB in all.
+- **Lesson photos** (plan Sprint 10): `POST /api/lessons/records/photo` (multipart: slotId, onDate, photo; up to 5 MB) adds one photo to a lesson record, replacing any photo there; `DELETE` removes it. Same rules as recording: only the recorder, only while the record is open, and the lesson must be marked first. The photo is seen by the same people as the record: whoever recorded it and the period's own teacher; administrators do not see it. The page asks for the board or the pupils' work, not their faces.
+- **Material bank** (plan Sprint 10): `GET /api/materials?subjectId=&level=&q=&cursor=` (every member of staff, newest first, 25 a page; the search matches title, topic and description, with `%` and `_` taken literally) and `POST /api/materials`: JSON for an https link (preferred, so DELIMa content is linked rather than copied), or a multipart form for a file up to 10 MB, tagged by subject, year or form, and topic. `DELETE /api/materials/:id` is for the person who added it and administrators. Removing a subject keeps its materials without the tag.
+- **Completion question** (plan Sprint 8): on their own finished task an assignee may say it took under 1 hour, 1 to 3 hours or over 3 hours (`PUT /api/tasks/:id/assignments/me/time-taken`; null takes it back). Nobody else can read an individual answer. Administrators see counts per task type on School Data (`GET /api/task-type-feedback`), only for types with at least three answers.
+- **AI and open standards** (plan Phase 6, stories and threat model in `../docs/phase-6-ai.md`): every part is off by default and the app works without it.
+  - *Instruction to task*: with `AI_PROVIDER=ollama` and `OLLAMA_MODEL` set, the new-task form offers a folded "draft from an instruction" panel (`GET /api/ai/status`, `POST /api/ai/task-draft` `{ instruction }`, senders and administrators, 20 an hour). Every name the school holds and any email, phone or MyKad-like number is removed first (`shared/server/llm/redaction.service.ts`); the model's JSON is checked field by field with the task schemas and only fills the form. One client, one `complete()`: `shared/server/llm/llm-client.service.ts`.
+  - *Duplicate warning*: as a title is typed, `POST /api/tasks/similar` `{ title, assigneeIds }` lists up to three open tasks from the last 30 days with a close title that the caller sent or that someone chosen already has (`features/duplicates`, no language model).
+  - *Weekly digest*: the worker's `weekly-digest-sweep` (every 15 minutes) emails each person their own overdue and this week's tasks, delivered relief and waiting extension requests on the school's first working morning of the week; once per person per week (`digest_sends`); each person can turn it off on the Notifications page (`PATCH /api/me/notifications` `{ weeklyDigest }`).
+  - *MCP server*: with `MCP_SERVER=on`, `/api/mcp` serves four read-only tools (`list_my_tasks`, `get_task`, `list_sent_tasks`, `list_my_relief`) to an MCP client signed in with a personal access token (`GET/POST /api/me/api-tokens`, `DELETE /api/me/api-tokens/:id`, made on the Security page with the password again, shown once, 90 days, 5 at most). Cookies are ignored there and a foreign browser Origin is refused. To connect a client, point it at `<APP_ORIGIN>/api/mcp` with the header `Authorization: Bearer <token>`.
+  - *WebMCP*: built with `NEXT_PUBLIC_WEBMCP=on`, the staff area offers two read-only tools to a browser with `navigator.modelContext` (experiment).
+- **Time**: services take a `Clock`; route handlers pass `appClock()`, which integration tests can set to "10 pm on a Friday" with `setTestClock`. Times are stored in UTC and read in the school's time zone (Luxon).
+- **Security headers**: `next.config.ts` sends a Content-Security-Policy that allows only the app's own origin, plus HSTS outside development. The Sprint 5 OWASP review, with what is still open, is in `../docs/owasp-review.md`.
+- **Accessibility**: staff screens are checked against WCAG 2.2 AA by `shared/theme/calm-contrast.test.ts` (colour tokens) and `e2e/accessibility.spec.ts` (axe). Keyboard order and wording still need a person to check.
+- **Languages**: Bahasa Melayu by default, English by the BM | EN button. `shared/api/api-error.messages.test.ts` fails if a reason code the server can send has no text in either language.
+- **Theme scopes** (plan D8): `(magic)` routes (sign-in, accept invite, student board) and `(calm)` routes (all staff screens, `shared/calm/Calm.module.css`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Where things are
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Code is grouped **by feature**. Every feature folder uses the same sub-folders, so you always know where to look:
 
-## Deploy on Vercel
+| Sub-folder | Holds |
+|---|---|
+| `components/` | React components (`.tsx`) |
+| `hooks/` | React hooks (`use*.ts`) |
+| `services/` | Rules and browser calls, no React; unit tests sit next to them as `*.test.ts` |
+| `server/` | Server-only code: repositories (SQL) and services that use the database; integration tests as `*.integration.test.ts` |
+| `schemas/` | Zod request schemas, shared by the API and the forms |
+| `interfaces/` | TypeScript types (`*.interface.ts`) |
+| `constants/` | Fixed values (`*.constants.ts`) |
+| `data/` | Sample data |
+| `i18n/` | Bahasa Melayu and English messages, with a `*-messages.interface.ts` |
+| `styles/` | CSS Modules (`*.module.css`) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/
+  layout.tsx, globals.css        root layout, design tokens (magic and calm scopes), colour skins, card frames
+  (magic)/                       login, accept-invite, student (magic-academy theme)
+  (calm)/staff/                  staff area: board, sent, held, tasks/new, tasks/[id], timetable, relief, lessons, homework, materials, hours, reports, users, students, school-data, settings, calendar, notifications
+  api/                           JSON API (auth, auth/student-login, auth/student-logout, student/me, student/password, student/homework, student/timetable, students, homework, homework/preview, homework/[id]/hand-ins, me, me/notifications, me/hours, me/push-subscriptions, users, staff, tasks, tasks/feasibility, tasks/[id]/extension-requests, tasks/[id]/extension-suggestion, staff/workload, relief, lessons, lessons/records/photo, materials, files/[id], reports/monthly, reports/monthly/export, task-type-feedback, timetable, school-data, school/settings, calendar/events, delivery/preview)
+  health/route.ts                GET /health: 200 when the database answers, 503 when not
+features/
+  auth/                          sign-in page, sessions, passwords, invites, throttling
+  users/                         administrators' user list and invites; the staff directory
+  students/                      pupil accounts: class lists, sign-in slips, pupil sessions and the choose-password step
+  homework/                      homework set by teachers: the class-week warning, marking time, paper hand-ins, the pupil's list
+  staff/                         the staff shell (menu by role, language, theme, sign-out)
+  tasks/                         tasks, board, comments, idempotent create, sent and held lists
+  delivery/                      working-time rules, school settings and calendar, delivery queue and service
+  capacity/                      free-time and feasibility rules, the dry-run check, the warning on the new-task form
+  extensions/                    requests for more time: the pre-filled form, the sender's answer, the exchange on the task
+  relief/                        covering an absent teacher's periods: suggestions, assigning, each person's own relief classes
+  lessons/                       one-tap lesson records for each person's own periods and the relief classes they cover
+  materials/                     the shared material bank: links and uploaded files with subject, level and topic tags
+  files/                         who may open an uploaded file (shared/server/files does the checking and storing)
+  hours/                         the private hours log, readable only by its owner, and the shared monthly total
+  reports/                       the monthly principal report, its wellbeing indicators, and the PDF and Excel exports
+  timetable/                     each teacher's weekly periods
+  school-data/                   subjects, classes and task types
+  notifications/                 email and push senders, the notify job, each person's settings, the Notifications page
+  task-drafts/                   instruction to task with the language model (Phase 6; off unless AI_PROVIDER is set)
+  duplicates/                    the "a task like this is still open" warning on the new-task form (Phase 6)
+  digest/                        the Monday-morning weekly digest email (Phase 6)
+  mcp/                           the read-only MCP server, personal access tokens, the WebMCP experiment (Phase 6)
+  mfa/                           two-step sign-in and the Security page
+  audit/                         the append-only audit log
+  health/                        the /health check
+  student-dashboard/  battle/  characters/  shop/  pahlawan/   the student board (real homework and timetable; progress is sample data)
+shared/
+  api/                           browser API client, error texts, TanStack Query provider
+  calm/                          calm-scope building blocks (cards, forms, tables, badges)
+  server/                        database pool, transactions, API wrapper, errors, logger, clock, pagination, idempotency
+  ...                            storage, i18n, theme, pixel sprites, buttons, cards, dialogs, toast
+migrations/                      SQL migrations (node-pg-migrate)
+seeds/dev-seed.ts                fictional schools and staff; capacity-seed.ts adds the demo school's timetable data
+worker/index.ts                  the background worker
+scripts/install-queues.ts        pg-boss schema and queues (run by db:migrate)
+e2e/                             Playwright journeys and accessibility scan (npm run test:e2e)
+docker/initdb/                   creates the test database on a fresh volume
+public/                          character art, scenes, logo
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Quiz chapters and levels
+
+Each monster is one difficulty level: Orang Bunian (Easy), Naga Laut (Medium), Harimau Jin (Hard), Hantu Lelaki (Very Hard). Each subject has chapters, and every chapter has a question set for every level. Within a chapter, a level opens once the one before it has been beaten. Records are kept per chapter and level in localStorage `sapientia.battles` under keys like `math-1:2`.
+
+To add a chapter, add it with its questions to the subject's file in `features/battle/data/quiz/` (for example `math.quiz.ts`), with at least one question for each of the four levels. `quiz-stage.service.test.ts` checks that every chapter has every level. The bank is a Year 4 sample: the chapter titles have not been checked against the syllabus and no teacher has reviewed the questions.
+
+### Pahlawan outfit colours
+
+In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok, and a separate colour for the sampin (black, red, blue, white, green, purple). The pahlawan's pictures are recoloured in the browser (`features/pahlawan/services/outfit-recolour.service.ts`): the clothes are the drawing's cool blue-greys and the sampin its crimsons, so skin, hair, gold trim, the keris and outlines stay as drawn on every frame. Choices are kept in localStorage `sapientia.pahlawan.outfit`. The swatch pictures come from `../Character/Malay Warrior Pixel Art Sprite Sheet.png` via `node scripts/cut-outfit-icons.mjs`. If the pendekar art is replaced, check the colour ranges in `partOf` against the new drawing.
+
+### Adding a monster
+
+1. Put its atlas in `../Character` (magenta background; rows idle, attack, hit, die, as the existing ones), add it to `CHARACTERS` in `scripts/cut-sprite-sheets.mjs` with the rows to mirror so it faces left, and run `node scripts/cut-sprite-sheets.mjs --preview`. It writes `public/characters/<name>/sprite-sheet.png` and `portrait.png`, previews in `../Character/preview`, and prints the cell size, foot line and frame ranges.
+2. Create `features/characters/<name>/<name>.character.ts` (copy another monster, then paste in the printed sheet values) and, if it moves differently, `<name>.module.css`.
+3. List it in `features/characters/index.ts`. The list is one monster per level, so a new monster replaces one, or a fifth level needs `MonsterLevel`, `QUIZ_LEVELS` and the questions extended too.
+
+## Notes and known limits
+
+- Capacity is a deliberate simplification: committed work is one total, not a schedule. An unfinished task counts in full once its due date falls inside the period being checked, and not at all before that. Only tasks with an estimate count, so the check is only as good as the estimates. A task's flag is worked out once, when it is sent, and does not change if the timetable changes later.
+- Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers). The board still sorts by the task's own due date, while each card shows the assignee's date. The figures on a request are a snapshot from when it was made.
+- Relief: there is no absence register: a teacher counts as away on a date only once relief is arranged for one of their own periods. Only staff with at least one timetable period are suggested. There is no urgent override for relief arranged outside working hours.
+- Pupil accounts: fictional data only until a legal review covers children's data (see `../docs/phase-4-students.md`). One class per pupil. The 14-day slip, the 8-character minimum and the 50-pupil batch are judgements to check with schools. A pupil who forgets their password needs a new slip from an administrator; there is no self-service reset, since pupils have no email. Usernames come from the first name's Latin letters, so a name in another script gets `murid` plus digits.
+- Homework: the warning at three pieces due on one day, the 60-day limits and the two-week list are judgements to check with schools. The warning counts every subject's homework for the class, whoever set it. Marking time is one total due on the planned day, like a task's estimate. Hand-ins are ticked by the teacher only; pupils do not hand in through the app yet. A pupil who moves class drops out of the old class's hand-in counts.
+- Lesson records: the reasons and the 30-day window are judgements, not from teacher interviews. A period nobody records stays unrecorded; nobody records the periods of a teacher who is absent with no relief. A photo can be added since Sprint 10.
+- Private hours log: administrators see shared totals only in the monthly report, listed by name and never ranked.
+- Monthly report: the format is generic, because no school report templates were gathered in Phase 0. Lessons are scheduled from the timetable as it is now (there is no timetable history): a period deleted mid-month keeps the lessons it has records for and loses the rest. The PDF uses the built-in Helvetica, so a name in a script other than Latin prints as "?"; the page and the Excel file show it correctly. The minimum of five teaching staff for the wellbeing averages is a judgement to check with schools.
+- Uploads: files are kept on the server's own disk, so a second server would need shared storage (hosting decision D5). There is no virus scan; uploaded documents are only ever downloaded, never opened inside the site. The 2 GB per school is a pilot figure. A picture the browser cannot read (some HEIC files outside Safari) is refused with a message rather than sent as it is.
+- Completion question: the three-answer minimum before counts are shown is a judgement to revisit for small schools. A task type's estimate can only be changed by removing the type and adding it again.
+- The timetable has no terms or alternating weeks: one week repeats all year. School holidays count only if they are in the Calendar.
+- A teacher's timetable can be read by that teacher and by administrators only. Senders see free-time totals through the deadline check, never the timetable itself.
+
+- Invite links are still shown to the administrator to pass on; they are not emailed yet.
+- Push needs a VAPID key pair in `.env` (`npx web-push generate-vapid-keys`) and, outside localhost, HTTPS. On iPhone and iPad it works only after Sapientia is added to the Home Screen. If a browser renews its push subscription by itself, push stops on that device until the person turns it on again.
+- Accounts have no saved language yet, so email carries both languages and push uses Bahasa Melayu.
+- Holidays are entered by the administrator on the Calendar page; none are built in. Tasks already held keep the delivery time worked out when they were sent.
+- The default working day is 07:30 to 17:00 until a school saves its own hours.
+- Per-address sign-in limits trust `X-Forwarded-For`, which is only safe behind a proxy that overwrites it.
+- Student board: progress resets on reload; the shop, language, theme, photo, pahlawan name and battle records are kept in this browser's localStorage. Its demo clock is fixed at Thursday 10:15. Every animation is switched off when the device asks for reduced motion.

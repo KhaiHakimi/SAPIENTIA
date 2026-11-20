@@ -1,0 +1,56 @@
+import type { LoginFieldError } from '../interfaces/account.interface';
+
+export interface LoginPillar {
+  title: string;
+  description: string;
+}
+
+export interface LoginMessages {
+  // Showcase panel
+  portalSubtitle: string;
+  panelTitle: string;
+  leadDesc: string;
+  pillars: readonly [LoginPillar, LoginPillar, LoginPillar];
+  metaPrototype: string;
+  metaAffiliation: string;
+
+  // Card
+  title: string;
+  subtitle: string;
+  identifier: string;
+  identifierPlaceholder: string;
+  password: string;
+  show: string;
+  hide: string;
+  forgot: string;
+  forgotInfo: string;
+  submit: string;
+  submitting: string;
+  fieldErrors: Record<LoginFieldError, string>;
+  badCredentials: string;
+  rateLimited: string;
+  networkError: string;
+  note: string;
+  demoBadge: string;
+
+  // Demo accounts
+  demoTitle: string;
+  demoIntro: string;
+  demoPasswordNote: string;
+  studentRole: string;
+  guardianRole: (childName: string) => string;
+  staffDemoNote: string;
+  use: string;
+  useAccount: (who: string) => string;
+  filled: (who: string) => string;
+
+  // After sign-in
+  successTitle: string;
+  studentOpening: (name: string) => string;
+  guardianOpening: (name: string) => string;
+  staffOpening: (name: string) => string;
+
+  // Corner tools
+  switchLanguage: string;
+  theme: string;
+}

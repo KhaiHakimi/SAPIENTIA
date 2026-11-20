@@ -1,0 +1,29 @@
+export type StaffRole = 'admin' | 'sender' | 'teacher';
+export type StaffStatus = 'invited' | 'active' | 'disabled';
+
+/** The signed-in staff member, as the server resolves it from the session cookie. Body of GET /api/me. */
+export interface SessionUser {
+  id: string;
+  schoolId: string;
+  schoolName: string;
+  /** The school's IANA zone; staff screens show times in it. */
+  timeZone: string;
+  email: string;
+  name: string;
+  role: StaffRole;
+  /**
+   * The school requires two-step sign-in for administrators and this administrator has not set it up: every staff endpoint
+   * but /api/me and the setup refuses them until they do.
+   */
+  mfaSetupRequired: boolean;
+}
+
+export interface SignInRequest {
+  email: string;
+  password: string;
+}
+
+export interface AcceptInviteRequest {
+  token: string;
+  password: string;
+}

@@ -1,0 +1,11 @@
+.monthField { max-width: 16em; }
+.heading { margin: 0; display: grid; gap: .15em; color: var(--muted); font-size: .9em; }
+.heading p { margin: 0; }
+.downloads { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; margin-top: 1em; }
+.notes { margin: 0 0 .75em; display: grid; gap: .25em; color: var(--muted); font-size: .9em; }
+.notes p { margin: 0; }
+/* Facts read as label and figure: the figure is right-aligned so the column of numbers lines up. */
+.facts th[scope='row'] { font-size: 1em; color: inherit; font-weight: 400; }
+.number { text-align: right !important; font-variant-numeric: tabular-nums; }
+.facts td { font-weight: 600; }
+.sections { display: grid; gap: 1em; margin-top: 1em; }

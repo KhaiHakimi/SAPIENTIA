@@ -1,0 +1,7 @@
+/* The exchange about a task's due date: one block per request, oldest first. */
+.list { list-style: none; margin: 0 0 1em; padding: 0; display: grid; gap: .75em; }
+.item { display: grid; gap: .4em; padding: .6em .8em; background: var(--panel-2); border-radius: .4em; }
+.item p { margin: 0; overflow-wrap: anywhere; }
+.reason { white-space: pre-wrap; }
+.actions { display: flex; flex-wrap: wrap; align-items: end; gap: .5em; }
+.form { display: grid; gap: .25em; }

@@ -79,7 +79,7 @@ export async function revokeSession(db: Queryable, token: string): Promise<void>
 }
 
 /**
- * Signs a user out everywhere (password set, account disabled or removed, two-step sign-in changed), including any access
+ * Signs a user out everywhere (password set from an invite, account disabled or removed, two-step sign-in reset), including any access
  * token an AI assistant holds for them (Phase 6), so a new password always ends every way in.
  */
 export async function revokeUserSessions(db: Queryable, schoolId: string, userId: string): Promise<void> {

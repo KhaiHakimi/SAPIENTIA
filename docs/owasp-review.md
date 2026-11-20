@@ -172,3 +172,25 @@ Checked on 18 November 2026 for the new code only.
 Open item:
 
 14. Setup shows a key to type into the app and an otpauth:// link; there is no QR code, to avoid a new dependency. Add one if schools find typing the key hard (Phase 0).
+
+## Phase 6: AI drafts, duplicate warnings, weekly digest, MCP server
+
+Checked on 19 November 2026 for the new code only. Stories and threat model in `phase-6-ai.md`.
+
+| # | Risk | Status | Evidence |
+|---|------|--------|----------|
+| A01 | Broken access control | Pass | Drafts and duplicate checks are for senders and administrators (404 for teachers; tested). The duplicate check compares only tasks the caller sent or already given to someone they chose, links only the caller's own (tested, including another school and a teacher). MCP tools call the page services with the token's owner as the actor; another person's task answers "not found" (tested). Tokens are listed and revoked by their owner only (404 for anyone else; tested). |
+| A02 | Cryptographic failures | Pass | Access tokens are 256 random bits with a `sap_` prefix; only SHA-256 is stored (tested). |
+| A03 | Injection | Pass | Parameterised SQL throughout. The model's answer is parsed as JSON and checked field by field with the task schemas; it is never executed or rendered as HTML. Digest emails escape every typed value and keep the subject on one line (tested). |
+| A04 | Insecure design | Pass | AI only fills a form; a person sends. The model gets no tools. Names the school holds and common identifiers are removed first (tested). Every feature is off by default and the app works without it. |
+| A05 | Security misconfiguration | Pass | `AI_PROVIDER`, `MCP_SERVER` and `NEXT_PUBLIC_WEBMCP` default to off; an unknown provider, a missing model or a non-http(s) model address leaves AI off (tested). |
+| A06 | Vulnerable components | Pass | `@modelcontextprotocol/sdk` 1.32.2 pinned, released 23 October 2026; `npm audit --omit=dev` found 0 vulnerabilities on 19 November 2026. |
+| A07 | Identification and authentication failures | Pass | `/api/mcp` accepts only a bearer token and ignores cookies; unknown, revoked or expired tokens and disabled accounts get 401 (tested). Making a token asks for the password again, counted against the sign-in throttle. Tokens are revoked with every session (invite password, disable, remove, MFA reset). |
+| A08 | Software and data integrity failures | Pass | The digest records each person's week once (primary key), so a repeated sweep cannot send twice (tested). |
+| A09 | Logging and monitoring failures | Pass | Token creation and revocation are audited with ids. `ai_requests` records who, when and outcome of each model request; instructions, answers and MCP bodies are never logged. |
+| A10 | Server-side request forgery | Pass | The model address comes from the operator's environment only, never from a request. The MCP server makes no outgoing calls. |
+
+Open items:
+
+15. A browser `Origin` other than the app's is refused at `/api/mcp`, but clients without one (desktop MCP clients) are accepted by design: the bearer token is the control. There is no per-token rate limit yet beyond what the read-only services cost.
+16. The prompt has not been tried with a real Ollama model (none on the development PC). Try candidate models with fictional instructions before switching AI on.

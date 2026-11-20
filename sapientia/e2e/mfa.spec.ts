@@ -24,8 +24,10 @@ test('a teacher turns on two-step sign-in, signs in with a code, then turns it o
 
   await page.locator('#mfa-start-password').fill(E2E_PASSWORD);
   await page.getByRole('button', { name: 'Mula', exact: true }).click();
-  // Next keeps the previous route in the DOM, hidden, so only the visible setup key counts.
-  const key = (await page.locator('main code:visible').first().textContent()) ?? '';
+  // Next keeps the previous route in the DOM, hidden, so only the visible setup key counts. The page also shows the MCP
+  // address in a <code>, so look only inside the two-step section.
+  const setup = page.getByRole('region').filter({ has: page.getByRole('heading', { name: 'Hidupkan log masuk dua langkah' }) });
+  const key = (await setup.locator('code:visible').first().textContent()) ?? '';
   expect(key).toMatch(/^[A-Z2-7 ]+$/);
   await expect(page.getByRole('link', { name: 'Buka dalam aplikasi pengesah' })).toHaveAttribute('href', /^otpauth:\/\/totp\//);
   await page.locator('#mfa-code').fill(codeFor(key));

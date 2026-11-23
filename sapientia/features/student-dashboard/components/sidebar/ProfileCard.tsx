@@ -38,8 +38,8 @@ export function ProfileCard() {
       return;
     }
     try {
-      photoStore.set(await squarePhoto(file));
-      showToast(text.photoSaved);
+      const kept = photoStore.set(await squarePhoto(file));
+      showToast(kept ? text.photoSaved : text.photoNotKept);
     } catch {
       showToast(text.photoFailed);
     }

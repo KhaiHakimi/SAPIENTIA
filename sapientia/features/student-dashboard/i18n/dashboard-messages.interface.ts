@@ -8,6 +8,8 @@ export interface DashboardMessages {
   photoUpload: string;
   photoRemove: string;
   photoSaved: string;
+  /** The browser would not keep the photo (private mode or full storage); it shows only until a reload. */
+  photoNotKept: string;
   photoRemoved: string;
   photoBadType: string;
   photoTooBig: string;

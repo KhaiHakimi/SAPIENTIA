@@ -12,7 +12,7 @@ import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, withTransaction, type Queryable } from '@/shared/server/database.service';
 import type { ExtensionDecision, ExtensionRequest, ExtensionSuggestion, NewExtensionRequest } from '../interfaces/extension.interface';
-import { decideExtension, findExtension, findOpenAssignment, insertExtension } from './extensions.repository';
+import { decideExtension, findExtension, findOpenAssignment, insertExtension, isRequestOpen } from './extensions.repository';
 
 const UNIQUE_VIOLATION = '23505';
 
@@ -100,8 +100,8 @@ export async function requestExtension(
 
 /**
  * The task's sender answers a request: accept the date asked for, or give another later date. Either way the assignee's
- * due date moves and the exchange stays on the task. Anyone but the sender gets 404; a request already answered gets 409.
- * The teacher is told at the next working moment.
+ * due date moves and the exchange stays on the task. Anyone but the sender gets 404; a request already answered, or closed
+ * because the teacher has finished the task, gets 409. The teacher is told at the next working moment.
  */
 export async function answerExtension(
   actor: SessionUser,
@@ -116,6 +116,9 @@ export async function answerExtension(
     const request = await findExtension(client, actor.schoolId, taskId, requestId);
     if (!request) throw new NotFoundError();
     if (request.status !== 'pending') throw new ConflictError('This request has already been answered.');
+    if (!(await isRequestOpen(client, actor.schoolId, taskId, requestId))) {
+      throw new ConflictError('The teacher has finished this task, so the request is closed.');
+    }
     // Proposing the very date that was asked for is an approval, and is recorded as one.
     const dueOn = decision.decision === 'propose' && decision.dueOn !== request.requestedDueOn ? decision.dueOn : null;
     if (dueOn !== null && dueOn <= request.currentDueOn) throw new ValidationError({ dueOn: 'not_later' });

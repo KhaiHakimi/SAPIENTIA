@@ -126,7 +126,10 @@ export async function listAssigned(
   return rows;
 }
 
-/** Tasks this user sent, newest first, with how many assignees have finished; heldOnly keeps those not yet delivered. */
+/**
+ * Tasks this user sent, newest first, with how many assignees have finished; heldOnly keeps those not yet delivered. A
+ * request from someone who has since finished is no longer waiting for an answer, so it is not counted.
+ */
 export async function listSent(
   db: Queryable,
   schoolId: string,
@@ -140,7 +143,8 @@ export async function listSent(
             (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id) AS assignee_count,
             (SELECT count(*)::int FROM task_assignments a WHERE a.task_id = t.id AND a.school_id = t.school_id AND a.status = 'done') AS done_count,
             (SELECT count(*)::int FROM extension_requests e
-              WHERE e.task_id = t.id AND e.school_id = t.school_id AND e.status = 'pending') AS pending_extensions
+               JOIN task_assignments a ON a.task_id = e.task_id AND a.user_id = e.requested_by AND a.school_id = e.school_id
+              WHERE e.task_id = t.id AND e.school_id = t.school_id AND e.status = 'pending' AND a.status <> 'done') AS pending_extensions
        FROM tasks t JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
       WHERE t.school_id = $1 AND t.created_by = $2 AND (NOT $6 OR t.delivered_at IS NULL)
         AND ($3::timestamptz IS NULL OR (t.created_at, t.id) < ($3::timestamptz, $4::uuid))

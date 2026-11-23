@@ -328,19 +328,21 @@ describe('relief and the completion question (Sprint 8)', () => {
       });
       const type = (await added.json()) as SchoolDataItem;
       const task = await newTask({ dueOn: TUESDAY, assigneeIds: [ali, bala, chong], taskTypeId: type.id });
-      const finish = async (email: string, timeTaken: string) => {
+      const another = await newTask({ dueOn: TUESDAY, assigneeIds: [ali], taskTypeId: type.id });
+      const finish = async (email: string, timeTaken: string, taskId = task.id) => {
         const cookie = await signIn(email);
-        await move(task.id, cookie, 'done');
-        expect((await answer(task.id, cookie, timeTaken)).status).toBe(200);
+        await move(taskId, cookie, 'done');
+        expect((await answer(taskId, cookie, timeTaken)).status).toBe(200);
       };
       await finish('ali@a.test', '1_to_3h');
       await finish('bala@a.test', '1_to_3h');
-      // Two answers could be traced to two people: nothing is shown yet.
+      // Ali answers for a second task of the type: three answers, but still only two people, so nothing is shown yet.
+      await finish('ali@a.test', 'under_1h', another.id);
       expect((await feedback()).items).toEqual([]);
 
       await finish('chong@a.test', 'over_3h');
       expect((await feedback()).items).toEqual([{
-        taskTypeId: type.id, name: 'Kunci masuk markah', estimatedMinutes: 45, answers: { 'under_1h': 0, '1_to_3h': 2, 'over_3h': 1 },
+        taskTypeId: type.id, name: 'Kunci masuk markah', estimatedMinutes: 45, answers: { 'under_1h': 1, '1_to_3h': 2, 'over_3h': 1 },
       }]);
       expect((await feedback(sender)).status).toBe(404);
       expect((await feedback(await signIn('ali@a.test'))).status).toBe(404);

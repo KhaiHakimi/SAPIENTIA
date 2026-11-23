@@ -84,6 +84,25 @@ describe('accounts, invites and roles (G2)', () => {
     expect((await call(acceptInvite, '/api/auth/invites/accept', { method: 'POST', body: { token: tokenOf(fresh.inviteUrl), password } })).status).toBe(204);
   });
 
+  it('inviting a still-invited person again takes the new name and role, and leaves one open link', async () => {
+    const admin = await signIn('admin@a.test');
+    const invite = (name: string, role: string) => call(inviteUser, '/api/users', {
+      method: 'POST', cookie: admin, body: { email: 'semula@a.test', name, role },
+    });
+    await invite('Semula', 'teacher');
+    const again = (await (await invite('Cikgu Semula', 'sender')).json()) as InviteUserResult;
+    expect(again.user).toMatchObject({ name: 'Cikgu Semula', role: 'sender', status: 'invited' });
+    const { rows } = await getPool().query("SELECT name, role FROM users WHERE email = 'semula@a.test'");
+    expect(rows).toEqual([{ name: 'Cikgu Semula', role: 'sender' }]);
+
+    const results = await Promise.all([invite('Semula', 'teacher'), invite('Semula', 'teacher'), invite('Semula', 'teacher')]);
+    expect(results.map((response) => response.status)).toEqual([201, 201, 201]);
+    const { rows: open } = await getPool().query<{ count: number }>(
+      'SELECT count(*)::int AS count FROM invites WHERE used_at IS NULL AND revoked_at IS NULL',
+    );
+    expect(open[0].count).toBe(1);
+  });
+
   it('refuses a short password when accepting', async () => {
     const admin = await signIn('admin@a.test');
     const result = (await (await call(inviteUser, '/api/users', {

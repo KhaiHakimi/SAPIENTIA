@@ -86,6 +86,18 @@ describe('capacity (Sprint 6): school data, timetable and the feasibility check'
       expect((await addTo('students', admin, { name: 'x' })).status).toBe(404);
     });
 
+    it('refuses to add past the 300 entries a list can show', async () => {
+      await getPool().query(
+        `INSERT INTO classes (school_id, name) SELECT id, 'Kelas ' || n FROM schools, generate_series(1, 299) n WHERE code = 'A001'`,
+      );
+      expect((await addTo('classes', admin, { name: 'Kelas 300' })).status).toBe(201);
+      const full = await addTo('classes', admin, { name: 'Kelas 301' });
+      expect(full.status).toBe(409);
+      expect(((await full.json()) as { error: { fields: Record<string, string> } }).error.fields).toEqual({ name: 'list_full' });
+      // Another list of the same school is not affected.
+      expect((await addTo('subjects', admin, { name: 'Sains' })).status).toBe(201);
+    });
+
     it('refusal: a teacher or sender cannot add or remove, and another school sees nothing of this one', async () => {
       const subject = await newItem('subjects', { name: 'Sejarah' });
       for (const cookie of [teacher, sender]) {
@@ -136,6 +148,38 @@ describe('capacity (Sprint 6): school data, timetable and the feasibility check'
       expect(clash.status).toBe(409);
       expect((await newSlot(admin, { ...slot, startTime: '09:00', endTime: '10:00' })).status).toBe(201);
       expect((await newSlot(admin, { ...slot, teacherId: guru2 })).status).toBe(201);
+    });
+
+    it('counts the cap one addition at a time, so two at once cannot pass it', async () => {
+      // 199 half-hour periods, 29 a day from midnight; the 200th is being added by another request that has not committed.
+      await getPool().query(
+        `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, label)
+         SELECT u.school_id, u.id, n / 29 + 1, time '00:00' + (n % 29) * interval '45 minutes',
+                time '00:30' + (n % 29) * interval '45 minutes', 'Tugas'
+           FROM users u, generate_series(0, 198) n WHERE u.id = $1`,
+        [guru],
+      );
+      const other = await getPool().connect();
+      try {
+        await other.query('BEGIN');
+        await other.query('SELECT 1 FROM users WHERE id = $1 FOR NO KEY UPDATE', [guru]);
+        await other.query(
+          `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, label)
+           SELECT school_id, id, 7, '23:00', '23:30', 'Tugas' FROM users WHERE id = $1`,
+          [guru],
+        );
+        const racing = newSlot(admin, { teacherId: guru, weekday: 6, startTime: '23:00', endTime: '23:30', label: 'Tugas' });
+        // Give the request time to count while the other addition is still open.
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await other.query('COMMIT');
+        const response = await racing;
+        expect(response.status).toBe(400);
+        expect(((await response.json()) as { error: { fields: Record<string, string> } }).error.fields).toEqual({ teacherId: 'too_many' });
+      } finally {
+        other.release();
+      }
+      const { rows } = await getPool().query<{ total: number }>('SELECT count(*)::int AS total FROM timetable_slots WHERE teacher_id = $1', [guru]);
+      expect(rows[0].total).toBe(200);
     });
 
     it('validates the period: end after start, a lesson needs class and subject, anything else needs a label', async () => {

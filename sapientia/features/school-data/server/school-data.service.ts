@@ -7,7 +7,7 @@ import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SCHOOL_DATA_ITEMS_MAX } from '../constants/school-data.constants';
 import type { NewSchoolDataItem, SchoolDataItem, SchoolDataKind, TaskTypeFeedback } from '../interfaces/school-data.interface';
 import { FEEDBACK_MIN_PEOPLE } from '../services/time-feedback';
-import { insertItem, listItems, listTimeTakenByTaskType, removeItem } from './school-data.repository';
+import { countItems, insertItem, listItems, listTimeTakenByTaskType, lockList, removeItem } from './school-data.repository';
 
 const UNIQUE_VIOLATION = '23505';
 const FOREIGN_KEY_VIOLATION = '23503';
@@ -26,10 +26,17 @@ export function listTaskTypeFeedback(actor: SessionUser): Promise<TaskTypeFeedba
   return listTimeTakenByTaskType(getPool(), actor.schoolId, FEEDBACK_MIN_PEOPLE, SCHOOL_DATA_ITEMS_MAX);
 }
 
-/** Administrators add to a list. The audit entry records which list, never the name. */
+/**
+ * Administrators add to a list. A full list is refused rather than left to grow past what the screens read back. The
+ * audit entry records which list, never the name.
+ */
 export async function addSchoolData(actor: SessionUser, kind: SchoolDataKind, input: NewSchoolDataItem): Promise<SchoolDataItem> {
   try {
     return await withTransaction(async (client) => {
+      await lockList(client, actor.schoolId, kind);
+      if ((await countItems(client, actor.schoolId, kind)) >= SCHOOL_DATA_ITEMS_MAX) {
+        throw new ConflictError('This list is full.', { name: 'list_full' });
+      }
       const item = await insertItem(client, actor.schoolId, kind, input);
       await writeAudit(client, actor.schoolId, [
         { actorId: actor.id, action: 'school_data.added', entityType: 'school_data', entityId: item.id, metadata: { kind } },

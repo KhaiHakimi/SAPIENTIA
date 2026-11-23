@@ -1,4 +1,5 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import pg from 'pg';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST as login } from '@/app/api/auth/login/route';
 import { DELETE as deleteEvent } from '@/app/api/calendar/events/[id]/route';
 import { GET as listEvents, POST as addEvent } from '@/app/api/calendar/events/route';
@@ -99,6 +100,37 @@ describe('held delivery (Sprint 4)', () => {
     expect(await deliverDueTasks(fixedClock(myt('2026-11-09T07:31')))).toBe(1);
     const { rows } = await getPool().query<{ delivered_at: Date | null }>('SELECT delivered_at FROM tasks WHERE id = $1', [created.id]);
     expect(rows[0].delivered_at).not.toBeNull();
+  });
+
+  it('the sweep logs and announces a large catch-up in a few statements, across schools', async () => {
+    const schoolB = await createSchool('B001');
+    await createUser(schoolB, 'pk@b.test', 'sender');
+    const guruB = await createUser(schoolB, 'guru@b.test', 'teacher');
+    at('2026-11-06T22:00');
+    const senderA = await signIn('pk@a.test');
+    const ids: string[] = [];
+    for (let i = 0; i < 12; i++) ids.push(((await (await send(senderA, task(guru))).json()) as TaskDetail).id);
+    ids.push(((await (await send(await signIn('pk@b.test'), task(guruB))).json()) as TaskDetail).id);
+    await clearQueuedJobs();
+
+    const queries = vi.spyOn(pg.Client.prototype, 'query');
+    try {
+      expect(await deliverDueTasks(fixedClock(myt('2026-11-09T07:31')))).toBe(13);
+      // BEGIN, the update, one audit insert, one job insert, COMMIT; a statement or two per task would be dozens.
+      expect(queries.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(queries.mock.calls.length).toBeLessThanOrEqual(8);
+    } finally {
+      queries.mockRestore();
+    }
+    const { rows: logged } = await getPool().query<{ school_id: string; entity_id: string }>(
+      `SELECT school_id, entity_id FROM audit_logs WHERE action = 'task.delivered' AND metadata->>'via' = 'sweep'`,
+    );
+    expect(logged.map((row) => row.entity_id).sort()).toEqual([...ids].sort());
+    expect(logged.find((row) => row.entity_id === ids[12])?.school_id).toBe(schoolB);
+    const { rows: jobs } = await getPool().query<{ singleton_key: string }>(
+      `SELECT singleton_key FROM pgboss.job WHERE name = 'notify-task-delivered'`,
+    );
+    expect(jobs.map((job) => job.singleton_key).sort()).toEqual([...ids].sort());
   });
 
   it('delivers at once inside working hours', async () => {

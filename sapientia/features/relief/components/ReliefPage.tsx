@@ -10,6 +10,7 @@ import calm from '@/shared/calm/Calm.module.css';
 import { formatDay, todayInZone } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { RELIEF_MESSAGES } from '../i18n/relief.messages';
+import type { ReliefDuty } from '../interfaces/relief.interface';
 import { fetchMyReliefDuties, fetchReliefDay, MY_RELIEF_KEY, reliefDayKey } from '../services/relief.client';
 import styles from '../styles/Relief.module.css';
 import { ReliefPeriod } from './ReliefPeriod';
@@ -59,6 +60,31 @@ function MyReliefDuties() {
 }
 
 /**
+ * The teacher chosen as away is also down to cover colleagues' classes that day. Nothing moves those by itself, so the
+ * administrator is told which, to cancel and arrange again.
+ */
+function OwnDutiesWarning({ name, duties }: { name: string; duties: readonly ReliefDuty[] }) {
+  const text = useMessages(RELIEF_MESSAGES);
+  const timetable = useMessages(TIMETABLE_MESSAGES);
+  return (
+    <div className={`${calm.alert} ${calm.alertError}`} role="status">
+      <p>{text.ownDutiesWarning(name)}</p>
+      <ul>
+        {duties.map((duty) => (
+          <li key={duty.id}>
+            {text.ownDutyLine(
+              timetable.timeRange(duty.startTime, duty.endTime),
+              duty.class && duty.subject ? timetable.lesson(duty.class.name, duty.subject.name) : (duty.label ?? ''),
+              duty.absentTeacher.name,
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
  * Administrators: choose who is away and when, then cover each of their periods. The suggestions are a short list to
  * choose from, never a ranking of the staff (plan Phase 2).
  */
@@ -99,6 +125,7 @@ function ReliefPlanner() {
         <>
           <h3>{text.periodsTitle(day.data.teacher.name, formatDay(day.data.onDate, lang, { weekday: true }))}</h3>
           {!day.data.canArrange && <p className={`${calm.alert} ${calm.alertInfo}`} role="status">{text.cannotArrange}</p>}
+          {day.data.ownDuties.length > 0 && <OwnDutiesWarning name={day.data.teacher.name} duties={day.data.ownDuties} />}
           {day.data.periods.length === 0 ? (
             <p className={calm.empty}>{text.noPeriods}</p>
           ) : (

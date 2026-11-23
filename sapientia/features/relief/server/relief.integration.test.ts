@@ -284,6 +284,27 @@ describe('relief and the completion question (Sprint 8)', () => {
       expect(rows).toEqual([{ id: today.id, slot_id: null, on_date: MONDAY }]);
     });
 
+    it('warns that a teacher chosen as away also has relief to give, and keeps new periods off it', async () => {
+      const assigned = (await (await assign(lesson.id, MONDAY, bala)).json()) as ReliefAssigned;
+      const day = (await (await call(getReliefDay, `/api/relief?teacherId=${bala}&onDate=${MONDAY}`, { cookie: admin })).json()) as ReliefDay;
+      expect(day.ownDuties).toEqual([{
+        id: assigned.id, onDate: MONDAY, startTime: '08:00', endTime: '09:00', class: null, subject: null, label: 'Kelas',
+        absentTeacher: { id: absent, name: 'absent' },
+      }]);
+      const other = (await (await call(getReliefDay, `/api/relief?teacherId=${chong}&onDate=${MONDAY}`, { cookie: admin })).json()) as ReliefDay;
+      expect(other.ownDuties).toEqual([]);
+
+      const slot = (startTime: string, endTime: string, weekday = 1) => call(addSlot, '/api/timetable/slots', {
+        method: 'POST', cookie: admin, body: { teacherId: bala, weekday, startTime, endTime, label: 'Tugas' },
+      });
+      const clash = await slot('08:30', '09:30');
+      expect(clash.status).toBe(409);
+      expect(await fieldsOf(clash)).toEqual({ startTime: 'relief_clash' });
+      // Right after the relief class, or on another day, is fine.
+      expect((await slot('09:00', '10:00')).status).toBe(201);
+      expect((await slot('08:30', '09:30', 2)).status).toBe(201);
+    });
+
     it('a relief class is not free time in the deadline check', async () => {
       const check = async () => {
         const body = { assigneeIds: [bala], dueOn: MONDAY, estimatedMinutes: 560 };

@@ -20,7 +20,7 @@ import type { NewRelief, ReliefAssigned, ReliefDay, ReliefDuty, ReliefSuggestion
 import { busyTeacherIds, rankReliefCandidates } from '../services/relief-ranking.service';
 import {
   countReliefBetween, deleteRelief, findSlotForRelief, insertRelief, listAbsentTeacherIds, listBusyPeriods, listDuties,
-  listReliefForDay, listTeachingStaffIds, type SlotForRelief,
+  listDutiesOnDay, listReliefForDay, listTeachingStaffIds, type SlotForRelief,
 } from './relief.repository';
 
 const UNIQUE_VIOLATION = '23505';
@@ -87,6 +87,7 @@ export async function getReliefDay(actor: SessionUser, teacherId: string, onDate
     teacher: { id: teacher.id, name: teacher.name },
     onDate,
     canArrange: canArrangeOn(onDate, now, calendar),
+    ownDuties: await listDutiesOnDay(db, actor.schoolId, teacherId, onDate),
     periods: slots.map((slot) => {
       const relief = cover.get(slot.id);
       if (!relief) return { slot, relief: null };

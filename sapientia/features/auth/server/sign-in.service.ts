@@ -52,7 +52,9 @@ export async function signIn(input: SignInRequest, address: string, clock: Clock
 
 /**
  * Uses a one-time invite: sets the password, activates the account and signs the person in. The invite row is locked, so
- * the same link used twice at once still succeeds only once. Any other state is a plain 404.
+ * the same link used twice at once still succeeds only once. Only an account still waiting to be set up can be taken over
+ * this way, and its other open links stop working, so a second link can never reset an active account's password. Any
+ * other state is a plain 404.
  */
 export async function acceptInvite(input: AcceptInviteRequest, clock: Clock): Promise<string> {
   const passwordHash = await hashPassword(input.password);
@@ -60,7 +62,7 @@ export async function acceptInvite(input: AcceptInviteRequest, clock: Clock): Pr
     const { rows } = await client.query<{ id: string; school_id: string; user_id: string }>(
       `SELECT i.id, i.school_id, i.user_id
          FROM invites i JOIN users u ON u.id = i.user_id AND u.school_id = i.school_id
-        WHERE i.token_hash = $1 AND i.used_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > $2 AND u.status <> 'disabled'
+        WHERE i.token_hash = $1 AND i.used_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > $2 AND u.status = 'invited'
         FOR UPDATE OF i`,
       [hashToken(input.token), clock.now()],
     );
@@ -68,6 +70,10 @@ export async function acceptInvite(input: AcceptInviteRequest, clock: Clock): Pr
     if (!invite) throw new NotFoundError('This invite link is not valid. Ask your administrator for a new one.');
 
     await client.query('UPDATE invites SET used_at = $2 WHERE id = $1', [invite.id, clock.now()]);
+    await client.query(
+      'UPDATE invites SET revoked_at = $3 WHERE school_id = $1 AND user_id = $2 AND used_at IS NULL AND revoked_at IS NULL',
+      [invite.school_id, invite.user_id, clock.now()],
+    );
     await client.query(
       `UPDATE users SET password_hash = $3, status = 'active', updated_at = $4 WHERE school_id = $1 AND id = $2`,
       [invite.school_id, invite.user_id, passwordHash, clock.now()],

@@ -18,3 +18,16 @@ describe('pupil schemas: no MyKad numbers', () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe('pupil schemas: no MyKad numbers in names', () => {
+  it.each(['Ali bin Abu, 010203-14-5678', 'Ali bin Abu IC010203145678', 'Ali 0102 0314 5678'])('refuse the name %s', (name) => {
+    const result = addStudentsSchema.safeParse({ classId: CLASS_ID, students: [{ name }] });
+    expect(reasons(result)).toEqual({ 'students.0.name': 'name_has_mykad' });
+    expect(reasons(updateStudentSchema.safeParse({ name }))).toEqual({ name: 'name_has_mykad' });
+  });
+
+  it('keep names, including ones with a/l, a/p and a short number', () => {
+    const students = [{ name: 'Kavitha a/p Raman' }, { name: 'Muthu a/l Samy' }, { name: 'Tan Mei Ling 2' }];
+    expect(addStudentsSchema.safeParse({ classId: CLASS_ID, students }).success).toBe(true);
+  });
+});

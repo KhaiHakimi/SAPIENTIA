@@ -59,6 +59,8 @@ export const STUDENTS_MESSAGES: Record<Lang, StudentsMessages> = {
 
     fieldErrors: {
       looks_like_mykad: 'Ini kelihatan seperti nombor MyKad. Gunakan nombor yang diberi sekolah.',
+      name_has_mykad: 'Nama ini mengandungi nombor seperti MyKad. Buang nombor itu.',
+      too_many_values: 'Baris ini ada lebih daripada satu koma atau tab. Tulis nama, kemudian nombor sekolah sahaja.',
       invalid_school_number: 'Hanya huruf, nombor, / dan - dibenarkan.',
       number_taken: 'Nombor sekolah ini sudah digunakan oleh murid lain.',
       number_repeated: 'Nombor sekolah ini berulang dalam senarai.',
@@ -123,6 +125,8 @@ export const STUDENTS_MESSAGES: Record<Lang, StudentsMessages> = {
 
     fieldErrors: {
       looks_like_mykad: 'This looks like a MyKad number. Use the number the school gave.',
+      name_has_mykad: 'This name contains a number like a MyKad number. Remove it.',
+      too_many_values: 'This line has more than one comma or tab. Write the name, then the school number only.',
       invalid_school_number: 'Only letters, digits, / and - are allowed.',
       number_taken: 'Another pupil already has this school number.',
       number_repeated: 'This school number appears twice in the list.',

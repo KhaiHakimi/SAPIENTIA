@@ -82,6 +82,7 @@ export const GUARDIANS_MESSAGES: Record<Lang, GuardiansMessages> = {
 
     fieldErrors: {
       invalid_student: 'Pilih murid daripada senarai.',
+      name_has_mykad: 'Nama ini mengandungi nombor seperti MyKad. Buang nombor itu.',
       invalid_relationship: 'Pilih hubungan daripada senarai.',
       invalid_reason: 'Pilih sebab daripada senarai.',
       too_many_children: `Seorang penjaga boleh dipautkan kepada ${GUARDIAN_LINKS_MAX} anak sahaja.`,
@@ -166,6 +167,7 @@ export const GUARDIANS_MESSAGES: Record<Lang, GuardiansMessages> = {
 
     fieldErrors: {
       invalid_student: 'Choose a pupil from the list.',
+      name_has_mykad: 'This name contains a number like a MyKad number. Remove it.',
       invalid_relationship: 'Choose a relationship from the list.',
       invalid_reason: 'Choose a reason from the list.',
       too_many_children: `A guardian can be linked to ${GUARDIAN_LINKS_MAX} children at most.`,

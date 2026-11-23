@@ -39,11 +39,15 @@ export function AddStudentsForm({ text, classes, onAdded }: AddStudentsFormProps
   });
   const fields = add.error instanceof ApiError ? add.error.fields : {};
   const fieldText = (code: string | undefined) => (code ? (text.fieldErrors[code] ?? describeFieldError(code, lang)) : '');
-  const rowProblem = (index: number) => fields[`students.${index}.name`] ?? fields[`students.${index}.schoolNumber`];
+  const rowProblem = (index: number) =>
+    pupils[index].problem ?? fields[`students.${index}.name`] ?? fields[`students.${index}.schoolNumber`];
+  // A line the page could not read is never sent: the admin fixes it first, so nothing is guessed into a name.
+  const unreadable = pupils.some((pupil) => pupil.problem);
   const listProblem = fields.students;
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (unreadable) return;
     setAddedCount(null);
     add.mutate({ classId, students: pupils.map(({ name, schoolNumber }) => ({ name, schoolNumber })) });
   };
@@ -69,7 +73,7 @@ export function AddStudentsForm({ text, classes, onAdded }: AddStudentsFormProps
         <div className={calm.field}>
           <label className={calm.label} htmlFor="add-students-list">{text.addList}</label>
           <textarea id="add-students-list" className={calm.textarea} rows={8} value={list} spellCheck={false}
-            onChange={(event) => setList(event.target.value)} aria-invalid={Boolean(listProblem)}
+            onChange={(event) => setList(event.target.value)} aria-invalid={Boolean(listProblem) || unreadable}
             aria-describedby="add-students-list-help add-students-list-error" />
           <div id="add-students-list-help" className={calm.help}>{text.addListHelp}</div>
           <div id="add-students-list-error" className={calm.fieldError}>{fieldText(listProblem)}</div>
@@ -93,7 +97,7 @@ export function AddStudentsForm({ text, classes, onAdded }: AddStudentsFormProps
           </div>
         )}
 
-        <button type="submit" className={`${calm.button} ${calm.primary}`} disabled={add.isPending}>
+        <button type="submit" className={`${calm.button} ${calm.primary}`} disabled={add.isPending || unreadable}>
           {add.isPending ? text.adding : text.add}
         </button>
       </form>

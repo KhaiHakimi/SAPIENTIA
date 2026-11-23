@@ -27,7 +27,7 @@ Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@g
 | `npm run lint` | ESLint: Next.js rules plus the Google style rules |
 | `npm run typecheck` | Generates route types, then `tsc --noEmit` |
 | `npm run build` | Production build |
-| `npm run worker` | Background worker: held-task delivery jobs, a sweep every minute, and email and push notifications (tasks, extension requests and answers, relief) |
+| `npm run worker` | Background worker: held-task delivery jobs, a sweep every minute, email and push notifications (tasks, extension requests and answers, relief), and an hourly removal of expired sessions, two-step challenges, idempotency keys and sign-in counters |
 | `node scripts/make-app-icons.mjs` | Remakes the app icons in `public/icons/` from the logo |
 | `npm run db:migrate:down` | Rolls back the last migration |
 | `npm run db:migrate:create -- <name>` | New SQL migration in `migrations/`. Never edit one that has been released; add another |

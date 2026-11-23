@@ -145,6 +145,18 @@ describe('tasks (G3) and refusals', () => {
     expect((await newTask(sender, { title: 'Hujung', dueOn: '2027-11-05', ...estimate })).status).toBe(201);
   });
 
+  it('a sender who assigns a held task to themselves gets no status to change until it is delivered', async () => {
+    const { rows: [me] } = await getPool().query<{ id: string }>(`SELECT id FROM users WHERE email = 'pk@a.test'`);
+    // Wednesday 10 pm: outside working hours, so the task is held until the morning.
+    setTestClock(fixedClock('2026-11-04T22:00:00+08:00'));
+    const evening = await signIn('pk@a.test');
+    const held = (await (await newTask(evening, { title: 'Untuk saya', dueOn: FAR_FUTURE, assigneeIds: [me.id, guruA] })).json()) as TaskDetail;
+    expect(held.deliveredAt).toBeNull();
+    expect(held).toMatchObject({ isSender: true, myStatus: null, myDueOn: null });
+    const moved = await call(moveMine, `/api/tasks/${held.id}/assignments/me`, { method: 'PATCH', cookie: evening, body: { status: 'done' }, params: { id: held.id } });
+    expect(moved.status).toBe(404);
+  });
+
   it('replays a retried POST with the same Idempotency-Key instead of creating a second task', async () => {
     const body = { title: 'Sekali sahaja', dueOn: FAR_FUTURE, assigneeIds: [guruA] };
     const headers = { 'idempotency-key': 'f1f5c3a2-9d0b-4c1e-8e57-0b6a2b1f2c3d' };

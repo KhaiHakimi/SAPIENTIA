@@ -64,7 +64,8 @@ export async function insertAssignments(db: Queryable, schoolId: string, taskId:
 /**
  * The task if this user may see it (they sent it, or it is assigned to them and has been delivered), with their own status;
  * otherwise null. Callers answer null with 404, so a held task, a task in another school or someone else's task all look the
- * same to an assignee as one that does not exist.
+ * same to an assignee as one that does not exist. Their own status and date come only once the task is delivered: a sender
+ * who assigned a held task to themselves cannot move it yet, so the page must not offer to.
  */
 export async function findVisibleTask(db: Queryable, schoolId: string, taskId: string, userId: string): Promise<VisibleTaskRow | null> {
   const { rows } = await db.query<VisibleTaskRow>(
@@ -73,8 +74,8 @@ export async function findVisibleTask(db: Queryable, schoolId: string, taskId: s
             a.time_taken AS my_time_taken
        FROM tasks t
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
-       LEFT JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id AND a.user_id = $3
-      WHERE t.school_id = $1 AND t.id = $2 AND (t.created_by = $3 OR (a.user_id IS NOT NULL AND t.delivered_at IS NOT NULL))`,
+       LEFT JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id AND a.user_id = $3 AND t.delivered_at IS NOT NULL
+      WHERE t.school_id = $1 AND t.id = $2 AND (t.created_by = $3 OR a.user_id IS NOT NULL)`,
     [schoolId, taskId, userId],
   );
   return rows[0] ?? null;

@@ -4,7 +4,7 @@ import type { PoolClient } from 'pg';
 import { ConflictError } from './app-errors';
 
 /** A key is honoured for a day; after that the same key starts afresh. */
-const KEY_LIFETIME_HOURS = 24;
+export const KEY_LIFETIME_HOURS = 24;
 
 export interface StoredResponse<T> {
   status: number;

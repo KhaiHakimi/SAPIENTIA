@@ -55,6 +55,15 @@ export async function listSlotTimes(db: Queryable, schoolId: string, teacherIds:
   return rows;
 }
 
+/**
+ * Holds one teacher's timetable until the transaction ends, so two periods added at once are counted one after the other
+ * and cannot both slip under the cap. NO KEY UPDATE leaves the row free for the foreign-key checks of everything else that
+ * points at the teacher.
+ */
+export async function lockTeacherTimetable(db: Queryable, schoolId: string, teacherId: string): Promise<void> {
+  await db.query('SELECT 1 FROM users WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, teacherId]);
+}
+
 export async function countSlots(db: Queryable, schoolId: string, teacherId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     'SELECT count(*)::int AS total FROM timetable_slots WHERE school_id = $1 AND teacher_id = $2',

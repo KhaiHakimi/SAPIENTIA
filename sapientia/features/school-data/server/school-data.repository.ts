@@ -32,6 +32,24 @@ export async function listItems(db: Queryable, schoolId: string, kind: SchoolDat
   return rows.map(toItem);
 }
 
+/**
+ * Holds one school's list until the transaction ends, so two administrators adding at once are counted one after the other
+ * and cannot both slip under the cap. An advisory lock, because there is no row to lock before the first item exists.
+ */
+export async function lockList(db: Queryable, schoolId: string, kind: SchoolDataKind): Promise<void> {
+  await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`school-data:${schoolId}:${TABLES[kind].table}`]);
+}
+
+/** How many entries the list shows: archived task types do not count. */
+export async function countItems(db: Queryable, schoolId: string, kind: SchoolDataKind): Promise<number> {
+  const { table, hasEstimate } = TABLES[kind];
+  const { rows } = await db.query<{ total: number }>(
+    `SELECT count(*)::int AS total FROM ${table} WHERE school_id = $1 ${hasEstimate ? 'AND archived_at IS NULL' : ''}`,
+    [schoolId],
+  );
+  return rows[0].total;
+}
+
 export async function insertItem(db: Queryable, schoolId: string, kind: SchoolDataKind, item: NewSchoolDataItem): Promise<SchoolDataItem> {
   const { table, hasEstimate } = TABLES[kind];
   const sql = hasEstimate

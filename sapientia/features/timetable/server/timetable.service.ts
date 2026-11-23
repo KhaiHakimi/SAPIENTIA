@@ -7,7 +7,7 @@ import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/a
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SLOTS_PER_TEACHER_MAX } from '../constants/timetable.constants';
 import type { NewTimetableSlot, Timetable, TimetableSlot } from '../interfaces/timetable.interface';
-import { countSlots, deleteSlot, insertSlot, listSlots } from './timetable.repository';
+import { countSlots, deleteSlot, insertSlot, listSlots, lockTeacherTimetable } from './timetable.repository';
 
 const EXCLUSION_VIOLATION = '23P01';
 const FOREIGN_KEY_VIOLATION = '23503';
@@ -42,6 +42,7 @@ export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSl
     return await withTransaction(async (client) => {
       const [teacher] = await listActiveStaff(client, actor.schoolId, [input.teacherId]);
       if (!teacher) throw new ValidationError({ teacherId: 'invalid_teacher' });
+      await lockTeacherTimetable(client, actor.schoolId, input.teacherId);
       if ((await countSlots(client, actor.schoolId, input.teacherId)) >= SLOTS_PER_TEACHER_MAX) throw new ValidationError({ teacherId: 'too_many' });
       // Dated by the clock, as the lesson records and the monthly report count a period only from the day it was added.
       const slot = await insertSlot(client, actor.schoolId, input, clock.now());

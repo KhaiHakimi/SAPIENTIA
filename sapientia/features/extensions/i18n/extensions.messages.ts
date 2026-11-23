@@ -34,6 +34,7 @@ export const EXTENSIONS_MESSAGES: Record<Lang, ExtensionsMessages> = {
     fieldErrors: {
       not_later: 'Pilih tarikh yang lebih lewat daripada tarikh akhir sekarang.',
       past_date: 'Tarikh ini sudah berlalu.',
+      too_far_ahead: 'Pilih tarikh dalam tempoh setahun dari hari ini.',
       already_pending: 'Permohonan anda untuk tugas ini masih menunggu jawapan.',
       invalid_decision: 'Jawapan tidak sah. Muat semula halaman dan cuba lagi.',
     },
@@ -70,6 +71,7 @@ export const EXTENSIONS_MESSAGES: Record<Lang, ExtensionsMessages> = {
     fieldErrors: {
       not_later: 'Choose a date later than the current due date.',
       past_date: 'This date has already passed.',
+      too_far_ahead: 'Choose a date within a year from today.',
       already_pending: 'Your request for this task is still waiting for an answer.',
       invalid_decision: 'That answer is not valid. Reload the page and try again.',
     },

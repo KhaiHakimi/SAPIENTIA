@@ -3,6 +3,7 @@ import { POST as login } from '@/app/api/auth/login/route';
 import { PATCH as moveMine } from '@/app/api/tasks/[id]/assignments/me/route';
 import { POST as comment } from '@/app/api/tasks/[id]/comments/route';
 import { GET as getTask } from '@/app/api/tasks/[id]/route';
+import { POST as feasibility } from '@/app/api/tasks/feasibility/route';
 import { GET as listTasks, POST as createTask } from '@/app/api/tasks/route';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
@@ -13,7 +14,8 @@ import type { AssignedTask, SentTask, TaskDetail } from '../interfaces/task.inte
 const signIn = async (email: string) =>
   cookieFrom(await call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } }));
 
-const FAR_FUTURE = '2099-12-31';
+/** Well ahead, but inside the one-year limit on due dates. */
+const FAR_FUTURE = '2027-06-30';
 /** A Wednesday morning, inside working hours, so every task here is delivered at once (held delivery has its own tests). */
 const WORKING_HOURS = '2026-11-04T10:00:00+08:00';
 
@@ -130,6 +132,19 @@ describe('tasks (G3) and refusals', () => {
     expect((await call(getTask, '/api/tasks/not-a-uuid', { cookie: sender, params: { id: 'not-a-uuid' } })).status).toBe(404);
   });
 
+  it('refuses a due date more than a year ahead, on the task and on the dry run, and accepts the last allowed day', async () => {
+    const estimate = { assigneeIds: [guruA], estimatedMinutes: 60 };
+    for (const dueOn of ['2027-11-06', '9999-12-31']) {
+      const created = await newTask(sender, { title: 'Jauh', dueOn, ...estimate });
+      expect(created.status).toBe(400);
+      expect((await created.json()).error.fields).toEqual({ dueOn: 'too_far_ahead' });
+      const dryRun = await call(feasibility, '/api/tasks/feasibility', { method: 'POST', cookie: sender, body: { dueOn, ...estimate } });
+      expect(dryRun.status).toBe(400);
+      expect((await dryRun.json()).error.fields).toEqual({ dueOn: 'too_far_ahead' });
+    }
+    expect((await newTask(sender, { title: 'Hujung', dueOn: '2027-11-05', ...estimate })).status).toBe(201);
+  });
+
   it('replays a retried POST with the same Idempotency-Key instead of creating a second task', async () => {
     const body = { title: 'Sekali sahaja', dueOn: FAR_FUTURE, assigneeIds: [guruA] };
     const headers = { 'idempotency-key': 'f1f5c3a2-9d0b-4c1e-8e57-0b6a2b1f2c3d' };
@@ -153,7 +168,7 @@ describe('tasks (G3) and refusals', () => {
     for (let day = 1; day <= 5; day++) {
       // A minute apart, so "newest first" has a real order to follow.
       setTestClock(fixedClock(new Date(Date.parse(WORKING_HOURS) + day * 60_000)));
-      await newTask(sender, { title: `Tugas ${day}`, dueOn: `2099-01-0${day}`, assigneeIds: [guruA] });
+      await newTask(sender, { title: `Tugas ${day}`, dueOn: `2027-01-0${day}`, assigneeIds: [guruA] });
     }
     const collect = async <T extends { id: string }>(cookie: string, query: string) => {
       const items: T[] = [];
@@ -169,6 +184,6 @@ describe('tasks (G3) and refusals', () => {
     const sent = await collect<SentTask>(sender, 'view=sent');
     expect(sent.map((task) => task.title)).toEqual(['Tugas 5', 'Tugas 4', 'Tugas 3', 'Tugas 2', 'Tugas 1']);
     const board = await collect<AssignedTask>(await signIn('guru@a.test'), 'view=assigned');
-    expect(board.map((task) => task.dueOn)).toEqual(['2099-01-01', '2099-01-02', '2099-01-03', '2099-01-04', '2099-01-05']);
+    expect(board.map((task) => task.dueOn)).toEqual(['2027-01-01', '2027-01-02', '2027-01-03', '2027-01-04', '2027-01-05']);
   });
 });

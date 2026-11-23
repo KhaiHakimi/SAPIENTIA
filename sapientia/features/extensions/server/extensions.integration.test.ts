@@ -135,6 +135,10 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await ask(task.id, teacher, { requestedDueOn: 'esok' })).status).toBe(400);
       expect((await ask(task.id, teacher, { requestedDueOn: WEDNESDAY, reason: 'a'.repeat(501) })).status).toBe(400);
       expect((await ask(task.id, teacher, { requestedDueOn: WEDNESDAY, status: 'approved' })).status).toBe(400);
+      // More than a year ahead: the capacity check behind the figures would walk every day to it.
+      const tooFar = await ask(task.id, teacher, { requestedDueOn: '9999-12-31' });
+      expect(tooFar.status).toBe(400);
+      expect(await fieldsOf(tooFar)).toEqual({ requestedDueOn: 'too_far_ahead' });
     });
 
     it('refusal: only an assignee with unfinished, delivered work may ask', async () => {
@@ -197,6 +201,8 @@ describe('extensions and workload (Sprint 7)', () => {
       const tooEarly = await answer(task.id, first.id, sender, { decision: 'propose', dueOn: MONDAY });
       expect(tooEarly.status).toBe(400);
       expect(await fieldsOf(tooEarly)).toEqual({ dueOn: 'not_later' });
+      const tooFar = await answer(task.id, first.id, sender, { decision: 'propose', dueOn: '2027-11-04' });
+      expect(await fieldsOf(tooFar)).toEqual({ dueOn: 'too_far_ahead' });
       const countered = await answer(task.id, first.id, sender, { decision: 'propose', dueOn: TUESDAY });
       expect((await countered.json()) as ExtensionRequest).toMatchObject({ status: 'countered', requestedDueOn: THURSDAY, decidedDueOn: TUESDAY });
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);

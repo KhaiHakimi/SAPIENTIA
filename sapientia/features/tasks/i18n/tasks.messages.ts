@@ -92,6 +92,7 @@ export const TASKS_MESSAGES: Record<Lang, TasksMessages> = {
     someone: 'Seseorang',
     fieldErrors: {
       past_date: 'Tarikh akhir tidak boleh sebelum hari ini.',
+      too_far_ahead: 'Tarikh akhir paling lewat setahun dari hari ini.',
       invalid_assignee: 'Seorang penerima tidak lagi aktif di sekolah ini. Muat semula dan pilih semula.',
       due_before_delivery: 'Tarikh akhir jatuh sebelum tugas sampai kepada guru. Pilih tarikh kemudian, atau tandakan segera jika benar-benar perlu.',
       too_many: 'Terlalu ramai penerima.',
@@ -193,6 +194,7 @@ export const TASKS_MESSAGES: Record<Lang, TasksMessages> = {
     someone: 'Someone',
     fieldErrors: {
       past_date: 'The due date cannot be before today.',
+      too_far_ahead: 'The due date can be at most a year from today.',
       invalid_assignee: 'Someone you chose is no longer active in this school. Reload and choose again.',
       due_before_delivery: 'The due date falls before the task reaches the teachers. Choose a later date, or mark it urgent if it really is.',
       too_many: 'Too many people.',

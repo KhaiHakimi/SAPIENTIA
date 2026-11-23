@@ -38,10 +38,12 @@ export async function listUsers(db: Queryable, schoolId: string, limit: number, 
   return rows;
 }
 
-export async function findUserByEmail(db: Queryable, email: string) {
+/** The account with this email in any school, locked until the transaction ends so two invites for it take turns. */
+export async function findUserByEmailForUpdate(db: Queryable, email: string) {
   const { rows } = await db.query<UserRow & { school_id: string }>(
     `SELECT id, school_id, name, email, role, status, last_sign_in_at, removed_at,
-            EXISTS (SELECT 1 FROM user_mfa m WHERE m.user_id = users.id AND m.confirmed_at IS NOT NULL) AS mfa_enabled FROM users WHERE lower(email) = lower($1)`,
+            EXISTS (SELECT 1 FROM user_mfa m WHERE m.user_id = users.id AND m.confirmed_at IS NOT NULL) AS mfa_enabled FROM users WHERE lower(email) = lower($1)
+      FOR UPDATE`,
     [email],
   );
   return rows[0] ?? null;
@@ -67,16 +69,30 @@ export async function listActiveStaff(db: Queryable, schoolId: string, ids?: rea
   return rows;
 }
 
-/** One of the school's accounts that has not been removed, locked until the transaction ends. */
-export async function findUserForUpdate(db: Queryable, schoolId: string, id: string) {
+/**
+ * Some of the school's accounts, removed ones included, locked until the transaction ends. They are locked in id order, so
+ * two transactions locking the same pair never wait on each other in a circle.
+ */
+export async function findUsersForUpdate(db: Queryable, schoolId: string, ids: readonly string[]) {
   const { rows } = await db.query<UserRow & { has_password: boolean }>(
     `SELECT id, name, email, role, status, last_sign_in_at, removed_at, (password_hash IS NOT NULL) AS has_password,
             EXISTS (SELECT 1 FROM user_mfa m WHERE m.user_id = users.id AND m.confirmed_at IS NOT NULL) AS mfa_enabled FROM users
-      WHERE school_id = $1 AND id = $2 AND removed_at IS NULL
+      WHERE school_id = $1 AND id = ANY($2::uuid[])
+      ORDER BY id
       FOR UPDATE`,
-    [schoolId, id],
+    [schoolId, ids],
   );
-  return rows[0] ?? null;
+  return rows;
+}
+
+/** A still-invited account's new name and role, when the administrator invites the same email again. */
+export async function updateInvitedUser(db: Queryable, schoolId: string, id: string, input: { name: string; role: StaffRole }, now: Date) {
+  const { rows } = await db.query<UserRow>(
+    `UPDATE users SET name = $3, role = $4, updated_at = $5 WHERE school_id = $1 AND id = $2 AND status = 'invited'
+     RETURNING id, name, email, role, status, last_sign_in_at, removed_at, false AS mfa_enabled`,
+    [schoolId, id, input.name, input.role, now],
+  );
+  return rows[0];
 }
 
 

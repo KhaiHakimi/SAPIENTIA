@@ -9,19 +9,20 @@ import { writeAudit } from '@/features/audit/server/audit.repository';
 import { revokeUserSessions } from '@/features/auth/server/session.service';
 import { deleteAllOwnEntries } from '@/features/hours/server/hours.repository';
 import { cancelPendingForTeacher } from '@/features/meetings/server/meetings.repository';
-import { ConflictError, NotFoundError } from '@/shared/server/app-errors';
+import { ConflictError, NotFoundError, UnauthenticatedError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
 import { decodeCursor, encodeCursor, toPage } from '@/shared/server/pagination';
 import type { InviteUserRequest, InviteUserResult, StaffUser, UpdateUserStatusRequest } from '../interfaces/staff-user.interface';
 import {
-  findUserByEmail,
-  findUserForUpdate,
+  findUserByEmailForUpdate,
+  findUsersForUpdate,
   insertInvitedUser,
   listUsers,
   markUserRemoved,
   setUserStatus,
   toStaffUser,
+  updateInvitedUser,
 } from './users.repository';
 
 export async function listSchoolUsers(actor: SessionUser, limit: number, cursor: string | undefined): Promise<Page<StaffUser>> {
@@ -32,7 +33,8 @@ export async function listSchoolUsers(actor: SessionUser, limit: number, cursor:
 
 /**
  * Creates an invited account, or a fresh link for someone in this school who has not accepted yet (older links stop
- * working). An email already used by an active account, or by another school, is a conflict.
+ * working, and the new name and role replace the old). An email already used by an active account, or by another school,
+ * is a conflict. The existing row is locked, so two invites sent at once still leave only one link open.
  */
 export async function inviteUser(actor: SessionUser, input: InviteUserRequest, origin: string, clock: Clock): Promise<InviteUserResult> {
   const token = generateToken();
@@ -40,11 +42,13 @@ export async function inviteUser(actor: SessionUser, input: InviteUserRequest, o
   const expiresAt = new Date(now.getTime() + INVITE_VALID_HOURS * 3_600_000);
 
   const user = await withTransaction(async (client) => {
-    const existing = await findUserByEmail(client, input.email);
+    const existing = await findUserByEmailForUpdate(client, input.email);
     if (existing && (existing.school_id !== actor.schoolId || existing.status !== 'invited')) {
       throw new ConflictError('This email already has an account.', { email: 'taken' });
     }
-    const row = existing ?? (await insertInvitedUser(client, actor.schoolId, input));
+    const row = existing ?
+        await updateInvitedUser(client, actor.schoolId, existing.id, input, now) :
+        await insertInvitedUser(client, actor.schoolId, input);
     await client.query(
       'UPDATE invites SET revoked_at = $3 WHERE school_id = $1 AND user_id = $2 AND used_at IS NULL AND revoked_at IS NULL',
       [actor.schoolId, row.id, now],
@@ -63,12 +67,18 @@ export async function inviteUser(actor: SessionUser, input: InviteUserRequest, o
 
 /**
  * Staff logins beneath the school (plan Phase 4, Sprint 14). An administrator may not change their own login (409). Since
- * the one acting is always an active administrator, this also means the school can never be left without one.
+ * the one acting is always an active administrator, this also means the school can never be left without one. The actor's
+ * row is locked with the target's and checked again: two administrators disabling each other at once would otherwise both
+ * pass the sign-in check made before either change, and leave the school with none. The second one now finds itself
+ * signed out (401).
  */
 async function lockChangeable(client: PoolClient, actor: SessionUser, id: string) {
-  const user = await findUserForUpdate(client, actor.schoolId, id);
+  if (id === actor.id) throw new ConflictError('You cannot change your own login.', { status: 'self' });
+  const rows = await findUsersForUpdate(client, actor.schoolId, [actor.id, id]);
+  const self = rows.find((row) => row.id === actor.id);
+  if (!self || self.removed_at || self.status !== 'active' || self.role !== 'admin') throw new UnauthenticatedError();
+  const user = rows.find((row) => row.id === id && !row.removed_at);
   if (!user) throw new NotFoundError();
-  if (user.id === actor.id) throw new ConflictError('You cannot change your own login.', { status: 'self' });
   return user;
 }
 

@@ -3,10 +3,13 @@ import { POST as login } from '@/app/api/auth/login/route';
 import { GET as me } from '@/app/api/me/route';
 import { DELETE as removeUser, PATCH as updateUser } from '@/app/api/users/[id]/route';
 import { GET as listUsers, POST as inviteUser } from '@/app/api/users/route';
+import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import type { Page } from '@/shared/interfaces/api-error.interface';
+import { appClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
 import type { StaffUser } from '../interfaces/staff-user.interface';
+import { removeUser as removeUserService, updateUserStatus } from './users.service';
 
 const signInResponse = (email: string) => call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } });
 const signIn = async (email: string) => cookieFrom(await signInResponse(email));
@@ -84,6 +87,28 @@ describe('staff logins (Sprint 14)', () => {
       method: 'POST', cookie: admin, body: { email: 'guru@a.test', name: 'Guru Kembali', role: 'teacher' },
     });
     expect(invited.status).toBe(201);
+  });
+
+  it('re-checks the acting administrator under lock, so two cannot disable each other and leave none', async () => {
+    const admin2Id = await createUser(schoolA, 'admin2@a.test', 'admin');
+    const admin2 = await signIn('admin2@a.test');
+    const asAdmin2 = ((await (await call(me, '/api/me', { cookie: admin2 })).json()) as { user: SessionUser }).user;
+
+    // admin2 passed the sign-in check before admin disabled them; their own change must then be refused.
+    expect((await patch(admin2Id, 'disabled')).status).toBe(200);
+    await expect(updateUserStatus(asAdmin2, adminId, { status: 'disabled' }, appClock())).rejects.toMatchObject({ status: 401 });
+    await expect(removeUserService(asAdmin2, adminId, appClock())).rejects.toMatchObject({ status: 401 });
+    expect((await call(me, '/api/me', { cookie: admin })).status).toBe(200);
+
+    // Both at once: one wins, and the school keeps an active administrator.
+    expect((await patch(admin2Id, 'active')).status).toBe(200);
+    const again = await signIn('admin2@a.test');
+    const results = await Promise.all([patch(admin2Id, 'disabled'), patch(adminId, 'disabled', again)]);
+    expect(results.map((response) => response.status).filter((status) => status === 200)).toHaveLength(1);
+    const { rows } = await getPool().query<{ count: number }>(
+      "SELECT count(*)::int AS count FROM users WHERE school_id = $1 AND role = 'admin' AND status = 'active'", [schoolA],
+    );
+    expect(rows[0].count).toBe(1);
   });
 
   it('refuses an administrator\'s own login, anyone but an administrator, and another school', async () => {

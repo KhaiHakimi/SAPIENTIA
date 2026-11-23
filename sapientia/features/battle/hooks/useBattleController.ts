@@ -275,13 +275,17 @@ export function useBattleController(
     menuLabels,
     hp,
     record,
+    // The pressed button is about to be hidden or removed, which would drop focus to <body>, outside the dialog's key
+    // handler. Move it to the text box first so the keyboard keeps working.
     pickMore: () => {
+      refs.textBox.current?.focus();
       setMoreVisible(false);
       const done = resolveMore.current;
       resolveMore.current = null;
       done?.();
     },
     pickOption: (index) => {
+      refs.textBox.current?.focus();
       setMenuLabels(null);
       const done = resolveMenu.current;
       resolveMenu.current = null;

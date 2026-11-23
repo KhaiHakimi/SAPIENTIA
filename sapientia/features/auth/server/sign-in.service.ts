@@ -7,7 +7,7 @@ import { logger } from '@/shared/server/logger.service';
 import type { AcceptInviteRequest, SignInRequest } from '../interfaces/session-user.interface';
 import { hashPassword, timingDummyHash, verifyPassword } from './password.service';
 import { createSession, revokeUserSessions } from './session.service';
-import { assertNotThrottled, clearAccountFailures, emailThrottleKey, recordFailure } from './throttle.service';
+import { emailThrottleKey, releaseAttempt, reserveAttempt } from './throttle.service';
 import { hashToken } from './token.service';
 
 interface CredentialRow {
@@ -27,7 +27,7 @@ export type SignInOutcome = { kind: 'session'; token: string } | { kind: 'mfa'; 
  */
 export async function signIn(input: SignInRequest, address: string, clock: Clock, db: Queryable = getPool()): Promise<SignInOutcome> {
   const keys = { account: emailThrottleKey(input.email), address };
-  await assertNotThrottled(db, keys, clock);
+  const reservation = await reserveAttempt(db, keys, clock);
 
   const { rows } = await db.query<CredentialRow>(
     'SELECT id, school_id, status, password_hash FROM users WHERE lower(email) = $1',
@@ -36,12 +36,11 @@ export async function signIn(input: SignInRequest, address: string, clock: Clock
   const user = rows[0];
   const passwordOk = await verifyPassword(user?.password_hash ?? (await timingDummyHash()), input.password);
   if (!user || !passwordOk || user.status !== 'active') {
-    await recordFailure(db, keys, clock);
     logger.info('auth.sign_in_failed', { userId: user?.id ?? null });
     throw new InvalidCredentialsError();
   }
 
-  await clearAccountFailures(db, keys.account);
+  await releaseAttempt(db, reservation);
   if (await hasMfa(db, user.school_id, user.id)) {
     logger.info('auth.password_ok_mfa_next', { userId: user.id, schoolId: user.school_id });
     return { kind: 'mfa', challenge: await startChallenge(db, user.school_id, user.id, clock) };

@@ -118,6 +118,9 @@ async function finishRun(view: BattleView, context: BattleContext, run: BattleRu
   const hero = context.heroName();
   const record = context.recordResult(won);
   view.setRecord(record);
+  // The win is saved, and with it the next level opened, before any line is shown; pay the reward now too, or closing the
+  // dialog during the lines below would keep the unlock but lose the XP and coins.
+  const firstWin = won && context.claimFirstWin();
 
   if (won) {
     // Last words while it still stands, then it falls.
@@ -130,7 +133,7 @@ async function finishRun(view: BattleView, context: BattleContext, run: BattleRu
     await view.heroCheers();
     await view.say(`${text().foeFainted(foe)} ${text().winStats(run.right, run.wrong)}`);
     await view.waitForMore();
-    if (context.claimFirstWin()) {
+    if (firstWin) {
       context.celebrate();
       await view.say(text().reward(hero, BATTLE_BONUS_XP, BATTLE_BONUS_COINS));
       await view.waitForMore();

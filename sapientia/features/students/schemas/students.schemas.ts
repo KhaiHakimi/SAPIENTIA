@@ -14,7 +14,9 @@ export const studentIdSchema = z.uuid({ error: 'not_found' });
 
 const studentNameSchema = z.string({ error: 'required' }).trim()
   .min(1, { error: 'required' })
-  .max(STUDENT_NAME_MAX, { error: 'too_long' });
+  .max(STUDENT_NAME_MAX, { error: 'too_long' })
+  // Names go on slips and lists; a MyKad number pasted into one (a spare column, say) is refused like a school number.
+  .refine((value) => !looksLikeMyKad(value), { error: 'name_has_mykad' });
 
 /** Optional; an empty value means none. Letters, digits, '/' and '-' only. */
 const schoolNumberSchema = z.string({ error: 'invalid_school_number' }).trim()

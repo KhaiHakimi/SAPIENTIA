@@ -9,7 +9,7 @@ import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.
 import { isWorkingDay } from '@/features/delivery/services/working-time.service';
 import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import { SLOTS_PER_TEACHER_MAX } from '@/features/timetable/constants/timetable.constants';
-import { listSlots } from '@/features/timetable/server/timetable.repository';
+import { findTimetableTeacher, listSlots } from '@/features/timetable/server/timetable.repository';
 import type { StaffMember } from '@/features/users/interfaces/staff-user.interface';
 import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -73,11 +73,15 @@ async function listFreeStaff(db: Queryable, schoolId: string, slot: SlotForRelie
   return staff.filter((person) => person.id !== slot.teacher_id && !busy.has(person.id) && !away.has(person.id));
 }
 
-/** Administrators: one teacher's periods on a date, each with the relief arranged for it, if any. */
+/**
+ * Administrators: one teacher's periods on a date, each with the relief arranged for it, if any. The teacher may be active,
+ * disabled or removed; only active staff are ever suggested or accepted as cover.
+ */
 export async function getReliefDay(actor: SessionUser, teacherId: string, onDate: string, clock: Clock): Promise<ReliefDay> {
   const db = getPool();
   const now = clock.now();
-  const [teacher] = await listActiveStaff(db, actor.schoolId, [teacherId]);
+  // A disabled or removed teacher's periods still need cover until they are taken off the timetable.
+  const teacher = await findTimetableTeacher(db, actor.schoolId, teacherId);
   if (!teacher) throw new NotFoundError();
   const calendar = await loadWorkingCalendar(db, actor.schoolId, now);
   const weekday = DateTime.fromISO(onDate, { zone: calendar.timeZone }).weekday;

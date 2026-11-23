@@ -7,9 +7,10 @@ import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SLOTS_PER_TEACHER_MAX } from '../constants/timetable.constants';
-import type { NewTimetableSlot, Timetable, TimetableSlot } from '../interfaces/timetable.interface';
+import type { NewTimetableSlot, Timetable, TimetableSlot, TimetableTeacher } from '../interfaces/timetable.interface';
 import {
-  countSlots, deleteSlot, hasReliefDutyClash, hasReliefToCome, insertSlot, listSlots, lockSlot, lockTeacherTimetable,
+  countSlots, deleteSlot, findTimetableTeacher, hasReliefDutyClash, hasReliefToCome, insertSlot, listSlots, listTimetableTeachers,
+  lockSlot, lockTeacherTimetable,
 } from './timetable.repository';
 
 const EXCLUSION_VIOLATION = '23P01';
@@ -22,12 +23,15 @@ const FOREIGN_KEY_VIOLATION = '23503';
 export async function getTimetable(actor: SessionUser, teacherId: string | undefined): Promise<Timetable> {
   const targetId = teacherId ?? actor.id;
   if (targetId !== actor.id && actor.role !== 'admin') throw new NotFoundError();
-  const [teacher] = await listActiveStaff(getPool(), actor.schoolId, [targetId]);
+  // A disabled or removed colleague's week still opens, so an administrator can take off or cover the periods they left.
+  const teacher = await findTimetableTeacher(getPool(), actor.schoolId, targetId);
   if (!teacher) throw new NotFoundError();
-  return {
-    teacher: { id: teacher.id, name: teacher.name },
-    slots: await listSlots(getPool(), actor.schoolId, targetId, SLOTS_PER_TEACHER_MAX),
-  };
+  return { teacher, slots: await listSlots(getPool(), actor.schoolId, targetId, SLOTS_PER_TEACHER_MAX) };
+}
+
+/** Administrators: whose timetable they can open, each marked active, disabled or removed. */
+export function listTeachersForTimetable(actor: SessionUser): Promise<TimetableTeacher[]> {
+  return listTimetableTeachers(getPool(), actor.schoolId);
 }
 
 /** Today's date and the time of day at the school, against which relief counts as over or still to come. */

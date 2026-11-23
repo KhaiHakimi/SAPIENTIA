@@ -1,4 +1,5 @@
 import type { IsoWeekday } from '@/features/delivery/interfaces/working-calendar.interface';
+import type { TeacherStatus } from '../interfaces/timetable.interface';
 
 export type SlotKind = 'lesson' | 'duty';
 
@@ -7,6 +8,10 @@ export interface TimetableMessages {
   introOwn: string;
   introAdmin: string;
   teacher: string;
+  /** A name in the picker, marked when the person is no longer active. */
+  teacherOption: (name: string, status: TeacherStatus) => string;
+  /** Shown instead of the add form for someone no longer active. */
+  inactiveNote: string;
   weekTitle: (name: string) => string;
   weekdays: Record<IsoWeekday, string>;
   columns: { day: string; time: string; what: string; actions: string };

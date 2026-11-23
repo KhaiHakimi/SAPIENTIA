@@ -1,7 +1,7 @@
 import 'server-only';
 import type { IsoWeekday } from '@/features/delivery/interfaces/working-calendar.interface';
 import type { Queryable } from '@/shared/server/database.service';
-import type { NewTimetableSlot, TimetableSlot } from '../interfaces/timetable.interface';
+import type { NewTimetableSlot, TimetableSlot, TimetableTeacher } from '../interfaces/timetable.interface';
 
 /** Every function takes schoolId first and filters on it. */
 
@@ -33,6 +33,33 @@ export const toSlot = (row: SlotRow): TimetableSlot => ({
   subject: row.subject_id && row.subject_name ? { id: row.subject_id, name: row.subject_name } : null,
   label: row.label,
 });
+
+const TEACHER_STATUS = `CASE WHEN u.removed_at IS NOT NULL THEN 'removed' WHEN u.status = 'active' THEN 'active' ELSE 'disabled' END`;
+
+/**
+ * A member of staff whose timetable an administrator may open: active, or no longer active (disabled or removed) so that
+ * their periods can still be covered or taken off. An invited login never had a timetable.
+ */
+export async function findTimetableTeacher(db: Queryable, schoolId: string, teacherId: string): Promise<TimetableTeacher | null> {
+  const { rows } = await db.query<TimetableTeacher>(
+    `SELECT u.id, u.name, ${TEACHER_STATUS} AS status FROM users u WHERE u.school_id = $1 AND u.id = $2 AND u.status <> 'invited'`,
+    [schoolId, teacherId],
+  );
+  return rows[0] ?? null;
+}
+
+/** Active staff, and staff no longer active who still have a period, by name: the timetable and relief pickers. */
+export async function listTimetableTeachers(db: Queryable, schoolId: string): Promise<TimetableTeacher[]> {
+  const { rows } = await db.query<TimetableTeacher>(
+    `SELECT u.id, u.name, ${TEACHER_STATUS} AS status FROM users u
+      WHERE u.school_id = $1
+        AND (u.status = 'active'
+          OR (u.status = 'disabled' AND EXISTS (SELECT 1 FROM timetable_slots s WHERE s.school_id = u.school_id AND s.teacher_id = u.id)))
+      ORDER BY u.name, u.id`,
+    [schoolId],
+  );
+  return rows;
+}
 
 /** One teacher's week, Monday first, earliest period first. */
 export async function listSlots(db: Queryable, schoolId: string, teacherId: string, limit: number): Promise<TimetableSlot[]> {

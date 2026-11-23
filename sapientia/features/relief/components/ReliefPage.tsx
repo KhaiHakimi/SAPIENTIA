@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useStaffUser } from '@/features/staff/hooks/useStaffUser';
 import { TIMETABLE_MESSAGES } from '@/features/timetable/i18n/timetable.messages';
-import { fetchStaffDirectory, STAFF_DIRECTORY_KEY } from '@/features/users/services/users.client';
+import { fetchTimetableTeachers, TIMETABLE_TEACHERS_KEY } from '@/features/timetable/services/timetable.client';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
 import { formatDay, todayInZone } from '@/shared/i18n/format-date';
@@ -92,7 +92,9 @@ function ReliefPlanner() {
   const text = useMessages(RELIEF_MESSAGES);
   const { lang } = useLanguage();
   const user = useStaffUser();
-  const staff = useQuery({ queryKey: STAFF_DIRECTORY_KEY, queryFn: fetchStaffDirectory });
+  const timetable = useMessages(TIMETABLE_MESSAGES);
+  // Includes staff no longer active who still have periods: those periods need cover until they are taken off.
+  const staff = useQuery({ queryKey: TIMETABLE_TEACHERS_KEY, queryFn: fetchTimetableTeachers });
   const [teacherId, setTeacherId] = useState('');
   const [onDate, setOnDate] = useState(() => todayInZone(user.timeZone));
   const ready = teacherId !== '' && onDate !== '';
@@ -107,7 +109,9 @@ function ReliefPlanner() {
           <label className={calm.label} htmlFor="relief-teacher">{text.absentTeacher}</label>
           <select id="relief-teacher" className={calm.select} value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
             <option value="">{text.chooseTeacher}</option>
-            {(staff.data ?? []).map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
+            {(staff.data ?? []).map((person) => (
+              <option key={person.id} value={person.id}>{timetable.teacherOption(person.name, person.status)}</option>
+            ))}
           </select>
           {staff.isError && <div className={calm.fieldError} role="alert">{describeApiError(staff.error, lang)}</div>}
         </div>

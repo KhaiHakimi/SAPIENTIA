@@ -243,7 +243,7 @@ export async function listHomeworkForPupil(student: SessionStudent, clock: Clock
 export async function getComments(actor: SessionUser, homeworkId: string): Promise<HomeworkComments> {
   const db = getPool();
   await findOwnOrThrow(db, actor, homeworkId);
-  return { comments: await listHomeworkComments(db, actor.schoolId, homeworkId, HOMEWORK_LIST_MAX) };
+  return { comments: await listHomeworkComments(db, actor.schoolId, homeworkId) };
 }
 
 /** A comment to one pupil of the class: 404 for a pupil not in it now; refused past HOMEWORK_COMMENTS_PER_PUPIL_MAX. */

@@ -7,7 +7,10 @@ export interface ApiTokenSummary {
   expiresAt: string;
 }
 
-/** GET /api/me/api-tokens. available is false when the server has the MCP server switched off. */
+/**
+ * GET /api/me/api-tokens. available is false when the server has the MCP server switched off; the tokens are still listed
+ * then, so they can be revoked before it is switched on again.
+ */
 export interface ApiTokenList {
   available: boolean;
   /** Where an MCP client connects, or null while switched off. */

@@ -19,8 +19,9 @@ const fieldText = (reason: string | undefined, text: McpMessages, lang: Lang) =>
 const day = (iso: string, lang: Lang) => formatDay(iso.slice(0, 10), lang);
 
 /**
- * Personal access tokens for the read-only MCP server (plan Phase 6), on the Security page. Shown only when the server has
- * MCP switched on. A new token asks for the password again and is shown once; revoking takes effect at once.
+ * Personal access tokens for the read-only MCP server (plan Phase 6), on the Security page. Shown when the server has MCP
+ * switched on, or while it is off but the person still has tokens, so they can revoke them. A new token asks for the
+ * password again and is shown once; revoking takes effect at once.
  */
 export function ApiTokensSection() {
   const text = useMessages(MCP_MESSAGES);
@@ -44,7 +45,8 @@ export function ApiTokensSection() {
   const revoke = useMutation({ mutationFn: revokeApiToken, onSuccess: refresh });
   const fields = create.error instanceof ApiError ? create.error.fields : {};
 
-  if (!tokens.data?.available) return null;
+  if (!tokens.data || (!tokens.data.available && tokens.data.items.length === 0)) return null;
+  const available = tokens.data.available;
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     create.mutate();
@@ -55,7 +57,9 @@ export function ApiTokensSection() {
       <h2 id="mcp-heading">{text.heading}</h2>
       <p>{text.intro}</p>
       <p className={calm.help}>{text.scope}</p>
-      <p>{text.endpoint}: <code className={calm.code}>{tokens.data.endpoint}</code></p>
+      {available ?
+        <p>{text.endpoint}: <code className={calm.code}>{tokens.data.endpoint}</code></p> :
+        <div className={`${calm.alert} ${calm.alertInfo}`} role="status">{text.switchedOff}</div>}
 
       {tokens.data.items.length === 0 ? <p className={calm.muted}>{text.none}</p> : (
         <ul>
@@ -76,7 +80,7 @@ export function ApiTokensSection() {
       {revoke.isError && <div className={`${calm.alert} ${calm.alertError}`} role="alert">{describeApiError(revoke.error, lang)}</div>}
       {revoke.isSuccess && <div className={`${calm.alert} ${calm.alertOk}`} role="status">{text.revoked}</div>}
 
-      {made ? (
+      {!available ? null : made ? (
         <div className={`${calm.alert} ${calm.alertInfo}`} role="status">
           <strong>{text.shownOnce}</strong>
           {/* calm.code breaks anywhere: a 47-character token has no other place to wrap on a phone. */}

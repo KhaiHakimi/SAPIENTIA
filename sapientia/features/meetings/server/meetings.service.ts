@@ -4,7 +4,7 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import { planDelivery } from '@/features/delivery/server/delivery-plan.service';
 import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.repository';
 import type { SessionGuardian } from '@/features/guardians/interfaces/guardian.interface';
-import { findChild } from '@/features/guardians/server/guardians.repository';
+import { findChild, lockGuardian } from '@/features/guardians/server/guardians.repository';
 import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
@@ -29,7 +29,6 @@ import {
   listClassTeachers,
   listLinkMeetings,
   listTeacherMeetings,
-  lockGuardian,
   withdrawMeeting,
 } from './meetings.repository';
 

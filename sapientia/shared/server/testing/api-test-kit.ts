@@ -1,5 +1,6 @@
 import { hashPassword } from '@/features/auth/server/password.service';
 import { getPool } from '@/shared/server/database.service';
+import type { PoolClient } from 'pg';
 
 /**
  * Helpers for integration tests: build real Requests, call route handlers directly (no server), and set up fictional
@@ -92,4 +93,49 @@ export function cookieFrom(response: Response): string {
 export async function errorCode(response: Response): Promise<string> {
   const body = (await response.json()) as { error?: { code?: string } };
   return body.error?.code ?? '(no error body)';
+}
+
+/** How long raceAgainstOpenTransaction waits to see the request blocked before committing anyway. */
+const RACE_WAIT_MS = 3000;
+const RACE_POLL_MS = 20;
+
+/**
+ * Plays another request caught part-way through a limited change: `setUp` runs in a transaction on its own connection (take
+ * the lock the service takes, then insert the row that reaches the limit) and stays open while `request` runs. It commits
+ * once the request is waiting on a lock, or has finished without waiting. A service that counts under the lock then sees
+ * the committed row; one that does not counts too few and lets the request through, so the test fails every time rather
+ * than only when two requests happen to interleave.
+ */
+export async function raceAgainstOpenTransaction<T>(
+  setUp: (client: PoolClient) => Promise<unknown>,
+  request: () => Promise<T>,
+): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    await setUp(client);
+    let settled = false;
+    const pending = request().finally(() => {
+      settled = true;
+    });
+    const commitOnceBlocked = async () => {
+      const deadline = Date.now() + RACE_WAIT_MS;
+      while (!settled && Date.now() < deadline) {
+        const { rows } = await getPool().query<{ waiting: number }>(
+          `SELECT count(*)::int AS waiting FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'`,
+        );
+        if (rows[0].waiting > 0) break;
+        await new Promise((resolve) => setTimeout(resolve, RACE_POLL_MS));
+      }
+      await client.query('COMMIT');
+    };
+    const [result] = await Promise.all([pending, commitOnceBlocked()]);
+    return result;
+  } catch (error) {
+    // The original failure is what the test should report; a failed rollback on a broken connection would only hide it.
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

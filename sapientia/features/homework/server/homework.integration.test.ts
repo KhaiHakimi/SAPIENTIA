@@ -16,8 +16,11 @@ import type { AddStudentsResult } from '@/features/students/interfaces/student.i
 import type { ClassWeek } from '@/features/timetable/interfaces/timetable.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
-import { call, cookieFrom, createSchool, createUser, errorCode, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
+import {
+  call, cookieFrom, createSchool, createUser, errorCode, raceAgainstOpenTransaction, resetDatabase, TEST_PASSWORD,
+} from '@/shared/server/testing/api-test-kit';
 import type { HandInList, Homework, HomeworkPreview, MyHomework, PupilHomeworkList } from '../interfaces/homework.interface';
+import { lockClass } from './homework.repository';
 
 // Monday 22 March 2027, 09:00 at the school (Asia/Kuala_Lumpur).
 const NOW = new Date('2027-03-22T01:00:00Z');
@@ -157,6 +160,21 @@ describe('homework (Sprint 12)', () => {
         method: 'POST', cookie: guru, body: lesson({ dueOn: TUESDAY }),
       })).json()) as HomeworkPreview;
       expect(otherDay).toMatchObject({ sameDay: 0, loadWarning: false });
+    });
+
+    it('flags the third piece when another teacher is setting work for the same class and day at the same moment', async () => {
+      await setOk({ title: 'Kerja 1' });
+      // guru2 holds the class and has saved a second piece for Wednesday, not yet committed.
+      const response = await raceAgainstOpenTransaction(async (client) => {
+        await lockClass(client, schoolA, classA);
+        await client.query(
+          `INSERT INTO homework (school_id, class_id, subject_id, set_by, title, due_on)
+           VALUES ($1, $2, $3, (SELECT id FROM users WHERE email = 'guru2@a.test'), 'Kerja 2', $4)`,
+          [schoolA, classA, science, WEDNESDAY],
+        );
+      }, () => set({ title: 'Kerja 3' }));
+      expect(response.status).toBe(201);
+      expect(((await response.json()) as Homework).loadFlagged).toBe(true);
     });
   });
 

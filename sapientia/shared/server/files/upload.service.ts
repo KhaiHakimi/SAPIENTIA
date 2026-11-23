@@ -9,7 +9,7 @@ import type { PoolClient } from 'pg';
 import { CONTENT_TYPES, cleanFileName, detectFileKind } from './file-type.service';
 import { MalformedImageError, stripJpegMetadata, stripPngMetadata } from './image-metadata.service';
 import { removeBytes, saveBytes } from './file-storage.service';
-import { insertStoredFile, sumSchoolBytes } from './stored-files.repository';
+import { insertStoredFile, lockSchoolStorage, sumSchoolBytes } from './stored-files.repository';
 
 /** All uploads together, per school. A judgement for a pilot; revisit with hosting (D5). */
 export const SCHOOL_STORAGE_LIMIT_BYTES = 2 * 1024 ** 3;
@@ -82,6 +82,7 @@ export async function storeUpload<T>(
   const key = await saveBytes(file.bytes);
   try {
     return await withTransaction(async (client) => {
+      await lockSchoolStorage(client, actor.schoolId);
       if ((await sumSchoolBytes(client, actor.schoolId)) + file.bytes.byteLength > SCHOOL_STORAGE_LIMIT_BYTES) {
         throw new ValidationError({ [upload.field]: 'school_storage_full' });
       }

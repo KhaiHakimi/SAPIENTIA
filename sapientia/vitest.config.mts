@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['features/**/*.test.ts', 'shared/**/*.test.ts'],
+    include: ['features/**/*.test.ts', 'shared/**/*.test.ts', 'seeds/**/*.test.ts'],
     // Database tests have their own config (vitest.integration.config.mts) because they need PostgreSQL.
     exclude: ['**/node_modules/**', '**/*.integration.test.ts'],
     environment: 'node',

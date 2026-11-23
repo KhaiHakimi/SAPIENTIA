@@ -282,14 +282,17 @@ async function listPupilComments(db: Queryable, schoolId: string, studentId: str
   return byHomework;
 }
 
-/** Every comment on one piece of homework, hidden ones included: for the teacher who set it. */
-export async function listHomeworkComments(db: Queryable, schoolId: string, homeworkId: string, limit: number): Promise<HomeworkComment[]> {
+/**
+ * Every comment on one piece of homework, hidden ones included: for the teacher who set it. No row limit: the teacher must be
+ * able to find, and hide, any of them, and HOMEWORK_COMMENTS_PER_PUPIL_MAX per pupil already bounds the list (a class of 40
+ * is at most 400 short notes). A fixed limit used to leave the newest ones out of reach once a class passed it.
+ */
+export async function listHomeworkComments(db: Queryable, schoolId: string, homeworkId: string): Promise<HomeworkComment[]> {
   const { rows } = await db.query<{ id: string; student_id: string; body: string; created_at: Date; hidden_at: Date | null }>(
     `SELECT id, student_id, body, created_at, hidden_at FROM homework_comments
       WHERE school_id = $1 AND homework_id = $2
-      ORDER BY created_at, id
-      LIMIT $3`,
-    [schoolId, homeworkId, limit],
+      ORDER BY created_at, id`,
+    [schoolId, homeworkId],
   );
   return rows.map((row) => ({
     id: row.id, studentId: row.student_id, body: row.body, createdAt: row.created_at.toISOString(), hidden: row.hidden_at !== null,

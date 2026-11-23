@@ -126,6 +126,20 @@ describe('homework comments (Sprint 14)', () => {
     expect(rows[0].total).toBe(1);
   });
 
+  it('lists every comment on the homework to the setter, beyond 200, so the newest can still be hidden', async () => {
+    // As if a large class had had several notes each: written straight to the table, past the per-pupil check.
+    await getPool().query(
+      `INSERT INTO homework_comments (school_id, homework_id, student_id, author_id, body, created_at)
+       SELECT h.school_id, h.id, $2, h.set_by, 'Nota ' || n, $3::timestamptz + n * interval '1 second'
+         FROM homework h, generate_series(1, 250) AS n WHERE h.id = $1`,
+      [homework.id, pupils.aisyah, NOW],
+    );
+    const listed = await call(listComments, comments(homework.id), { params: { id: homework.id }, cookie: guru });
+    const list = (await listed.json()) as HomeworkComments;
+    expect(list.comments).toHaveLength(250);
+    expect(list.comments.at(-1)?.body).toBe('Nota 250');
+  });
+
   it('refuses anyone but the setter, a pupil outside the class, long or MyKad-like text, and an eleventh note', async () => {
     const lain = await staffSignIn('lain@a.test');
     expect((await write({ studentId: pupils.aisyah, body: 'Hai' }, lain)).status).toBe(404);

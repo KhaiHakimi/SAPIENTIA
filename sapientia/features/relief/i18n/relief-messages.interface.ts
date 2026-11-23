@@ -16,6 +16,8 @@ export interface ReliefMessages {
   periodsTitle: (name: string, day: string) => string;
   noPeriods: string;
   cannotArrange: string;
+  ownDutiesWarning: (name: string) => string;
+  ownDutyLine: (time: string, what: string, forWhom: string) => string;
   notCovered: string;
   coveredBy: (name: string) => string;
   heldUntil: (when: string) => string;

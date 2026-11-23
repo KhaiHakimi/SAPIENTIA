@@ -9,7 +9,7 @@ import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SLOTS_PER_TEACHER_MAX } from '../constants/timetable.constants';
 import type { NewTimetableSlot, Timetable, TimetableSlot } from '../interfaces/timetable.interface';
 import {
-  countSlots, deleteSlot, hasReliefToCome, insertSlot, listSlots, lockSlot, lockTeacherTimetable,
+  countSlots, deleteSlot, hasReliefDutyClash, hasReliefToCome, insertSlot, listSlots, lockSlot, lockTeacherTimetable,
 } from './timetable.repository';
 
 const EXCLUSION_VIOLATION = '23P01';
@@ -30,6 +30,12 @@ export async function getTimetable(actor: SessionUser, teacherId: string | undef
   };
 }
 
+/** Today's date and the time of day at the school, against which relief counts as over or still to come. */
+function schoolNow(clock: Clock, timeZone: string) {
+  const local = DateTime.fromJSDate(clock.now(), { zone: timeZone });
+  return { today: local.toISODate() ?? '', time: local.toFormat('HH:mm') };
+}
+
 /** A clash or a class from elsewhere is the database's to refuse (it holds even if two requests race); name the field. */
 function slotError(error: unknown): unknown {
   const { code, constraint = '' } = error as { code?: string; constraint?: string };
@@ -39,7 +45,10 @@ function slotError(error: unknown): unknown {
   return error;
 }
 
-/** Administrators add a weekly period for an active member of staff in their school. */
+/**
+ * Administrators add a weekly period for an active member of staff in their school. A period that would clash with relief
+ * the teacher already covers, from now on, is refused (409): they cannot be in two classes at once.
+ */
 export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSlot, clock: Clock): Promise<TimetableSlot> {
   try {
     return await withTransaction(async (client) => {
@@ -47,6 +56,10 @@ export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSl
       if (!teacher) throw new ValidationError({ teacherId: 'invalid_teacher' });
       await lockTeacherTimetable(client, actor.schoolId, input.teacherId);
       if ((await countSlots(client, actor.schoolId, input.teacherId)) >= SLOTS_PER_TEACHER_MAX) throw new ValidationError({ teacherId: 'too_many' });
+      const { today, time } = schoolNow(clock, actor.timeZone);
+      if (await hasReliefDutyClash(client, actor.schoolId, input, today, time)) {
+        throw new ConflictError('This overlaps a relief class the teacher covers.', { startTime: 'relief_clash' });
+      }
       // Dated by the clock, as the lesson records and the monthly report count a period only from the day it was added.
       const slot = await insertSlot(client, actor.schoolId, input, clock.now());
       await writeAudit(client, actor.schoolId, [
@@ -70,8 +83,8 @@ export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSl
 export async function removeTimetableSlot(actor: SessionUser, slotId: string, clock: Clock): Promise<void> {
   await withTransaction(async (client) => {
     if (!(await lockSlot(client, actor.schoolId, slotId))) throw new NotFoundError();
-    const local = DateTime.fromJSDate(clock.now(), { zone: actor.timeZone });
-    if (await hasReliefToCome(client, actor.schoolId, slotId, local.toISODate() ?? '', local.toFormat('HH:mm'))) {
+    const { today, time } = schoolNow(clock, actor.timeZone);
+    if (await hasReliefToCome(client, actor.schoolId, slotId, today, time)) {
       throw new ConflictError('This period has relief arranged. Cancel that relief first.', { slotId: 'has_relief' });
     }
     const teacherId = await deleteSlot(client, actor.schoolId, slotId);

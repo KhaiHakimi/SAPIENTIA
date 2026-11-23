@@ -64,6 +64,29 @@ export async function lockTeacherTimetable(db: Queryable, schoolId: string, teac
   await db.query('SELECT 1 FROM users WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, teacherId]);
 }
 
+/**
+ * True if a weekly period at this time would clash with relief the teacher already covers and that is not yet over: on a
+ * later date with that weekday, or today ending after the given school-local time. The relief overlap constraint cannot
+ * see the timetable, so this is checked here.
+ */
+export async function hasReliefDutyClash(
+  db: Queryable,
+  schoolId: string,
+  slot: Pick<NewTimetableSlot, 'teacherId' | 'weekday' | 'startTime' | 'endTime'>,
+  today: string,
+  time: string,
+): Promise<boolean> {
+  const { rows } = await db.query(
+    `SELECT 1 FROM relief_assignments
+      WHERE school_id = $1 AND relief_teacher_id = $2 AND extract(isodow FROM on_date) = $3
+        AND start_time < $5::time AND end_time > $4::time
+        AND (on_date > $6::date OR (on_date = $6::date AND end_time > $7::time))
+      LIMIT 1`,
+    [schoolId, slot.teacherId, slot.weekday, slot.startTime, slot.endTime, today, time],
+  );
+  return rows.length > 0;
+}
+
 export async function countSlots(db: Queryable, schoolId: string, teacherId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     'SELECT count(*)::int AS total FROM timetable_slots WHERE school_id = $1 AND teacher_id = $2',

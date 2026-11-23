@@ -34,6 +34,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
     removeLabel: (day, start) => `Buang waktu ${day} ${start}`,
     fieldErrors: {
       overlaps: 'Bertindih dengan waktu lain guru ini.',
+      relief_clash: 'Bertindih dengan kelas ganti yang diberi kepada guru ini. Batalkan guru ganti itu di halaman Guru Ganti dahulu.',
       end_before_start: 'Waktu tamat mesti selepas waktu mula.',
       lesson_needs_both: 'Pilih kelas dan subjek.',
       lesson_or_label: 'Masukkan nama tugas.',
@@ -76,6 +77,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
     removeLabel: (day, start) => `Remove the ${day} ${start} period`,
     fieldErrors: {
       overlaps: 'This overlaps another period for this teacher.',
+      relief_clash: 'This overlaps a relief class this teacher covers. Cancel that relief on the Relief page first.',
       end_before_start: 'The end time must be after the start time.',
       lesson_needs_both: 'Choose a class and a subject.',
       lesson_or_label: 'Enter the duty name.',

@@ -41,6 +41,8 @@ export const MFA_MESSAGES: Record<Lang, MfaMessages> = {
     adminTitle: 'Untuk sekolah anda',
     adminRequire: 'Wajibkan log masuk dua langkah untuk semua pentadbir',
     adminHelp: 'Pentadbir yang belum menyediakannya akan diminta berbuat demikian sebelum halaman lain dibuka. Hidupkan untuk diri anda dahulu.',
+    adminPasswordHelp: 'Masukkan kata laluan anda untuk menyimpan perubahan ini.',
+    adminSave: 'Simpan peraturan',
     saved: 'Disimpan.',
 
     signInTitle: 'Log masuk dua langkah',
@@ -102,6 +104,8 @@ export const MFA_MESSAGES: Record<Lang, MfaMessages> = {
     adminTitle: 'For your school',
     adminRequire: 'Require two-step sign-in for all administrators',
     adminHelp: 'Administrators who have not set it up are asked to before any other page opens. Turn it on for yourself first.',
+    adminPasswordHelp: 'Enter your password to save this change.',
+    adminSave: 'Save rule',
     saved: 'Saved.',
 
     signInTitle: 'Two-step sign-in',

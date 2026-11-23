@@ -130,10 +130,10 @@ describe('two-step sign-in', () => {
 
   it('can be required for administrators: one without it must set it up before anything else', async () => {
     const admin = await signIn('admin@a.test');
-    const early = await call(requirement, '/api/school/mfa', { method: 'PUT', cookie: admin, body: { requiredForAdmins: true } });
+    const early = await call(requirement, '/api/school/mfa', { method: 'PUT', cookie: admin, body: { requiredForAdmins: true, password: TEST_PASSWORD } });
     expect(await fieldsOf(early)).toEqual({ requiredForAdmins: 'enrol_first' });
     await enrol(admin);
-    const turnedOn = await call(requirement, '/api/school/mfa', { method: 'PUT', cookie: admin, body: { requiredForAdmins: true } });
+    const turnedOn = await call(requirement, '/api/school/mfa', { method: 'PUT', cookie: admin, body: { requiredForAdmins: true, password: TEST_PASSWORD } });
     expect(((await turnedOn.json()) as MfaStatus).requiredForAdmins).toBe(true);
     const keepOn = await call(disable, '/api/me/mfa', { method: 'DELETE', cookie: admin, body: { password: TEST_PASSWORD } });
     expect(await fieldsOf(keepOn)).toEqual({ password: 'required_for_admins' });
@@ -154,6 +154,27 @@ describe('two-step sign-in', () => {
     expect(rows.map((row) => row.action)).toEqual(['mfa.enabled', 'school.mfa_required', 'mfa.enabled']);
   });
 
+  it('asks the administrator for their password again to change the school rule or reset a colleague\'s', async () => {
+    const admin = await signIn('admin@a.test');
+    await enrol(admin);
+    const put = (body: Record<string, unknown>) => call(requirement, '/api/school/mfa', { method: 'PUT', cookie: admin, body });
+    expect((await put({ requiredForAdmins: true, password: TEST_PASSWORD })).status).toBe(200);
+
+    expect(await fieldsOf(await put({ requiredForAdmins: false }))).toEqual({ password: 'required' });
+    expect(await fieldsOf(await put({ requiredForAdmins: false, password: 'not-it' }))).toEqual({ password: 'wrong_password' });
+    expect(((await (await call(status, '/api/me/mfa', { cookie: admin })).json()) as MfaStatus).requiredForAdmins).toBe(true);
+    expect(((await (await put({ requiredForAdmins: false, password: TEST_PASSWORD })).json()) as MfaStatus).requiredForAdmins).toBe(false);
+
+    const guru = await signIn('guru@a.test');
+    await enrol(guru);
+    const reset = (body?: Record<string, unknown>) =>
+      call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: admin, body });
+    expect(await fieldsOf(await reset())).toEqual({ body: 'json_required' });
+    expect(await fieldsOf(await reset({ password: 'not-it' }))).toEqual({ password: 'wrong_password' });
+    expect((await call(me, '/api/me', { cookie: guru })).status).toBe(200);
+    expect((await reset({ password: TEST_PASSWORD })).status).toBe(204);
+  });
+
   it('turns off with the password, gives new recovery codes, and an administrator can reset a colleague\'s', async () => {
     const guru = await signIn('guru@a.test');
     const { key, recoveryCodes } = await enrol(guru);
@@ -164,12 +185,12 @@ describe('two-step sign-in', () => {
 
     // Lost phone: an administrator clears it; the teacher is signed out and signs in with the password alone.
     const admin = await signIn('admin@a.test');
-    expect((await call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: await signIn('admin@b.test') })).status)
+    expect((await call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: await signIn('admin@b.test'), body: { password: TEST_PASSWORD } })).status)
       .toBe(404);
-    expect((await call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: admin })).status).toBe(204);
+    expect((await call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: admin, body: { password: TEST_PASSWORD } })).status).toBe(204);
     expect((await call(me, '/api/me', { cookie: guruSession })).status).toBe(401);
     expect((await passwordStep('guru@a.test')).status).toBe(204);
-    expect((await call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: admin })).status).toBe(404);
+    expect((await call(resetMfa, `/api/users/${guruId}/mfa`, { params: { id: guruId }, method: 'DELETE', cookie: admin, body: { password: TEST_PASSWORD } })).status).toBe(404);
 
     // Turning it off needs the password.
     const again = await signIn('guru@a.test');

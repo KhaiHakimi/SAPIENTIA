@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { PLAYER_CHARACTER, type Character } from '@/features/characters';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
 import type { PahlawanOutfit } from '../interfaces/outfit.interface';
 import { recolouredImageUrl } from '../services/outfit-image.service';
-import { isOriginalOutfit, pahlawanOutfitStore } from '../services/pahlawan-outfit.store';
+import { isOriginalOutfit, pahlawanOutfitStores } from '../services/pahlawan-outfit.store';
 
 interface DressedImages {
   outfit: PahlawanOutfit;
@@ -18,7 +19,7 @@ interface DressedImages {
  * recoloured pictures are ready (a few tens of milliseconds) the pahlawan is shown as drawn.
  */
 export function usePahlawanCharacter(): Character {
-  const outfit = usePersistentStore(pahlawanOutfitStore);
+  const outfit = usePersistentStore(usePupilStore(pahlawanOutfitStores));
   const [dressed, setDressed] = useState<DressedImages | null>(null);
 
   useEffect(() => {

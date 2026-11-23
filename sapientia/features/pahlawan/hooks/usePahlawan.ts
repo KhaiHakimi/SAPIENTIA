@@ -1,12 +1,13 @@
 'use client';
 
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { useMessages } from '@/shared/i18n/useLanguage';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
 import { ORIGINAL_OUTFIT } from '../data/outfit-colours';
 import { PAHLAWAN_MESSAGES } from '../i18n/pahlawan.messages';
 import type { OutfitColourId, OutfitPart, PahlawanOutfit } from '../interfaces/outfit.interface';
-import { cleanPahlawanName, pahlawanNameStore } from '../services/pahlawan-name.service';
-import { pahlawanOutfitStore } from '../services/pahlawan-outfit.store';
+import { cleanPahlawanName, pahlawanNameStores } from '../services/pahlawan-name.service';
+import { pahlawanOutfitStores } from '../services/pahlawan-outfit.store';
 
 export interface PahlawanApi {
   /** What the student typed; empty until they choose one. */
@@ -21,18 +22,20 @@ export interface PahlawanApi {
 }
 
 export function usePahlawan(): PahlawanApi {
-  const name = usePersistentStore(pahlawanNameStore);
-  const outfit = usePersistentStore(pahlawanOutfitStore);
+  const nameStore = usePupilStore(pahlawanNameStores);
+  const outfitStore = usePupilStore(pahlawanOutfitStores);
+  const name = usePersistentStore(nameStore);
+  const outfit = usePersistentStore(outfitStore);
   const text = useMessages(PAHLAWAN_MESSAGES);
   return {
     name,
     displayName: name || text.defaultName,
     outfit,
-    rename: (value) => pahlawanNameStore.set(cleanPahlawanName(value)),
-    setColour: (part, colour) => pahlawanOutfitStore.set((current) => ({ ...current, [part]: colour })),
+    rename: (value) => nameStore.set(cleanPahlawanName(value)),
+    setColour: (part, colour) => outfitStore.set((current) => ({ ...current, [part]: colour })),
     reset: () => {
-      pahlawanNameStore.set('');
-      pahlawanOutfitStore.set(ORIGINAL_OUTFIT);
+      nameStore.set('');
+      outfitStore.set(ORIGINAL_OUTFIT);
     },
   };
 }

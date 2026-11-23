@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { monsterForLevel } from '@/features/characters';
 import type { ArenaPart, BattleArenaHandle } from '../components/BattleArena';
 import { usePahlawan } from '@/features/pahlawan/hooks/usePahlawan';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { useStudentProgress } from '@/features/student-dashboard/hooks/useStudentProgress';
 import { burstCoins } from '@/shared/feedback/coin-burst';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
@@ -14,7 +15,7 @@ import type { BattleRecord } from '../interfaces/battle-run.interface';
 import { BattleCancelled, type BattleSide, type BattleView } from '../interfaces/battle-view.interface';
 import type { QuizStage } from '../interfaces/quiz.interface';
 import { runBattle } from '../services/battle-script.service';
-import { battleStatsStore, recordBattle, recordFor } from '../services/battle-stats.store';
+import { battleStatsStores, recordBattle, recordFor } from '../services/battle-stats.store';
 import { stageKey } from '../services/quiz-stage.service';
 import arena from '../styles/BattleArena.module.css';
 
@@ -81,6 +82,7 @@ export function useBattleController(
   const { pick } = useLanguage();
   const { displayName } = usePahlawan();
   const progress = useStudentProgress();
+  const statsStore = usePupilStore(battleStatsStores);
   const latest = useRef({ messages, pick, displayName, progress, onRequestClose, onLevelUp });
   useEffect(() => {
     latest.current = { messages, pick, displayName, progress, onRequestClose, onLevelUp };
@@ -231,7 +233,7 @@ export function useBattleController(
 
     // Start once the dialog has painted, so every ref points at its element.
     const frame = requestAnimationFrame(() => {
-      setRecord(recordFor(battleStatsStore.getSnapshot(), key));
+      setRecord(recordFor(statsStore.getSnapshot(), key));
       setMenuLabels(null);
       setTopic('');
       refs.textBox.current?.focus(); // not the close button, so a stray Enter or Space while a line is typing never closes the fight
@@ -241,7 +243,7 @@ export function useBattleController(
         messages: () => latest.current.messages,
         pick: (value) => latest.current.pick(value),
         heroName: () => latest.current.displayName,
-        recordResult: (won) => recordBattle(key, won),
+        recordResult: (won) => recordBattle(statsStore, key, won),
         claimFirstWin: () => {
           const result = latest.current.progress.claimBattleWin(key);
           if (result.levelUp) pendingLevel = result.levelUp;
@@ -262,9 +264,9 @@ export function useBattleController(
       // A level reached in battle is celebrated once the fight is closed, so the two dialogs never stack.
       if (pendingLevel) latest.current.onLevelUp(pendingLevel);
     };
-    // The refs are stable objects; only a new stage starts a new fight.
+    // The refs are stable objects and the stats store is the same for the whole visit; only a new stage starts a new fight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage]);
+  }, [stage, statsStore]);
 
   return {
     topic,

@@ -1,10 +1,11 @@
 'use client';
 
 import { useRef, type ChangeEvent } from 'react';
-import { shopStore } from '@/features/shop/services/shop.store';
+import { shopStores } from '@/features/shop/services/shop.store';
 import { PixelButton } from '@/shared/components/PixelButton';
 import { PixelCard } from '@/shared/components/PixelCard';
 import { PixelSprite } from '@/shared/components/PixelSprite';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { SegmentedBar } from '@/shared/components/SegmentedBar';
 import { useToast } from '@/shared/feedback/ToastProvider';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
@@ -12,7 +13,7 @@ import { useMessages } from '@/shared/i18n/useLanguage';
 import { XP_PER_LEVEL } from '../../constants/progress.constants';
 import { useStudentProgress } from '../../hooks/useStudentProgress';
 import { DASHBOARD_MESSAGES } from '../../i18n/dashboard.messages';
-import { checkPhotoFile, profilePhotoStore, squarePhoto } from '../../services/profile-photo.service';
+import { checkPhotoFile, profilePhotoStores, squarePhoto } from '../../services/profile-photo.service';
 import { rankIndex } from '../../services/progress.service';
 import styles from '../../styles/Sidebar.module.css';
 
@@ -21,8 +22,9 @@ export function ProfileCard() {
   const text = useMessages(DASHBOARD_MESSAGES);
   const showToast = useToast();
   const progress = useStudentProgress();
-  const photo = usePersistentStore(profilePhotoStore);
-  const avatar = usePersistentStore(shopStore).equipped.avatar;
+  const photoStore = usePupilStore(profilePhotoStores);
+  const photo = usePersistentStore(photoStore);
+  const avatar = usePersistentStore(usePupilStore(shopStores)).equipped.avatar;
   const fileInput = useRef<HTMLInputElement>(null);
   const xpTitleId = 'profile-xp';
 
@@ -36,7 +38,7 @@ export function ProfileCard() {
       return;
     }
     try {
-      profilePhotoStore.set(await squarePhoto(file));
+      photoStore.set(await squarePhoto(file));
       showToast(text.photoSaved);
     } catch {
       showToast(text.photoFailed);
@@ -76,7 +78,7 @@ export function ProfileCard() {
             variant="ghost"
             className={styles.photoButton}
             onClick={() => {
-              profilePhotoStore.clear();
+              photoStore.clear();
               showToast(text.photoRemoved);
             }}
           >

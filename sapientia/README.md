@@ -140,7 +140,7 @@ public/                          character art, scenes, logo
 
 ### Quiz chapters and levels
 
-Each monster is one difficulty level: Orang Bunian (Easy), Naga Laut (Medium), Harimau Jin (Hard), Hantu Lelaki (Very Hard). Each subject has chapters, and every chapter has a question set for every level. Within a chapter, a level opens once the one before it has been beaten. Records are kept per chapter and level in localStorage `sapientia.battles` under keys like `math-1:2`.
+Each monster is one difficulty level: Orang Bunian (Easy), Naga Laut (Medium), Harimau Jin (Hard), Hantu Lelaki (Very Hard). Each subject has chapters, and every chapter has a question set for every level. Within a chapter, a level opens once the one before it has been beaten. Records are kept per chapter and level in localStorage `sapientia.battles:<student id>` under keys like `math-1:2`.
 
 To add a chapter, add it with its questions to the subject's file in `features/battle/data/quiz/` (for example `math.quiz.ts`), with at least one question for each of the four levels. `quiz-stage.service.test.ts` checks that every chapter has every level. The bank is a Year 4 sample: the chapter titles have not been checked against the syllabus and no teacher has reviewed the questions.
 
@@ -175,4 +175,4 @@ In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok
 - Holidays are entered by the administrator on the Calendar page; none are built in. Tasks already held keep the delivery time worked out when they were sent.
 - The default working day is 07:30 to 17:00 until a school saves its own hours.
 - Per-address sign-in limits trust `X-Forwarded-For`, which is only safe behind a proxy that overwrites it.
-- Student board: progress resets on reload; the shop, language, theme, photo, pahlawan name and battle records are kept in this browser's localStorage. Its demo clock is fixed at Thursday 10:15. Every animation is switched off when the device asks for reduced motion.
+- Student board: progress resets on reload; the shop, photo, pahlawan name and outfit and battle records are kept in this browser's localStorage under keys ending in the pupil's id, so pupils sharing a device never see each other's data (anything saved under the old bare keys is removed, as its owner is unknown); language and theme are device settings shared by everyone on the browser. Its demo clock is fixed at Thursday 10:15. Every animation is switched off when the device asks for reduced motion.

@@ -1,4 +1,5 @@
-import { createPersistentStore } from '@/shared/services/persistent-store';
+import type { PersistentStore } from '@/shared/services/persistent-store';
+import { createPupilStoreFamily } from '@/shared/services/pupil-store';
 import type { BattleRecord } from '../interfaces/battle-run.interface';
 
 export type BattleStats = Readonly<Record<string, BattleRecord>>;
@@ -29,7 +30,8 @@ export function parseBattleStats(raw: string | null): BattleStats {
   return stats;
 }
 
-export const battleStatsStore = createPersistentStore<BattleStats>({
+/** Each pupil's fights, so one pupil's wins never unlock levels for the next pupil on the same browser. */
+export const battleStatsStores = createPupilStoreFamily<BattleStats>({
   key: 'sapientia.battles',
   defaultValue: {},
   parse: parseBattleStats,
@@ -39,9 +41,9 @@ export const battleStatsStore = createPersistentStore<BattleStats>({
 export const recordFor = (stats: BattleStats, key: string): BattleRecord => stats[key] ?? { attempts: 0, wins: 0 };
 
 /** Count one finished fight; returns the stage's updated record. */
-export function recordBattle(key: string, won: boolean): BattleRecord {
-  const current = recordFor(battleStatsStore.getSnapshot(), key);
+export function recordBattle(store: PersistentStore<BattleStats>, key: string, won: boolean): BattleRecord {
+  const current = recordFor(store.getSnapshot(), key);
   const updated = { attempts: current.attempts + 1, wins: current.wins + (won ? 1 : 0) };
-  battleStatsStore.set((stats) => ({ ...stats, [key]: updated }));
+  store.set((stats) => ({ ...stats, [key]: updated }));
   return updated;
 }

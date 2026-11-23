@@ -117,7 +117,7 @@ export async function listAssignedTasks(
     myStatus: row.my_status,
     urgent: row.urgent,
     estimatedMinutes: row.estimated_minutes,
-  }), (row) => encodeCursor(row.due_on, row.id));
+  }), (row) => encodeCursor(row.my_due_on, row.id));
 }
 
 /** Tasks the caller sent, newest first; heldOnly is the held list (plan Sprint 4: senders see what is waiting). */

@@ -1,14 +1,16 @@
 import 'server-only';
+import { DateTime } from 'luxon';
 import type { PoolClient } from 'pg';
 import { INVITE_VALID_HOURS } from '@/features/auth/constants/session.constants';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import { generateToken, hashToken } from '@/features/auth/server/token.service';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
-import { writeAudit } from '@/features/audit/server/audit.repository';
+import { type AuditEntry, writeAudit } from '@/features/audit/server/audit.repository';
 import { revokeUserSessions } from '@/features/auth/server/session.service';
 import { deleteAllOwnEntries } from '@/features/hours/server/hours.repository';
 import { cancelPendingForTeacher } from '@/features/meetings/server/meetings.repository';
+import { deleteReliefCoveredFrom } from '@/features/relief/server/relief.repository';
 import { ConflictError, NotFoundError, UnauthenticatedError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
@@ -103,7 +105,8 @@ export async function updateUserStatus(actor: SessionUser, id: string, input: Up
 /**
  * Removes a login for good: access ends at once (sessions, invites, devices) and the person can never sign in with it again.
  * The row stays so tasks, homework and records keep the name as former staff; the email is replaced so it can be invited
- * afresh, and the private hours log is deleted. Meeting requests still waiting for them are cancelled.
+ * afresh, and the private hours log is deleted. Meeting requests still waiting for them are cancelled, and so is relief
+ * they were to cover from today on (each audited as a cancelled relief), so those periods show as uncovered again.
  */
 export async function removeUser(actor: SessionUser, id: string, clock: Clock): Promise<void> {
   const now = clock.now();
@@ -114,9 +117,18 @@ export async function removeUser(actor: SessionUser, id: string, clock: Clock): 
     // The private hours log is the teacher's own and goes with the login.
     await deleteAllOwnEntries(client, actor.schoolId, id);
     const meetingsCancelled = await cancelPendingForTeacher(client, actor.schoolId, id, now);
-    await writeAudit(client, actor.schoolId, [{
-      actorId: actor.id, action: 'user.removed', entityType: 'user', entityId: id, metadata: { meetingsCancelled },
-    }]);
+    const today = DateTime.fromJSDate(now, { zone: actor.timeZone }).toISODate() ?? '';
+    const reliefCancelled = await deleteReliefCoveredFrom(client, actor.schoolId, id, today);
+    await writeAudit(client, actor.schoolId, [
+      ...reliefCancelled.map((relief): AuditEntry => ({
+        actorId: actor.id, action: 'relief.cancelled', entityType: 'relief_assignment', entityId: relief.id,
+        metadata: { slotId: relief.slot_id, onDate: relief.on_date, reliefTeacherId: id, reason: 'relief_teacher_removed' },
+      })),
+      {
+        actorId: actor.id, action: 'user.removed', entityType: 'user', entityId: id,
+        metadata: { meetingsCancelled, reliefCancelled: reliefCancelled.length },
+      },
+    ]);
   });
   logger.info('users.removed', { userId: id, schoolId: actor.schoolId, actorId: actor.id });
 }

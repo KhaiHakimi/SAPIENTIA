@@ -11,5 +11,5 @@ import { appClock } from '@/shared/server/clock.service';
 export const POST = withApi(async (request) => {
   const actor = await requireUser(request, appClock(), ['admin']);
   const input = await readJson(request, newSlotSchema);
-  return Response.json(await addTimetableSlot(actor, input), { status: 201 });
+  return Response.json(await addTimetableSlot(actor, input, appClock()), { status: 201 });
 });

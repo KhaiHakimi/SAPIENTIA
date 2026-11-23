@@ -2,6 +2,7 @@ import 'server-only';
 import { writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import { listActiveStaff } from '@/features/users/server/users.repository';
+import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SLOTS_PER_TEACHER_MAX } from '../constants/timetable.constants';
@@ -36,13 +37,14 @@ function slotError(error: unknown): unknown {
 }
 
 /** Administrators add a weekly period for an active member of staff in their school. */
-export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSlot): Promise<TimetableSlot> {
+export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSlot, clock: Clock): Promise<TimetableSlot> {
   try {
     return await withTransaction(async (client) => {
       const [teacher] = await listActiveStaff(client, actor.schoolId, [input.teacherId]);
       if (!teacher) throw new ValidationError({ teacherId: 'invalid_teacher' });
       if ((await countSlots(client, actor.schoolId, input.teacherId)) >= SLOTS_PER_TEACHER_MAX) throw new ValidationError({ teacherId: 'too_many' });
-      const slot = await insertSlot(client, actor.schoolId, input);
+      // Dated by the clock, as the lesson records and the monthly report count a period only from the day it was added.
+      const slot = await insertSlot(client, actor.schoolId, input, clock.now());
       await writeAudit(client, actor.schoolId, [
         {
           actorId: actor.id, action: 'timetable.slot_added', entityType: 'timetable_slot', entityId: slot.id,

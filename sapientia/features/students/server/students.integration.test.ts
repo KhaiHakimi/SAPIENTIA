@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { POST as acceptInvite } from '@/app/api/auth/invites/accept/route';
 import { POST as login } from '@/app/api/auth/login/route';
 import { POST as studentLogin } from '@/app/api/auth/student-login/route';
 import { POST as studentLogout } from '@/app/api/auth/student-logout/route';
@@ -9,6 +10,8 @@ import { PUT as changePassword } from '@/app/api/student/password/route';
 import { POST as resetPassword } from '@/app/api/students/[id]/password-reset/route';
 import { DELETE as removeStudent, PATCH as updateStudent } from '@/app/api/students/[id]/route';
 import { GET as listStudents, POST as addStudents } from '@/app/api/students/route';
+import { POST as inviteUser } from '@/app/api/users/route';
+import type { InviteUserResult } from '@/features/users/interfaces/staff-user.interface';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
@@ -307,6 +310,20 @@ describe('pupil accounts (Sprint 11)', () => {
         method: 'POST', cookie: pupil, body: { email: 'guru@a.test', password: TEST_PASSWORD },
       });
       expect(asTeacher.headers.getSetCookie()).toEqual([expect.stringMatching(/^sapientia_session=.+/), expect.stringMatching(/^sapientia_student=; .*Max-Age=0/)]);
+      expect((await call(studentMe, '/api/student/me', { cookie: pupil })).status).toBe(401);
+    });
+
+    it('accepting a staff invite ends a pupil session in the same browser', async () => {
+      const { cookie: pupil } = await activePupil();
+      const invited = (await (await call(inviteUser, '/api/users', {
+        method: 'POST', cookie: admin, body: { email: 'baru@a.test', name: 'Cikgu Baru', role: 'teacher' },
+      })).json()) as InviteUserResult;
+      const token = decodeURIComponent(new URL(invited.inviteUrl).hash.replace('#token=', ''));
+      const accepted = await call(acceptInvite, '/api/auth/invites/accept', {
+        method: 'POST', cookie: pupil, body: { token, password: 'a-new-long-password' },
+      });
+      expect(accepted.status).toBe(204);
+      expect(accepted.headers.getSetCookie()).toEqual([expect.stringMatching(/^sapientia_session=.+/), expect.stringMatching(/^sapientia_student=; .*Max-Age=0/)]);
       expect((await call(studentMe, '/api/student/me', { cookie: pupil })).status).toBe(401);
     });
   });

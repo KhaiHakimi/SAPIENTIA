@@ -123,6 +123,8 @@ export async function answerExtension(
     const dueOn = decision.decision === 'propose' && decision.dueOn !== request.requestedDueOn ? decision.dueOn : null;
     if (dueOn !== null && dueOn <= request.currentDueOn) throw new ValidationError({ dueOn: 'not_later' });
     const today = DateTime.fromJSDate(clock.now(), { zone: actor.timeZone }).toISODate() ?? '';
+    // A request answered late may ask for a day that has gone; granting it would leave the work overdue at once.
+    if ((dueOn ?? request.requestedDueOn) < today) throw new ValidationError({ dueOn: 'past_date' });
     if (dueOn !== null && isBeyondDueHorizon(dueOn, today)) throw new ValidationError({ dueOn: 'too_far_ahead' });
 
     const decided = await decideExtension(client, actor.schoolId, { taskId, requestId, decidedBy: actor.id, dueOn, now: clock.now() });

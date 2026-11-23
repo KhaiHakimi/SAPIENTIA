@@ -27,6 +27,7 @@ export function UserActions({ text, user, onNotice }: UserActionsProps) {
   const { lang } = useLanguage();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<'remove' | 'mfa' | null>(null);
+  const [password, setPassword] = useState('');
   const refresh = () => queryClient.invalidateQueries({ queryKey: USERS_KEY });
   const status = useMutation({
     mutationFn: () => updateUserStatus(user.id, { status: user.status === 'disabled' ? 'active' : 'disabled' }),
@@ -41,13 +42,19 @@ export function UserActions({ text, user, onNotice }: UserActionsProps) {
     },
   });
   const reset = useMutation({
-    mutationFn: () => resetUserMfa(user.id),
+    mutationFn: () => resetUserMfa(user.id, password),
     onSuccess: async () => {
       setConfirming(null);
+      setPassword('');
       onNotice(text.mfaReset(user.name));
       await refresh();
     },
+    onError: () => setPassword(''),
   });
+  const cancel = () => {
+    setConfirming(null);
+    setPassword('');
+  };
   const failed = [status, remove, reset].find((mutation) => mutation.isError);
   const failureText = (error: unknown) => {
     const code = error instanceof ApiError ? Object.values(error.fields)[0] : undefined;
@@ -78,11 +85,19 @@ export function UserActions({ text, user, onNotice }: UserActionsProps) {
                 {text.remove}
               </button>
             ) : (
-              <button type="button" className={`${calm.button} ${calm.danger} ${calm.small}`} disabled={reset.isPending} onClick={() => reset.mutate()}>
-                {text.resetMfa}
-              </button>
+              <form className={calm.row} noValidate onSubmit={(event) => {
+                event.preventDefault();
+                reset.mutate();
+              }}>
+                <label className={calm.label} htmlFor={`mfa-reset-password-${user.id}`}>{text.yourPassword}</label>
+                <input id={`mfa-reset-password-${user.id}`} type="password" className={calm.input} autoComplete="current-password"
+                  value={password} onChange={(event) => setPassword(event.target.value)} />
+                <button type="submit" className={`${calm.button} ${calm.danger} ${calm.small}`} disabled={reset.isPending || password === ''}>
+                  {text.resetMfa}
+                </button>
+              </form>
             )}
-            <button type="button" className={`${calm.button} ${calm.small}`} onClick={() => setConfirming(null)}>{text.cancel}</button>
+            <button type="button" className={`${calm.button} ${calm.small}`} onClick={cancel}>{text.cancel}</button>
           </div>
         </div>
       )}

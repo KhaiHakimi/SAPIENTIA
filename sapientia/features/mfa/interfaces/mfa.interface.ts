@@ -32,7 +32,8 @@ export interface MfaCodeRequest {
 /** POST /api/auth/mfa: the code from the app, or one recovery code. */
 export type MfaSignInRequest = { code: string } | { recoveryCode: string };
 
-/** PUT /api/school/mfa: administrators only. */
+/** PUT /api/school/mfa: administrators only, with their password again. */
 export interface MfaRequirementRequest {
   requiredForAdmins: boolean;
+  password: string;
 }

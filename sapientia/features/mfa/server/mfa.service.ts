@@ -9,7 +9,7 @@ import { ConflictError, MfaUnavailableError, NotFoundError, ValidationError } fr
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
 import { RECOVERY_CODE_COUNT } from '../constants/mfa.constants';
-import type { MfaRecoveryCodes, MfaSetup, MfaStatus } from '../interfaces/mfa.interface';
+import type { MfaRecoveryCodes, MfaRequirementRequest, MfaSetup, MfaStatus } from '../interfaces/mfa.interface';
 import { decryptSecret, encryptSecret, readMfaKey } from './mfa-secret.service';
 import {
   confirmMfa,
@@ -111,9 +111,12 @@ export async function disableMyMfa(actor: SessionUser, password: string, clock: 
 
 /**
  * An administrator requires two-step sign-in for every administrator of the school, or stops requiring it. They must have it
- * on themselves first, so turning the rule on never locks out the person doing it.
+ * on themselves first, so turning the rule on never locks out the person doing it. Like the personal changes, it asks for
+ * the password again: an unattended signed-in screen must not be enough to lower the whole school's protection.
  */
-export async function setAdminMfaRequirement(actor: SessionUser, required: boolean): Promise<MfaStatus> {
+export async function setAdminMfaRequirement(actor: SessionUser, input: MfaRequirementRequest, clock: Clock): Promise<MfaStatus> {
+  const required = input.requiredForAdmins;
+  await confirmPassword(actor, input.password, clock);
   await withTransaction(async (client) => {
     const own = await findMfa(client, actor.schoolId, actor.id);
     if (required && !own?.confirmed_at) {
@@ -129,9 +132,11 @@ export async function setAdminMfaRequirement(actor: SessionUser, required: boole
 
 /**
  * An administrator clears a colleague's authenticator (a lost phone). The colleague is signed out everywhere and signs in
- * again with their password; an administrator in a school that requires it is then asked to set it up again.
+ * again with their password; an administrator in a school that requires it is then asked to set it up again. It asks for
+ * the administrator's password again, so an unattended signed-in screen cannot strip a colleague's second step.
  */
-export async function resetUserMfa(actor: SessionUser, userId: string): Promise<void> {
+export async function resetUserMfa(actor: SessionUser, userId: string, password: string, clock: Clock): Promise<void> {
+  await confirmPassword(actor, password, clock);
   if (userId === actor.id) throw new ConflictError('Use your own security page.', { status: 'self' });
   await withTransaction(async (client) => {
     if (!(await deleteMfa(client, actor.schoolId, userId))) throw new NotFoundError();

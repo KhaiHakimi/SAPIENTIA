@@ -20,4 +20,5 @@ export const mfaSignInSchema = z.union([
 
 export const mfaRequirementSchema = z.strictObject({
   requiredForAdmins: z.boolean({ error: 'invalid_boolean' }),
+  password: passwordSchema,
 });

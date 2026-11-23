@@ -37,6 +37,9 @@ export interface MfaMessages {
   adminTitle: string;
   adminRequire: string;
   adminHelp: string;
+  /** The rule changes only after the administrator's password is entered again. */
+  adminPasswordHelp: string;
+  adminSave: string;
   saved: string;
 
   signInTitle: string;

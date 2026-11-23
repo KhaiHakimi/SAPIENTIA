@@ -333,8 +333,9 @@ describe('meeting requests and the printed summary (Sprint 13, part 2)', () => {
 
     it('cancels them when the guardian is disabled, and leaves another guardian\'s alone', async () => {
       const mother = await activeGuardian(pupils.aisyah, 'Salmah binti Yusof');
-      const father = await activeGuardian(pupils.aisyah, 'Rahman bin Ismail');
       const ids = await threeRequests(mother);
+      // Added after the clock moves on, so the father's session is fresh.
+      const father = await activeGuardian(pupils.aisyah, 'Rahman bin Ismail');
       const fathers = await askOk(father, teacherIds.cikgu4);
       expect((await call(updateGuardian, `/api/guardians/${mother.id}`, {
         params: { id: mother.id }, method: 'PATCH', cookie: admin, body: { status: 'disabled' },

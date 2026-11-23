@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { withApi } from './api-handler';
-import { NotFoundError } from './app-errors';
+import { z } from 'zod';
+import { readJson, withApi } from './api-handler';
+import { NotFoundError, ValidationError } from './app-errors';
 import { logger } from './logger.service';
 
 const get = (signal?: AbortSignal) => new Request('http://localhost:3000/api/thing', { signal });
@@ -38,5 +39,50 @@ describe('withApi', () => {
     expect(response.status).toBe(499);
     expect(error).not.toHaveBeenCalled();
     expect(info).toHaveBeenCalledWith('api.client_aborted', expect.anything());
+  });
+});
+
+describe('readJson', () => {
+  const schema = z.strictObject({ name: z.string() });
+
+  /** A body that never ends, as a client could send: it counts the bytes handed out and notes being cancelled. */
+  function endlessBody() {
+    const state = { sent: 0, cancelled: false };
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        state.sent += 16 * 1024;
+        controller.enqueue(new Uint8Array(16 * 1024).fill(0x20));
+      },
+      cancel() {
+        state.cancelled = true;
+      },
+    });
+    return { stream, state };
+  }
+
+  const post = (body: BodyInit, headers: Record<string, string> = {}) => new Request('http://localhost:3000/api/thing', {
+    method: 'POST', body, headers: { 'content-type': 'application/json', ...headers }, duplex: 'half',
+  } as RequestInit);
+
+  const refusal = (promise: Promise<unknown>) => promise.then(
+    () => null,
+    (error: unknown) => (error instanceof ValidationError ? error.fields : error),
+  );
+
+  it('reads a body within the limit', async () => {
+    expect(await readJson(post(JSON.stringify({ name: 'Aminah' })), schema)).toEqual({ name: 'Aminah' });
+  });
+
+  it('refuses a declared length over 64 KB without reading the body', async () => {
+    const { stream, state } = endlessBody();
+    expect(await refusal(readJson(post(stream, { 'content-length': String(64 * 1024 + 1) }), schema))).toEqual({ body: 'too_large' });
+    expect(state.sent).toBeLessThanOrEqual(16 * 1024);
+  });
+
+  it('stops reading a body with no length once it passes 64 KB, and cancels it', async () => {
+    const { stream, state } = endlessBody();
+    expect(await refusal(readJson(post(stream), schema))).toEqual({ body: 'too_large' });
+    expect(state.cancelled).toBe(true);
+    expect(state.sent).toBeLessThanOrEqual(64 * 1024 + 2 * 16 * 1024);
   });
 });

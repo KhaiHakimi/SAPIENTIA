@@ -238,6 +238,21 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
     });
 
+    it('a date that has gone by the time of the answer cannot be granted', async () => {
+      const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
+      const request = await askedFor(task.id, TUESDAY);
+      // Answered on Wednesday: Tuesday, asked for or proposed, is already past.
+      setTestClock(fixedClock('2026-11-04T09:00:00+08:00'));
+      const late = await signIn('pk@a.test');
+      for (const decision of [{ decision: 'approve' }, { decision: 'propose', dueOn: TUESDAY }]) {
+        const response = await answer(task.id, request.id, late, decision);
+        expect(response.status).toBe(400);
+        expect(await fieldsOf(response)).toEqual({ dueOn: 'past_date' });
+      }
+      const today = await answer(task.id, request.id, late, { decision: 'propose', dueOn: WEDNESDAY });
+      expect((await today.json()) as ExtensionRequest).toMatchObject({ status: 'countered', decidedDueOn: WEDNESDAY });
+    });
+
     it('a request is closed once the teacher finishes the task, and opens again if they move it back', async () => {
       const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
       const request = await askedFor(task.id, TUESDAY);

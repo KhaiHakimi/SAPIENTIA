@@ -10,15 +10,16 @@ import { formatDay } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { EXTENSIONS_MESSAGES } from '../i18n/extensions.messages';
 import type { ExtensionDecision, ExtensionRequest } from '../interfaces/extension.interface';
-import { dayAfter } from '../services/extension-dates';
+import { earliestExtensionDay } from '../services/extension-dates';
 import { answerExtension } from '../services/extensions.client';
 import styles from '../styles/Extensions.module.css';
 
 /**
  * The sender's answer to one open request: approve the date asked for with one button, or set a different later date.
- * There is no "refuse": the plan gives the sender two answers, and either one moves the teacher's due date.
+ * There is no "refuse": the plan gives the sender two answers, and either one moves the teacher's due date. A date asked
+ * for that has gone by the time of the answer cannot be approved; the sender sets another. `today` is the school's date.
  */
-export function ExtensionAnswer({ taskId, request }: { taskId: string; request: ExtensionRequest }) {
+export function ExtensionAnswer({ taskId, request, today }: { taskId: string; request: ExtensionRequest; today: string }) {
   const text = useMessages(EXTENSIONS_MESSAGES);
   const { lang } = useLanguage();
   const queryClient = useQueryClient();
@@ -35,13 +36,13 @@ export function ExtensionAnswer({ taskId, request }: { taskId: string; request: 
   return (
     <div>
       <div className={styles.actions}>
-        <button type="button" className={`${calm.button} ${calm.primary} ${calm.small}`} disabled={answer.isPending}
+        <button type="button" className={`${calm.button} ${calm.primary} ${calm.small}`} disabled={answer.isPending || request.requestedDueOn < today}
           onClick={() => answer.mutate({ decision: 'approve' })}>
           {answer.isPending ? text.saving : text.approve(formatDay(request.requestedDueOn, lang))}
         </button>
         <div>
           <label className={calm.label} htmlFor={inputId}>{text.otherDate}</label>
-          <input id={inputId} type="date" className={calm.input} value={otherDate} min={dayAfter(request.currentDueOn)}
+          <input id={inputId} type="date" className={calm.input} value={otherDate} min={earliestExtensionDay(request.currentDueOn, today)}
             onChange={(event) => setOtherDate(event.target.value)} aria-invalid={Boolean(dateError)} aria-describedby={`${inputId}-error`} />
         </div>
         <button type="button" className={`${calm.button} ${calm.small}`} disabled={answer.isPending || otherDate === ''}

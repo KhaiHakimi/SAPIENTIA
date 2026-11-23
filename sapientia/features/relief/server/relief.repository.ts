@@ -87,7 +87,8 @@ export async function insertRelief(db: Queryable, schoolId: string, relief: NewR
 /** Removes the relief; returns what it was for the audit log and the cancellation notice, or null if there is none in this school. */
 export async function deleteRelief(db: Queryable, schoolId: string, reliefId: string) {
   interface RemovedRow {
-    slot_id: string;
+    /** Null once the period has been removed from the timetable (relief already over is kept). */
+    slot_id: string | null;
     on_date: string;
     relief_teacher_id: string;
     absent_teacher_id: string;

@@ -1,4 +1,5 @@
 import 'server-only';
+import { DateTime } from 'luxon';
 import { writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import { listActiveStaff } from '@/features/users/server/users.repository';
@@ -7,7 +8,9 @@ import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/a
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { SLOTS_PER_TEACHER_MAX } from '../constants/timetable.constants';
 import type { NewTimetableSlot, Timetable, TimetableSlot } from '../interfaces/timetable.interface';
-import { countSlots, deleteSlot, insertSlot, listSlots, lockTeacherTimetable } from './timetable.repository';
+import {
+  countSlots, deleteSlot, hasReliefToCome, insertSlot, listSlots, lockSlot, lockTeacherTimetable,
+} from './timetable.repository';
 
 const EXCLUSION_VIOLATION = '23P01';
 const FOREIGN_KEY_VIOLATION = '23503';
@@ -59,8 +62,18 @@ export async function addTimetableSlot(actor: SessionUser, input: NewTimetableSl
   }
 }
 
-export async function removeTimetableSlot(actor: SessionUser, slotId: string): Promise<void> {
+/**
+ * Administrators remove a period. While it has relief still to come it is refused (409): the relief teacher has been or
+ * will be told of that duty, so it must be cancelled first, the normal way, which tells them. Relief already over is kept
+ * as history, as lesson records are.
+ */
+export async function removeTimetableSlot(actor: SessionUser, slotId: string, clock: Clock): Promise<void> {
   await withTransaction(async (client) => {
+    if (!(await lockSlot(client, actor.schoolId, slotId))) throw new NotFoundError();
+    const local = DateTime.fromJSDate(clock.now(), { zone: actor.timeZone });
+    if (await hasReliefToCome(client, actor.schoolId, slotId, local.toISODate() ?? '', local.toFormat('HH:mm'))) {
+      throw new ConflictError('This period has relief arranged. Cancel that relief first.', { slotId: 'has_relief' });
+    }
     const teacherId = await deleteSlot(client, actor.schoolId, slotId);
     if (!teacherId) throw new NotFoundError();
     await writeAudit(client, actor.schoolId, [

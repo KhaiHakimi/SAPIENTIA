@@ -91,7 +91,30 @@ export async function insertSlot(db: Queryable, schoolId: string, slot: NewTimet
   return toSlot(rows[0]);
 }
 
-/** Removes the period; returns whose it was, or null if there is no such period in this school. */
+/**
+ * Locks one period until the transaction ends; true if it is in this school. Relief being arranged for it at the same
+ * moment holds a key-share lock on it, so this waits for that relief to commit, and a later one waits for this.
+ */
+export async function lockSlot(db: Queryable, schoolId: string, slotId: string): Promise<boolean> {
+  const { rows } = await db.query('SELECT 1 FROM timetable_slots WHERE school_id = $1 AND id = $2 FOR UPDATE', [schoolId, slotId]);
+  return rows.length > 0;
+}
+
+/** True if the period has relief not yet over: on a later date, or on today's date ending after the given school-local time. */
+export async function hasReliefToCome(db: Queryable, schoolId: string, slotId: string, today: string, time: string): Promise<boolean> {
+  const { rows } = await db.query(
+    `SELECT 1 FROM relief_assignments
+      WHERE school_id = $1 AND slot_id = $2 AND (on_date > $3::date OR (on_date = $3::date AND end_time > $4::time))
+      LIMIT 1`,
+    [schoolId, slotId, today, time],
+  );
+  return rows.length > 0;
+}
+
+/**
+ * Removes the period; returns whose it was, or null if there is no such period in this school. Its lesson records and
+ * relief already over stay, with slot_id cleared.
+ */
 export async function deleteSlot(db: Queryable, schoolId: string, slotId: string): Promise<string | null> {
   const { rows } = await db.query<{ teacher_id: string }>(
     'DELETE FROM timetable_slots WHERE school_id = $1 AND id = $2 RETURNING teacher_id',

@@ -11,6 +11,7 @@ import { PUT as setTimeTaken } from '@/app/api/tasks/[id]/assignments/me/time-ta
 import { GET as getTask } from '@/app/api/tasks/[id]/route';
 import { POST as checkFeasibility } from '@/app/api/tasks/feasibility/route';
 import { POST as createTask } from '@/app/api/tasks/route';
+import { DELETE as removeSlot } from '@/app/api/timetable/slots/[id]/route';
 import { POST as addSlot } from '@/app/api/timetable/slots/route';
 import type { FeasibilityResponse } from '@/features/capacity/interfaces/capacity.interface';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
@@ -262,6 +263,25 @@ describe('relief and the completion question (Sprint 8)', () => {
       expect(await fieldsOf(past)).toEqual({ onDate: 'past_date' });
       const { rows } = await getPool().query('SELECT id FROM relief_assignments WHERE id = $1', [assigned.id]);
       expect(rows).toHaveLength(1);
+    });
+
+    it('will not remove a period with relief still to come, and keeps relief already over when it goes', async () => {
+      const remove = () => call(removeSlot, `/api/timetable/slots/${lesson.id}`, { method: 'DELETE', cookie: admin, params: { id: lesson.id } });
+      const today = (await (await assign(lesson.id, MONDAY, bala)).json()) as ReliefAssigned;
+      const later = (await (await assign(lesson.id, NEXT_MONDAY, chong)).json()) as ReliefAssigned;
+      const refused = await remove();
+      expect(refused.status).toBe(409);
+      expect(await fieldsOf(refused)).toEqual({ slotId: 'has_relief' });
+
+      // Next week's relief is cancelled the normal way; today's is over once the period ends at 09:00.
+      expect((await call(cancelRelief, `/api/relief/${later.id}`, { method: 'DELETE', cookie: admin, params: { id: later.id } })).status).toBe(204);
+      expect((await remove()).status).toBe(409);
+      setTestClock(fixedClock('2026-11-02T09:00:00+08:00'));
+      admin = await signIn('admin@a.test');
+      expect((await remove()).status).toBe(204);
+
+      const { rows } = await getPool().query('SELECT id, slot_id, on_date::text AS on_date FROM relief_assignments');
+      expect(rows).toEqual([{ id: today.id, slot_id: null, on_date: MONDAY }]);
     });
 
     it('a relief class is not free time in the deadline check', async () => {

@@ -41,6 +41,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
       invalid_class: 'Pilih kelas.',
       invalid_subject: 'Pilih subjek.',
       too_many: 'Guru ini sudah mempunyai terlalu banyak waktu.',
+      has_relief: 'Waktu ini ada guru ganti yang belum selesai. Batalkan guru ganti itu di halaman Guru Ganti dahulu.',
     },
   },
   en: {
@@ -82,6 +83,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
       invalid_class: 'Choose a class.',
       invalid_subject: 'Choose a subject.',
       too_many: 'This teacher already has too many periods.',
+      has_relief: 'This period has relief still to come. Cancel that relief on the Relief page first.',
     },
   },
 };

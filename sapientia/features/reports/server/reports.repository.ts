@@ -43,12 +43,17 @@ export async function listLessonRecordFacts(db: Queryable, schoolId: string, ran
   }));
 }
 
-/** Relief arranged in the period, and how many of those classes were recorded as held. */
+/**
+ * Relief arranged in the period, and how many of those classes were recorded as held. Once a period is removed, its relief
+ * and its records both lose slot_id, so they are matched on what each copied: the date, the absent teacher and the start.
+ */
 export async function countRelief(db: Queryable, schoolId: string, range: ReportRange) {
   const { rows } = await db.query<{ arranged: number; recorded_held: number }>(
     `SELECT count(*)::int AS arranged, count(*) FILTER (WHERE l.status = 'held')::int AS recorded_held
        FROM relief_assignments r
-       LEFT JOIN lesson_records l ON l.school_id = r.school_id AND l.slot_id = r.slot_id AND l.on_date = r.on_date
+       LEFT JOIN lesson_records l ON l.school_id = r.school_id AND l.on_date = r.on_date
+        AND (l.slot_id = r.slot_id
+          OR (r.slot_id IS NULL AND l.slot_id IS NULL AND l.scheduled_teacher_id = r.absent_teacher_id AND l.start_time = r.start_time))
       WHERE r.school_id = $1 AND r.on_date BETWEEN $2::date AND $3::date`,
     [schoolId, range.from, range.to],
   );

@@ -54,13 +54,14 @@ export async function removeItem(db: Queryable, schoolId: string, kind: SchoolDa
 }
 
 /**
- * Answers to the completion question, counted per active task type. Types with fewer than minAnswers are left out, so a
- * count can never be traced to the one or two people who gave it. No user id leaves this function.
+ * Answers to the completion question, counted per active task type. Types answered by fewer than minPeople different
+ * people are left out, so a count can never be traced to the one or two people who gave it: one person answering for many
+ * tasks of a type is still one person. No user id leaves this function.
  */
 export async function listTimeTakenByTaskType(
   db: Queryable,
   schoolId: string,
-  minAnswers: number,
+  minPeople: number,
   limit: number,
 ): Promise<TaskTypeFeedback[]> {
   const { rows } = await db.query<{ id: string; name: string; estimated_minutes: number; under: number; middle: number; over: number }>(
@@ -73,9 +74,9 @@ export async function listTimeTakenByTaskType(
        JOIN task_assignments a ON a.task_id = t.id AND a.school_id = t.school_id
       WHERE y.school_id = $1 AND y.archived_at IS NULL AND a.time_taken IS NOT NULL
       GROUP BY y.id, y.name, y.estimated_minutes
-     HAVING count(*) >= $2
+     HAVING count(DISTINCT a.user_id) >= $2
       ORDER BY lower(y.name), y.id LIMIT $3`,
-    [schoolId, minAnswers, limit],
+    [schoolId, minPeople, limit],
   );
   return rows.map((row) => ({
     taskTypeId: row.id,

@@ -23,7 +23,8 @@ export const SAMPLE_PNG = fromBase64(
 /** Text that stands for a phone's GPS position: if it survives an upload, metadata was not removed. */
 export const GPS_MARKER = 'GPSLatitude 3.1390 N';
 
-const segment = (marker: number, payload: string) => {
+/** One JPEG marker segment: the marker, the length and the payload. */
+export const jpegSegment = (marker: number, payload: string) => {
   const body = Buffer.from(payload, 'latin1');
   return Buffer.concat([Buffer.from([0xff, marker, (body.length + 2) >> 8, (body.length + 2) & 0xff]), body]);
 };
@@ -32,7 +33,7 @@ const segment = (marker: number, payload: string) => {
 export function jpegWithExif(jpeg: Uint8Array = SAMPLE_JPEG): Uint8Array {
   const bytes = Buffer.from(jpeg);
   return new Uint8Array(Buffer.concat([
-    bytes.subarray(0, 2), segment(0xe1, `Exif\0\0${GPS_MARKER}`), segment(0xfe, 'Taken on Phone X'), bytes.subarray(2),
+    bytes.subarray(0, 2), jpegSegment(0xe1, `Exif\0\0${GPS_MARKER}`), jpegSegment(0xfe, 'Taken on Phone X'), bytes.subarray(2),
   ]));
 }
 

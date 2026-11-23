@@ -6,12 +6,15 @@ import { GET as children } from '@/app/api/guardian/children/route';
 import { POST as refuse } from '@/app/api/guardian/links/[linkId]/refusal/route';
 import { POST as withdraw } from '@/app/api/guardian/meetings/[id]/withdrawal/route';
 import { PUT as guardianPassword } from '@/app/api/guardian/password/route';
+import { PATCH as removeLink } from '@/app/api/guardians/[id]/links/[linkId]/route';
+import { PATCH as updateGuardian } from '@/app/api/guardians/[id]/route';
 import { GET as summaryOf } from '@/app/api/guardians/[id]/summary/route';
 import { POST as addGuardian } from '@/app/api/guardians/route';
 import { PUT as setHandIn } from '@/app/api/homework/[id]/hand-ins/[studentId]/route';
 import { POST as setHomework } from '@/app/api/homework/route';
 import { PATCH as answer } from '@/app/api/meetings/[id]/route';
 import { GET as myMeetings } from '@/app/api/meetings/route';
+import { PATCH as updateStudent } from '@/app/api/students/[id]/route';
 import { POST as addStudents } from '@/app/api/students/route';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
 import type { AddGuardianResult, GuardianChildren, GuardianSummary } from '@/features/guardians/interfaces/guardian.interface';
@@ -68,7 +71,7 @@ describe('meeting requests and the printed summary (Sprint 13, part 2)', () => {
     });
     const cookie = cookieFrom(changed);
     const kids = (await (await call(children, '/api/guardian/children', { cookie })).json()) as GuardianChildren;
-    return { id: added.guardian.id, cookie, linkId: kids.children[0].linkId };
+    return { id: added.guardian.id, cookie, linkId: kids.children[0].linkId, username: added.slip.username };
   };
 
   const ask = (guardian: { cookie: string; linkId: string }, teacherId: string, topic = 'homework') =>
@@ -279,6 +282,88 @@ describe('meeting requests and the printed summary (Sprint 13, part 2)', () => {
     expect((await listFor(guru)).items).toMatchObject([{ id: withdrawn.id, status: 'withdrawn' }]);
     const cikgu2 = await staffSignIn('cikgu2@a.test');
     expect((await listFor(cikgu2)).items).toMatchObject([{ id: cancelled.id, status: 'cancelled' }]);
+  });
+
+  describe('a request belongs to the link and ends with it', () => {
+    const statusOf = async (id: string) => {
+      const { rows } = await getPool().query<{ status: string; meeting_at: Date | null }>(
+        'SELECT status, meeting_at FROM meeting_requests WHERE id = $1', [id],
+      );
+      return { status: rows[0].status, meetingAt: rows[0].meeting_at?.toISOString() ?? null };
+    };
+    /** A waiting request to guru, one accepted for Wednesday (cikgu2) and one accepted for this afternoon (cikgu3). */
+    const threeRequests = async (guardian: { cookie: string; linkId: string }) => {
+      const waiting = await askOk(guardian, teacherIds.guru);
+      const future = await askOk(guardian, teacherIds.cikgu2);
+      const today = await askOk(guardian, teacherIds.cikgu3);
+      expect((await answerAs(await staffSignIn('cikgu2@a.test'), future.id, { answer: 'accept', date: '2027-03-24', time: '14:00' })).status)
+        .toBe(200);
+      expect((await answerAs(await staffSignIn('cikgu3@a.test'), today.id, { answer: 'accept', date: '2027-03-22', time: '14:00' })).status)
+        .toBe(200);
+      // The next morning: this afternoon's meeting has been held, Wednesday's is still to come.
+      await later('2027-03-23T09:00');
+      return { waiting: waiting.id, future: future.id, held: today.id };
+    };
+    const held = { status: 'accepted', meetingAt: myt('2027-03-22T14:00').toISOString() };
+    const cancelled = { status: 'cancelled', meetingAt: null };
+
+    it('cancels the waiting and the future accepted requests when the administrator removes the link, not one already held', async () => {
+      const mother = await activeGuardian(pupils.aisyah, 'Salmah binti Yusof');
+      const ids = await threeRequests(mother);
+      expect((await call(removeLink, `/api/guardians/${mother.id}/links/${mother.linkId}`, {
+        params: { id: mother.id, linkId: mother.linkId }, method: 'PATCH', cookie: admin, body: { reason: 'school_decision' },
+      })).status).toBe(200);
+      expect(await statusOf(ids.waiting)).toEqual(cancelled);
+      expect(await statusOf(ids.future)).toEqual(cancelled);
+      expect(await statusOf(ids.held)).toEqual(held);
+    });
+
+    it('cancels them when the guardian refuses the link', async () => {
+      const mother = await activeGuardian(pupils.aisyah, 'Salmah binti Yusof');
+      const ids = await threeRequests(mother);
+      const cookie = cookieFrom(await call(guardianLogin, '/api/auth/guardian-login', {
+        method: 'POST', body: { username: mother.username, password: OWN_PASSWORD },
+      }));
+      expect((await call(refuse, `/api/guardian/links/${mother.linkId}/refusal`, {
+        params: { linkId: mother.linkId }, method: 'POST', cookie, body: { reason: 'not_my_child' },
+      })).status).toBe(204);
+      expect(await statusOf(ids.future)).toEqual(cancelled);
+      expect(await statusOf(ids.held)).toEqual(held);
+    });
+
+    it('cancels them when the guardian is disabled, and leaves another guardian\'s alone', async () => {
+      const mother = await activeGuardian(pupils.aisyah, 'Salmah binti Yusof');
+      const father = await activeGuardian(pupils.aisyah, 'Rahman bin Ismail');
+      const ids = await threeRequests(mother);
+      const fathers = await askOk(father, teacherIds.cikgu4);
+      expect((await call(updateGuardian, `/api/guardians/${mother.id}`, {
+        params: { id: mother.id }, method: 'PATCH', cookie: admin, body: { status: 'disabled' },
+      })).status).toBe(200);
+      expect(await statusOf(ids.waiting)).toEqual(cancelled);
+      expect(await statusOf(ids.future)).toEqual(cancelled);
+      expect(await statusOf(ids.held)).toEqual(held);
+      expect((await statusOf(fathers.id)).status).toBe('pending');
+    });
+
+    it('on a class move, cancels those to teachers who do not teach the new class and keeps the rest', async () => {
+      const mother = await activeGuardian(pupils.aisyah, 'Salmah binti Yusof');
+      const ids = await threeRequests(mother);
+      // guru also teaches 5 Cemerlang; cikgu2 does not.
+      const classB = await insertRow('INSERT INTO classes (school_id, name) VALUES ($1, $2)', [schoolA, '5 Cemerlang']);
+      await insertRow(
+        `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id)
+         VALUES ($1, $2, 5, '10:00', '11:00', $3, $4)`,
+        [schoolA, teacherIds.guru, classB, maths],
+      );
+      expect((await call(updateStudent, `/api/students/${pupils.aisyah}`, {
+        params: { id: pupils.aisyah }, method: 'PATCH', cookie: admin, body: { classId: classB },
+      })).status).toBe(200);
+      expect((await statusOf(ids.waiting)).status).toBe('pending');
+      expect(await statusOf(ids.future)).toEqual(cancelled);
+      expect(await statusOf(ids.held)).toEqual(held);
+      const { rows } = await getPool().query("SELECT metadata FROM audit_logs WHERE action = 'student.updated'");
+      expect(rows[0].metadata).toMatchObject({ classId: classB, meetingsCancelled: 1 });
+    });
   });
 
   describe('the printed summary', () => {

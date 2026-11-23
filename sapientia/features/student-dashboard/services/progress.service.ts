@@ -56,11 +56,14 @@ export function totalXp(input: TotalsInput): number {
   return input.baseXp + questXp + guardianXp + input.battleWins * input.battleBonusXp;
 }
 
-/** Quest progress is demo data and resets on reload, so saved purchases never push the balance below zero. */
+/**
+ * Every purchase costs its price. Coins earned on an earlier visit are not kept yet (quest progress resets on reload) while
+ * purchases are, so the balance stops at zero instead of going negative.
+ */
 export function totalCoins(input: TotalsInput): number {
   const questCoins = newlyDone(input.quests, input.done).reduce((sum, quest) => sum + quest.coins, 0);
-  const base = Math.max(input.baseCoins, input.spentCoins);
-  return base + questCoins + input.battleWins * input.battleBonusCoins - input.spentCoins;
+  const earned = questCoins + input.battleWins * input.battleBonusCoins;
+  return Math.max(0, input.baseCoins + earned - input.spentCoins);
 }
 
 /** Today's torch lights once the pupil ticks a quest today; a hand-in recorded earlier does not light it. */

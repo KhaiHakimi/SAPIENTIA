@@ -85,6 +85,13 @@ describe('totals', () => {
   it('never lets saved purchases push the demo balance below zero', () => {
     expect(totalCoins({ ...base, spentCoins: 300 })).toBe(0);
   });
+
+  it('keeps charging for purchases once spending passes the starting coins', () => {
+    // Royal Hall 80 and Owl Scholar 40 use up the 120; five battle wins earn 50; Studded Iron 50 spends it.
+    expect(totalCoins({ ...base, spentCoins: 80 + 40 })).toBe(0);
+    expect(totalCoins({ ...base, battleWins: 5, spentCoins: 80 + 40 })).toBe(50);
+    expect(totalCoins({ ...base, battleWins: 5, spentCoins: 80 + 40 + 50 })).toBe(0);
+  });
 });
 
 describe('guardian and torch', () => {

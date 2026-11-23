@@ -1,4 +1,4 @@
-import { createPersistentStore } from '@/shared/services/persistent-store';
+import { createPupilStoreFamily } from '@/shared/services/pupil-store';
 
 const MAX_NAME_LENGTH = 12;
 
@@ -20,8 +20,8 @@ function parseName(raw: string | null): string {
   }
 }
 
-/** The pahlawan's name. Stored under the prototype's "knight" key, so a name saved there still loads. */
-export const pahlawanNameStore = createPersistentStore<string>({
+/** Each pupil's pahlawan name, under the prototype's "knight" key followed by the pupil's id. */
+export const pahlawanNameStores = createPupilStoreFamily<string>({
   key: 'sapientia.knight',
   defaultValue: '',
   parse: parseName,

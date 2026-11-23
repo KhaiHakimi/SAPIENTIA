@@ -5,13 +5,14 @@ import { monsterForLevel } from '@/features/characters';
 import { CharacterPortrait } from '@/features/characters/components/CharacterPortrait';
 import { PixelButton } from '@/shared/components/PixelButton';
 import { PixelCard } from '@/shared/components/PixelCard';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { SCHOOL_SUBJECTS } from '@/shared/data/school-subjects';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import type { SchoolSubjectKey } from '@/shared/interfaces/school-subject.interface';
 import { BATTLE_MESSAGES } from '../i18n/battle.messages';
 import type { QuizStage } from '../interfaces/quiz.interface';
-import { battleStatsStore, recordFor } from '../services/battle-stats.store';
+import { battleStatsStores, recordFor } from '../services/battle-stats.store';
 import { QUIZ_LEVELS, QUIZ_SUBJECTS, chaptersFor, isBeaten, isUnlocked, levelsBeaten, stageKey } from '../services/quiz-stage.service';
 import styles from '../styles/MonsterLair.module.css';
 
@@ -27,7 +28,7 @@ interface MonsterLairCardProps {
 export function MonsterLairCard({ className, onFight }: MonsterLairCardProps) {
   const text = useMessages(BATTLE_MESSAGES);
   const { pick } = useLanguage();
-  const stats = usePersistentStore(battleStatsStore);
+  const stats = usePersistentStore(usePupilStore(battleStatsStores));
   const [subject, setSubject] = useState<SchoolSubjectKey>(QUIZ_SUBJECTS[0]);
 
   return (

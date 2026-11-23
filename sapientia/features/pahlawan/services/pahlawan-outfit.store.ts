@@ -1,4 +1,4 @@
-import { createPersistentStore } from '@/shared/services/persistent-store';
+import { createPupilStoreFamily } from '@/shared/services/pupil-store';
 import { ORIGINAL_OUTFIT, OUTFIT_COLOUR_IDS } from '../data/outfit-colours';
 import type { OutfitColourId, PahlawanOutfit } from '../interfaces/outfit.interface';
 
@@ -24,8 +24,8 @@ export function parseOutfit(raw: string | null): PahlawanOutfit {
 export const isOriginalOutfit = (outfit: PahlawanOutfit): boolean =>
   outfit.clothes === ORIGINAL_OUTFIT.clothes && outfit.sampin === ORIGINAL_OUTFIT.sampin;
 
-/** The pahlawan's outfit colours, kept in this browser like the name. */
-export const pahlawanOutfitStore = createPersistentStore<PahlawanOutfit>({
+/** Each pupil's pahlawan outfit colours, kept in this browser like the name. */
+export const pahlawanOutfitStores = createPupilStoreFamily<PahlawanOutfit>({
   key: 'sapientia.pahlawan.outfit',
   defaultValue: ORIGINAL_OUTFIT,
   parse: parseOutfit,

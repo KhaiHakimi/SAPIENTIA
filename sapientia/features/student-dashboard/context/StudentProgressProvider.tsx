@@ -5,7 +5,8 @@ import { createContext, useMemo, useState, type ReactNode } from 'react';
 import { BATTLE_BONUS_COINS, BATTLE_BONUS_XP } from '@/features/battle/constants/battle.constants';
 import { fetchPupilHomework, PUPIL_HOMEWORK_KEY } from '@/features/homework/services/homework.client';
 import { spentCoins } from '@/features/shop/services/shop.service';
-import { shopStore } from '@/features/shop/services/shop.store';
+import { shopStores } from '@/features/shop/services/shop.store';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
 import { SAMPLE_RELICS } from '../data/sample-relics';
 import { SAMPLE_MASTERY } from '../data/sample-student';
@@ -41,15 +42,15 @@ interface StudentProgressProviderProps {
 /**
  * Holds this visit's progress. The quests are the class's real homework (plan Sprint 12); a room is cleared for good once the
  * teacher records the hand-in. The pupil's own ticks, battle wins, XP and coins are still visit state and reset on reload, as
- * in the prototype: nothing about them is kept on the server yet. Shop purchases are remembered (see features/shop), so they
- * are taken off the coin total here.
+ * in the prototype: nothing about them is kept on the server yet. Each pupil's shop purchases are remembered in this browser
+ * (see features/shop), so they are taken off the coin total here.
  */
 export function StudentProgressProvider({ student, baseline, children }: StudentProgressProviderProps) {
   const homework = useQuery({ queryKey: PUPIL_HOMEWORK_KEY, queryFn: fetchPupilHomework });
   const clock = useSchoolClock(student.timeZone);
   const [done, setDone] = useState<QuestDoneMap>({});
   const [battleWins, setBattleWins] = useState<readonly string[]>([]);
-  const spent = spentCoins(usePersistentStore(shopStore));
+  const spent = spentCoins(usePersistentStore(usePupilStore(shopStores)));
 
   const quests = useMemo(() => homework.data?.items.map(questFromHomework) ?? NO_QUESTS, [homework.data]);
   const questsStatus: QuestsStatus = homework.data ? 'ready' : homework.isError ? 'error' : 'loading';

@@ -1,8 +1,8 @@
-import { createPersistentStore } from '@/shared/services/persistent-store';
+import { createPupilStoreFamily } from '@/shared/services/pupil-store';
 
 /**
- * Profile photo. The picked image is centre-cropped to a small square JPEG on a canvas and kept in localStorage (there is no
- * server yet). Re-encoding through the canvas also drops EXIF data, such as where a phone photo was taken.
+ * Profile photo. The picked image is centre-cropped to a small square JPEG on a canvas and kept in localStorage under the pupil's
+ * own key (there is no server yet). Re-encoding through the canvas also drops EXIF data, such as where a phone photo was taken.
  */
 const PHOTO_SIZE = 192;
 const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
@@ -10,7 +10,7 @@ const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const PHOTO_PREFIX = 'data:image/jpeg;base64,';
 
 /** Only a JPEG data URL made by this page is accepted back, so edited storage cannot inject anything else. */
-export const profilePhotoStore = createPersistentStore<string | null>({
+export const profilePhotoStores = createPupilStoreFamily<string | null>({
   key: 'sapientia.photo',
   defaultValue: null,
   parse: (raw) => (raw && raw.startsWith(PHOTO_PREFIX) ? raw : null),

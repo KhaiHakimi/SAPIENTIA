@@ -5,11 +5,11 @@ import { withApi } from '@/shared/server/api-handler';
 import { NotFoundError } from '@/shared/server/app-errors';
 import { appClock } from '@/shared/server/clock.service';
 
-/** DELETE /api/timetable/slots/:id: administrators remove a period. */
+/** DELETE /api/timetable/slots/:id: administrators remove a period. One with relief still to come answers 409. */
 export const DELETE = withApi(async (request, context: RouteContext<'/api/timetable/slots/[id]'>) => {
   const actor = await requireUser(request, appClock(), ['admin']);
   const parsed = slotIdSchema.safeParse((await context.params).id);
   if (!parsed.success) throw new NotFoundError();
-  await removeTimetableSlot(actor, parsed.data);
+  await removeTimetableSlot(actor, parsed.data, appClock());
   return new Response(null, { status: 204 });
 });

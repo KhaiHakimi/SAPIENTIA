@@ -244,6 +244,26 @@ describe('relief and the completion question (Sprint 8)', () => {
       expect(rows.map((row) => row.action)).toEqual(['relief.assigned', 'relief.cancelled']);
     });
 
+    it('refuses to cancel relief once the period is over, so the relief teacher\'s record stands', async () => {
+      const assigned = (await (await assign(lesson.id, MONDAY, bala)).json()) as ReliefAssigned;
+      const cancel = () => call(cancelRelief, `/api/relief/${assigned.id}`, { method: 'DELETE', cookie: admin, params: { id: assigned.id } });
+
+      // 09:00 on the day: the 08:00 to 09:00 period has just ended.
+      setTestClock(fixedClock('2026-11-02T09:00:00+08:00'));
+      admin = await signIn('admin@a.test');
+      const over = await cancel();
+      expect(over.status).toBe(409);
+      expect(await fieldsOf(over)).toEqual({ onDate: 'period_over' });
+
+      setTestClock(fixedClock('2026-11-03T08:00:00+08:00'));
+      admin = await signIn('admin@a.test');
+      const past = await cancel();
+      expect(past.status).toBe(409);
+      expect(await fieldsOf(past)).toEqual({ onDate: 'past_date' });
+      const { rows } = await getPool().query('SELECT id FROM relief_assignments WHERE id = $1', [assigned.id]);
+      expect(rows).toHaveLength(1);
+    });
+
     it('a relief class is not free time in the deadline check', async () => {
       const check = async () => {
         const body = { assigneeIds: [bala], dueOn: MONDAY, estimatedMinutes: 560 };

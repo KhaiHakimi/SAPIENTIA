@@ -34,6 +34,17 @@ function canArrangeOn(onDate: string, now: Date, calendar: WorkingCalendar): boo
 }
 
 /**
+ * Why relief for a period on a date can no longer be arranged or cancelled: the date has passed, or it is today and the
+ * period has ended. Once over, the relief is what happened, and the relief teacher's lesson record depends on it.
+ */
+function overReason(onDate: string, endTime: string, now: Date, timeZone: string): 'past_date' | 'period_over' | null {
+  const local = DateTime.fromJSDate(now, { zone: timeZone });
+  const today = local.toISODate() ?? '';
+  if (onDate < today) return 'past_date';
+  return onDate === today && endTime <= local.toFormat('HH:mm') ? 'period_over' : null;
+}
+
+/**
  * The period relief is wanted for, checked against the date: it must be that period's weekday, a working day, and not
  * already over. Each refusal names the field and the reason.
  */
@@ -41,12 +52,11 @@ async function loadPeriod(db: Queryable, schoolId: string, slotId: string, onDat
   const slot = await findSlotForRelief(db, schoolId, slotId);
   if (!slot) throw new ValidationError({ slotId: 'invalid_slot' });
   const calendar = await loadWorkingCalendar(db, schoolId, now);
-  const local = localNow(now, calendar);
-  const today = local.toISODate() ?? '';
   if (DateTime.fromISO(onDate, { zone: calendar.timeZone }).weekday !== slot.weekday) throw new ValidationError({ onDate: 'wrong_weekday' });
-  if (onDate < today) throw new ValidationError({ onDate: 'past_date' });
+  const over = overReason(onDate, slot.end_time, now, calendar.timeZone);
+  if (over === 'past_date') throw new ValidationError({ onDate: 'past_date' });
   if (!isWorkingDay(onDate, calendar)) throw new ValidationError({ onDate: 'not_working_day' });
-  if (onDate === today && slot.end_time <= local.toFormat('HH:mm')) throw new ValidationError({ onDate: 'period_over' });
+  if (over === 'period_over') throw new ValidationError({ onDate: 'period_over' });
   return slot;
 }
 
@@ -156,11 +166,16 @@ export async function assignRelief(actor: SessionUser, input: NewRelief, clock: 
 /**
  * An administrator cancels a relief; the period is uncovered again and can be given to someone else. A relief teacher who
  * had already been told is told it is cancelled, at the next working moment. One still held never knew, so hears nothing.
+ * Relief already over is refused (409): it happened, and cancelling it would hand the lesson record back to the absent
+ * teacher.
  */
 export async function cancelRelief(actor: SessionUser, reliefId: string, clock: Clock): Promise<void> {
   await withTransaction(async (client) => {
     const removed = await deleteRelief(client, actor.schoolId, reliefId);
     if (!removed) throw new NotFoundError();
+    // Checked after the delete so the row is read once; throwing rolls the delete back.
+    const over = overReason(removed.on_date, removed.end_time, clock.now(), actor.timeZone);
+    if (over) throw new ConflictError('This relief is already over.', { onDate: over });
     await writeAudit(client, actor.schoolId, [{
       actorId: actor.id, action: 'relief.cancelled', entityType: 'relief_assignment', entityId: reliefId,
       metadata: { slotId: removed.slot_id, onDate: removed.on_date, reliefTeacherId: removed.relief_teacher_id },

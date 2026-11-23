@@ -27,11 +27,6 @@ export async function listClassTeachers(db: Queryable, schoolId: string, classId
   return rows;
 }
 
-/** Holds the guardian's row until the transaction ends, so their requests are counted and made one at a time. */
-export async function lockGuardian(db: Queryable, schoolId: string, guardianId: string): Promise<void> {
-  await db.query('SELECT 1 FROM guardians WHERE school_id = $1 AND id = $2 FOR UPDATE', [schoolId, guardianId]);
-}
-
 export async function countPendingForGuardian(db: Queryable, schoolId: string, guardianId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     `SELECT count(*)::int AS total FROM meeting_requests m

@@ -32,6 +32,7 @@ import {
   insertLink,
   listGuardians,
   listLinks,
+  lockGuardian,
   revokeGuardianSessions,
   setGuardianStartingPassword,
   toSchoolGuardian,
@@ -143,6 +144,8 @@ export async function addLink(actor: SessionUser, guardianId: string, input: Add
   return withTransaction(async (client) => {
     if (!(await findGuardian(client, actor.schoolId, guardianId))) throw new NotFoundError();
     if (!(await findStudent(client, actor.schoolId, input.studentId))) throw new ValidationError({ studentId: 'invalid_student' });
+    // Links are counted and added one at a time per guardian, so two administrators cannot both add the eleventh.
+    await lockGuardian(client, actor.schoolId, guardianId);
     if ((await countActiveLinks(client, actor.schoolId, guardianId)) >= GUARDIAN_LINKS_MAX) {
       throw new ValidationError({ studentId: 'too_many_children' });
     }

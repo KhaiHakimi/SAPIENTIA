@@ -17,8 +17,11 @@ import type { AddGuardianResult, GuardianChildren } from '@/features/guardians/i
 import type { AddStudentsResult } from '@/features/students/interfaces/student.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
-import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
+import {
+  call, cookieFrom, createSchool, createUser, raceAgainstOpenTransaction, resetDatabase, TEST_PASSWORD,
+} from '@/shared/server/testing/api-test-kit';
 import type { Homework, HomeworkComment, HomeworkComments, PupilHomeworkList } from '../interfaces/homework.interface';
+import { lockHomework } from './homework.repository';
 
 // Monday 22 March 2027, 09:00 at the school.
 const NOW = new Date('2027-03-22T01:00:00Z');
@@ -33,6 +36,7 @@ async function insertRow(sql: string, values: unknown[]): Promise<string> {
 
 /** Teacher-to-pupil notes on homework (plan Phase 4, Sprint 14): written by the setter, read by the pupil and guardians. */
 describe('homework comments (Sprint 14)', () => {
+  let school: string;
   let guru: string;
   let homework: Homework;
   let pupils: { aisyah: string; daniel: string };
@@ -56,7 +60,7 @@ describe('homework comments (Sprint 14)', () => {
   beforeEach(async () => {
     setTestClock(fixedClock(NOW));
     await resetDatabase();
-    const school = await createSchool('A001');
+    school = await createSchool('A001');
     await createUser(school, 'admin@a.test', 'admin');
     const guruId = await createUser(school, 'guru@a.test', 'teacher');
     await createUser(school, 'lain@a.test', 'teacher');
@@ -170,5 +174,21 @@ describe('homework comments (Sprint 14)', () => {
 
     for (let note = 1; note <= 10; note += 1) expect((await write({ studentId: pupils.aisyah, body: `Nota ${note}` })).status).toBe(201);
     expect(await fieldsOf(await write({ studentId: pupils.aisyah, body: 'Nota 11' }))).toEqual({ body: 'too_many_comments' });
+  });
+
+  it('keeps to ten notes per pupil when another is being saved at the same moment', async () => {
+    for (let note = 1; note <= 9; note += 1) expect((await write({ studentId: pupils.aisyah, body: `Nota ${note}` })).status).toBe(201);
+    // Another request holds the homework and has written the tenth note, not yet committed.
+    const response = await raceAgainstOpenTransaction(async (client) => {
+      await lockHomework(client, school, homework.id);
+      await client.query(
+        `INSERT INTO homework_comments (school_id, homework_id, student_id, author_id, body)
+         SELECT school_id, id, $2, set_by, 'Nota 10' FROM homework WHERE id = $1`,
+        [homework.id, pupils.aisyah],
+      );
+    }, () => write({ studentId: pupils.aisyah, body: 'Nota 11' }));
+    expect(response.status).toBe(400);
+    const { rows } = await getPool().query('SELECT count(*)::int AS total FROM homework_comments WHERE student_id = $1', [pupils.aisyah]);
+    expect(rows[0].total).toBe(10);
   });
 });

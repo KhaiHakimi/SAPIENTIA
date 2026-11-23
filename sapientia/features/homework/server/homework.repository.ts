@@ -76,6 +76,15 @@ export async function teachesLesson(db: Queryable, schoolId: string, teacherId: 
   return rows.length > 0;
 }
 
+
+/**
+ * Holds the class's row until the transaction ends, so the homework due on a day is counted and added one teacher at a time:
+ * two teachers setting work for the same class at once cannot both miss the same-day warning. FOR NO KEY UPDATE, because
+ * other work for the class (enrolments, timetable slots, homework) only refers to the row and need not wait.
+ */
+export async function lockClass(db: Queryable, schoolId: string, classId: string): Promise<void> {
+  await db.query('SELECT 1 FROM classes WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, classId]);
+}
 /** The class's homework due between two dates (inclusive): date and subject only, never who set it. */
 export async function listClassHomeworkDays(db: Queryable, schoolId: string, classId: string, fromDate: string, toDate: string) {
   const { rows } = await db.query<{ due_on: string; subject_name: string }>(
@@ -299,6 +308,15 @@ export async function listHomeworkComments(db: Queryable, schoolId: string, home
   }));
 }
 
+
+/**
+ * Holds the homework's row until the transaction ends, so a pupil's notes are counted and added one at a time and two quick
+ * submissions cannot pass HOMEWORK_COMMENTS_PER_PUPIL_MAX together. FOR NO KEY UPDATE, so hand-ins, which only refer to the
+ * row, need not wait.
+ */
+export async function lockHomework(db: Queryable, schoolId: string, homeworkId: string): Promise<void> {
+  await db.query('SELECT 1 FROM homework WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, homeworkId]);
+}
 export async function countPupilComments(db: Queryable, schoolId: string, homeworkId: string, studentId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     'SELECT count(*)::int AS total FROM homework_comments WHERE school_id = $1 AND homework_id = $2 AND student_id = $3',

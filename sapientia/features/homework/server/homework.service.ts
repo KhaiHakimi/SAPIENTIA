@@ -49,6 +49,8 @@ import {
   listOwnHomework,
   listPupilHomework,
   listTeacherLessons,
+  lockClass,
+  lockHomework,
   recordHandIn,
   setMarked,
   teachesLesson,
@@ -155,6 +157,7 @@ export async function setHomework(actor: SessionUser, input: SetHomeworkRequest,
   return withTransaction(async (client) => {
     const now = clock.now();
     const calendar = await checkRequest(client, actor, input, now);
+    await lockClass(client, actor.schoolId, input.classId);
     const { sameDay, loadWarning } = await classLoad(client, actor, input, calendar);
     const id = await insertHomework(client, actor.schoolId, {
       classId: input.classId,
@@ -265,6 +268,7 @@ export async function addComment(actor: SessionUser, homeworkId: string, input: 
     if (!(await isEnrolled(client, actor.schoolId, input.studentId, homework.class.id))) {
       throw new ValidationError({ studentId: 'invalid_student' });
     }
+    await lockHomework(client, actor.schoolId, homeworkId);
     if ((await countPupilComments(client, actor.schoolId, homeworkId, input.studentId)) >= HOMEWORK_COMMENTS_PER_PUPIL_MAX) {
       throw new ValidationError({ body: 'too_many_comments' });
     }

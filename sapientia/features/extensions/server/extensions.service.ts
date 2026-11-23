@@ -5,6 +5,7 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import type { Feasibility } from '@/features/capacity/interfaces/capacity.interface';
 import { assessAssignees } from '@/features/capacity/server/feasibility.service';
 import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.repository';
+import { isBeyondDueHorizon } from '@/features/delivery/services/due-horizon.service';
 import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import { findVisibleTask } from '@/features/tasks/server/tasks.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -72,6 +73,7 @@ export async function requestExtension(
       const today = DateTime.fromJSDate(now, { zone: actor.timeZone }).toISODate() ?? '';
       if (input.requestedDueOn <= assignment.due_on) throw new ValidationError({ requestedDueOn: 'not_later' });
       if (input.requestedDueOn < today) throw new ValidationError({ requestedDueOn: 'past_date' });
+      if (isBeyondDueHorizon(input.requestedDueOn, today)) throw new ValidationError({ requestedDueOn: 'too_far_ahead' });
       const figures = assignment.estimated_minutes === null
         ? null
         : await assessOwnTask(client, actor, { id: taskId, dueOn: assignment.due_on, estimatedMinutes: assignment.estimated_minutes }, now);
@@ -117,6 +119,8 @@ export async function answerExtension(
     // Proposing the very date that was asked for is an approval, and is recorded as one.
     const dueOn = decision.decision === 'propose' && decision.dueOn !== request.requestedDueOn ? decision.dueOn : null;
     if (dueOn !== null && dueOn <= request.currentDueOn) throw new ValidationError({ dueOn: 'not_later' });
+    const today = DateTime.fromJSDate(clock.now(), { zone: actor.timeZone }).toISODate() ?? '';
+    if (dueOn !== null && isBeyondDueHorizon(dueOn, today)) throw new ValidationError({ dueOn: 'too_far_ahead' });
 
     const decided = await decideExtension(client, actor.schoolId, { taskId, requestId, decidedBy: actor.id, dueOn, now: clock.now() });
     // Lost a race with another answer between the read above and the update.

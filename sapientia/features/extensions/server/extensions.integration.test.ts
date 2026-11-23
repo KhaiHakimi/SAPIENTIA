@@ -18,6 +18,7 @@ import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
 import type { ExtensionRequest, ExtensionSuggestion } from '../interfaces/extension.interface';
+import { listExtensions } from './extensions.repository';
 
 const signIn = async (email: string) =>
   cookieFrom(await call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } }));
@@ -237,6 +238,26 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(200);
       expect((await answer(task.id, request.id, sender, { decision: 'propose', dueOn: THURSDAY })).status).toBe(409);
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
+    });
+
+    it('a long exchange keeps every open request and drops the oldest answered ones first', async () => {
+      const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
+      let minute = 30;
+      const nextMinute = () => setTestClock(fixedClock(`2026-11-02T07:${minute++}:00+08:00`));
+      for (const day of [TUESDAY, WEDNESDAY, THURSDAY]) {
+        nextMinute();
+        const request = await askedFor(task.id, day);
+        nextMinute();
+        await answer(task.id, request.id, sender, { decision: 'approve' });
+      }
+      nextMinute();
+      await askedFor(task.id, NEXT_MONDAY);
+
+      const { rows: [owner] } = await getPool().query<{ school_id: string }>('SELECT school_id FROM tasks WHERE id = $1', [task.id]);
+      const shown = await listExtensions(getPool(), owner.school_id, task.id, null, 2);
+      expect(shown.map((item) => [item.requestedDueOn, item.status])).toEqual([[THURSDAY, 'approved'], [NEXT_MONDAY, 'pending']]);
+      // Even a limit smaller than the open requests never hides one.
+      expect((await listExtensions(getPool(), owner.school_id, task.id, null, 0)).map((item) => item.status)).toEqual(['pending']);
     });
 
     it('the board orders and pages by each teacher\'s own date, so an extended task moves down', async () => {

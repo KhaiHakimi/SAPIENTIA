@@ -7,6 +7,8 @@ import { PUT as guardianPassword } from '@/app/api/guardian/password/route';
 import { POST as addGuardian } from '@/app/api/guardians/route';
 import { PATCH as hideComment } from '@/app/api/homework/[id]/comments/[commentId]/route';
 import { GET as listComments, POST as addComment } from '@/app/api/homework/[id]/comments/route';
+import { PUT as tickHandIn } from '@/app/api/homework/[id]/hand-ins/[studentId]/route';
+import { GET as listHandIns } from '@/app/api/homework/[id]/hand-ins/route';
 import { POST as setHomework } from '@/app/api/homework/route';
 import { GET as pupilHomework } from '@/app/api/student/homework/route';
 import { PUT as studentPassword } from '@/app/api/student/password/route';
@@ -138,6 +140,20 @@ describe('homework comments (Sprint 14)', () => {
     const list = (await listed.json()) as HomeworkComments;
     expect(list.comments).toHaveLength(250);
     expect(list.comments.at(-1)?.body).toBe('Nota 250');
+  });
+
+  it('closes the class list and the notes to a setter who no longer teaches the class', async () => {
+    const handIns = `/api/homework/${homework.id}/hand-ins`;
+    expect((await call(listHandIns, handIns, { params: { id: homework.id }, cookie: guru })).status).toBe(200);
+    // The timetable changes hands: guru no longer teaches 4 Bestari.
+    await getPool().query("DELETE FROM timetable_slots WHERE teacher_id = (SELECT id FROM users WHERE email = 'guru@a.test')");
+
+    expect((await call(listHandIns, handIns, { params: { id: homework.id }, cookie: guru })).status).toBe(404);
+    expect((await call(tickHandIn, `${handIns}/${pupils.aisyah}`, {
+      params: { id: homework.id, studentId: pupils.aisyah }, method: 'PUT', cookie: guru, body: { handedIn: true },
+    })).status).toBe(404);
+    expect((await call(listComments, comments(homework.id), { params: { id: homework.id }, cookie: guru })).status).toBe(404);
+    expect((await write({ studentId: pupils.aisyah, body: 'Hai' })).status).toBe(404);
   });
 
   it('refuses anyone but the setter, a pupil outside the class, long or MyKad-like text, and an eleventh note', async () => {

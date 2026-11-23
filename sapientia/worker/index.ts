@@ -21,11 +21,15 @@ import { createPushSender } from '@/features/notifications/server/push.sender';
 import { systemClock } from '@/shared/server/clock.service';
 import { closePool, readDatabaseUrl } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
+import { runWorker } from '@/shared/server/worker-lifecycle.service';
 
 const SHUTDOWN_TIMEOUT_MS = 15_000;
 
-async function main(): Promise<void> {
-  const boss = new PgBoss({ connectionString: readDatabaseUrl() });
+/** Set once start-up has created it, so stopping knows whether there is anything to stop. */
+let boss: PgBoss | null = null;
+
+async function start(): Promise<void> {
+  boss = new PgBoss({ connectionString: readDatabaseUrl() });
   boss.on('error', (error: Error) => logger.error('worker.queue_error', { error }));
   await boss.start();
   await ensureQueues(boss);
@@ -70,21 +74,23 @@ async function main(): Promise<void> {
   // Anything that came due while the worker was stopped goes out now rather than at the next sweep.
   const caughtUp = await deliverDueTasks(systemClock);
   logger.info('worker.started', { caughtUp });
+}
 
-  const shutdown = async (signal: string) => {
-    logger.info('worker.stopping', { signal });
+/**
+ * Closes everything start-up may have opened, each step even if an earlier one failed, so a half-started worker still
+ * ends. The sender instance queues notify jobs from inside deliveries; it is stopped too or the process stays alive.
+ */
+async function stop(): Promise<void> {
+  const steps = [() => boss?.stop({ graceful: true, timeout: SHUTDOWN_TIMEOUT_MS }), closeQueue, closePool];
+  const failures: unknown[] = [];
+  for (const step of steps) {
     try {
-      await boss.stop({ graceful: true, timeout: SHUTDOWN_TIMEOUT_MS });
-      // The sender instance queues notify jobs from inside deliveries; stop it too or the process stays alive.
-      await closeQueue();
-      await closePool();
+      await step();
     } catch (error) {
-      logger.error('worker.stop_failed', { error });
-      process.exitCode = 1;
+      failures.push(error);
     }
-  };
-  process.once('SIGINT', () => void shutdown('SIGINT'));
-  process.once('SIGTERM', () => void shutdown('SIGTERM'));
+  }
+  if (failures.length > 0) throw failures[0];
 }
 
 /** A channel without its environment variables is off, and the log says so once at start. */
@@ -96,7 +102,7 @@ function buildSenders(): NotificationSenders {
   return { email: email && createEmailSender(email), push: push && createPushSender(push) };
 }
 
-main().catch((error: unknown) => {
-  logger.error('worker.start_failed', { error });
-  process.exitCode = 1;
+void runWorker({ start, stop }, {
+  onSignal: (signal, handler) => process.once(signal, handler),
+  exit: (code) => process.exit(code),
 });

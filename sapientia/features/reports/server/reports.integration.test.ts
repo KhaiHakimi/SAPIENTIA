@@ -167,6 +167,12 @@ describe('monthly report (Sprint 10, G5)', () => {
     expect(JSON.stringify(october)).not.toContain('Nota peribadi');
   });
 
+  it('does not count a removed teacher\'s periods as not recorded once the login is gone', async () => {
+    // Guru's login is removed on Tuesday 20 October: Monday 26 and Wednesdays 21 and 28 are no longer scheduled.
+    await db().query(`UPDATE users SET status = 'disabled', removed_at = $2, password_hash = NULL WHERE id = $1`, [guru, myt('2026-10-20T10:00')]);
+    expect((await report('2026-10')).lessons).toMatchObject({ scheduled: 3, notRecorded: 3 });
+  });
+
   it('keeps last month\'s relief figures when the period is later removed from the timetable', async () => {
     await db().query(
       `INSERT INTO relief_assignments (school_id, slot_id, on_date, absent_teacher_id, relief_teacher_id, start_time, end_time, deliver_at, created_by)

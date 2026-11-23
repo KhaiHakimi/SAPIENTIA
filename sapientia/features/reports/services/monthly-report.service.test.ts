@@ -19,7 +19,7 @@ const WEEK_ONE = { from: '2026-11-02', to: '2026-11-06' };
 const QUIET = { taskMinutes: 0, flaggedDeadlines: 0, extensionRequests: 0 };
 
 const slot = (id: string, weekday: number, subjectName: string | null = 'Matematik', createdOn = '2026-01-01'): ScheduledSlot =>
-  ({ id, weekday, subjectName, createdOn });
+  ({ id, weekday, subjectName, createdOn, teacherRemovedOn: null });
 const held = (slotId: string | null, onDate: string, subjectName: string | null = 'Matematik'): LessonRecordFact =>
   ({ slotId, onDate, subjectName, status: 'held', reason: null });
 const notHeld = (slotId: string, onDate: string, reason: LessonRecordFact['reason']): LessonRecordFact =>
@@ -67,6 +67,18 @@ describe('countLessons', () => {
       { subject: 'Matematik', scheduled: 2, held: 1, notHeld: 1, notRecorded: 0 },
       { subject: 'Sains', scheduled: 2, held: 1, notHeld: 0, notRecorded: 1 },
     ]);
+  });
+
+  it('stops scheduling a removed teacher\'s periods from the day the login was removed, but keeps any record made', () => {
+    const result = countLessons({
+      calendar: calendar(),
+      period: { from: '2026-11-02', to: '2026-11-20' },
+      slots: [{ ...slot('mon', 1), teacherRemovedOn: '2026-11-09' }],
+      // A relief teacher still recorded the 16th.
+      records: [held('mon', '2026-11-16')],
+    });
+    // 2 November was before the removal and went unrecorded; the 9th is not scheduled; the 16th counts by its record.
+    expect(result).toMatchObject({ scheduled: 2, held: 1, notRecorded: 1 });
   });
 
   it('does not schedule a lesson before its period was added, nor on a holiday', () => {

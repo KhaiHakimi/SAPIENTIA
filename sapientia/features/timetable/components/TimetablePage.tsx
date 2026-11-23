@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useStaffUser } from '@/features/staff/hooks/useStaffUser';
-import { fetchStaffDirectory, STAFF_DIRECTORY_KEY } from '@/features/users/services/users.client';
 import { ApiError } from '@/shared/api/api-client';
 import { describeApiError } from '@/shared/api/api-error.messages';
 import calm from '@/shared/calm/Calm.module.css';
@@ -12,7 +11,9 @@ import type { Lang } from '@/shared/interfaces/localized-text.interface';
 import type { TimetableMessages } from '../i18n/timetable-messages.interface';
 import { TIMETABLE_MESSAGES } from '../i18n/timetable.messages';
 import type { TimetableSlot } from '../interfaces/timetable.interface';
-import { fetchTimetable, removeTimetableSlot, TIMETABLE_KEY, timetableKey } from '../services/timetable.client';
+import {
+  fetchTimetable, fetchTimetableTeachers, removeTimetableSlot, TIMETABLE_KEY, TIMETABLE_TEACHERS_KEY, timetableKey,
+} from '../services/timetable.client';
 import { AddSlotForm } from './AddSlotForm';
 
 /** The server names why a period cannot go (relief still to come); its reason is what the administrator needs to read. */
@@ -49,10 +50,12 @@ export function TimetablePage() {
   const { lang } = useLanguage();
   const user = useStaffUser();
   const isAdmin = user.role === 'admin';
-  const staff = useQuery({ queryKey: STAFF_DIRECTORY_KEY, queryFn: fetchStaffDirectory, enabled: isAdmin });
+  const staff = useQuery({ queryKey: TIMETABLE_TEACHERS_KEY, queryFn: fetchTimetableTeachers, enabled: isAdmin });
   const [chosenId, setChosenId] = useState<string | null>(null);
   const teacherId = isAdmin ? chosenId : null;
   const timetable = useQuery({ queryKey: timetableKey(teacherId), queryFn: () => fetchTimetable(teacherId) });
+  // Someone no longer active keeps their periods until removed, but gets no new ones (the server refuses them too).
+  const canAdd = (timetable.data?.teacher.status ?? 'active') === 'active';
 
   return (
     <>
@@ -68,8 +71,8 @@ export function TimetablePage() {
           <label className={calm.label} htmlFor="timetable-teacher">{text.teacher}</label>
           <select id="timetable-teacher" className={calm.select} value={chosenId ?? user.id} onChange={(event) => setChosenId(event.target.value)}>
             {/* Until the directory loads, the administrator's own name keeps the control from being empty. */}
-            {(staff.data ?? [{ id: user.id, name: user.name }]).map((person) => (
-              <option key={person.id} value={person.id}>{person.name}</option>
+            {(staff.data ?? [{ id: user.id, name: user.name, status: 'active' as const }]).map((person) => (
+              <option key={person.id} value={person.id}>{text.teacherOption(person.name, person.status)}</option>
             ))}
           </select>
           {staff.isError && <div className={calm.fieldError} role="alert">{describeApiError(staff.error, lang)}</div>}
@@ -111,7 +114,8 @@ export function TimetablePage() {
           )}
         </section>
 
-        {isAdmin && <AddSlotForm teacherId={chosenId ?? user.id} text={text} />}
+        {isAdmin && canAdd && <AddSlotForm teacherId={chosenId ?? user.id} text={text} />}
+        {isAdmin && !canAdd && <p className={`${calm.alert} ${calm.alertInfo}`} role="status">{text.inactiveNote}</p>}
       </div>
     </>
   );

@@ -13,11 +13,13 @@ import { POST as checkFeasibility } from '@/app/api/tasks/feasibility/route';
 import { POST as createTask } from '@/app/api/tasks/route';
 import { DELETE as removeSlot } from '@/app/api/timetable/slots/[id]/route';
 import { POST as addSlot } from '@/app/api/timetable/slots/route';
+import { GET as getTimetableTeachers } from '@/app/api/timetable/teachers/route';
+import { GET as getTimetable } from '@/app/api/timetable/route';
 import type { FeasibilityResponse } from '@/features/capacity/interfaces/capacity.interface';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
 import type { SchoolDataItem, TaskTypeFeedback } from '@/features/school-data/interfaces/school-data.interface';
 import type { TaskDetail } from '@/features/tasks/interfaces/task.interface';
-import type { TimetableSlot } from '@/features/timetable/interfaces/timetable.interface';
+import type { Timetable, TimetableSlot, TimetableTeacher } from '@/features/timetable/interfaces/timetable.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
@@ -303,6 +305,36 @@ describe('relief and the completion question (Sprint 8)', () => {
       // Right after the relief class, or on another day, is fine.
       expect((await slot('09:00', '10:00')).status).toBe(201);
       expect((await slot('08:30', '09:30', 2)).status).toBe(201);
+    });
+
+    it('lets administrators open, cover and clear the periods of a teacher who is disabled or removed', async () => {
+      await getPool().query(`UPDATE users SET status = 'disabled' WHERE id = ANY($1::uuid[])`, [[absent, devi]]);
+      await getPool().query(`UPDATE users SET status = 'disabled', removed_at = now(), password_hash = NULL WHERE id = $1`, [chong]);
+      // Devi and Chong have periods (Friday), so they stay in the picker, marked; nobody else inactive is listed.
+      const listed = await call(getTimetableTeachers, '/api/timetable/teachers', { cookie: admin });
+      expect(((await listed.json()) as { items: TimetableTeacher[] }).items.map((person) => [person.name, person.status])).toEqual([
+        ['absent', 'disabled'], ['admin', 'active'], ['ali', 'active'], ['bala', 'active'], ['chong', 'removed'], ['devi', 'disabled'],
+        ['pk', 'active'],
+      ]);
+      expect((await call(getTimetableTeachers, '/api/timetable/teachers', { cookie: sender })).status).toBe(404);
+
+      const week = await call(getTimetable, `/api/timetable?teacherId=${absent}`, { cookie: admin });
+      expect(((await week.json()) as Timetable).teacher).toEqual({ id: absent, name: 'absent', status: 'disabled' });
+      const day = await call(getReliefDay, `/api/relief?teacherId=${absent}&onDate=${MONDAY}`, { cookie: admin });
+      expect(((await day.json()) as ReliefDay).periods).toHaveLength(1);
+      // Only active staff cover: Chong and Devi are not suggested, and cannot be chosen.
+      expect(await suggestedNames(lesson.id, MONDAY)).toEqual(['ali', 'bala']);
+      expect(await fieldsOf(await assign(lesson.id, MONDAY, devi))).toEqual({ reliefTeacherId: 'not_free' });
+      expect((await assign(lesson.id, MONDAY, ali)).status).toBe(201);
+
+      // No new periods for someone no longer active, but the old ones can go.
+      const added = await call(addSlot, '/api/timetable/slots', {
+        method: 'POST', cookie: admin, body: { teacherId: chong, weekday: 2, startTime: '08:00', endTime: '09:00', label: 'x' },
+      });
+      expect(await fieldsOf(added)).toEqual({ teacherId: 'invalid_teacher' });
+      const chongWeek = (await (await call(getTimetable, `/api/timetable?teacherId=${chong}`, { cookie: admin })).json()) as Timetable;
+      const [friday] = chongWeek.slots;
+      expect((await call(removeSlot, `/api/timetable/slots/${friday.id}`, { method: 'DELETE', cookie: admin, params: { id: friday.id } })).status).toBe(204);
     });
 
     it('a relief class is not free time in the deadline check', async () => {

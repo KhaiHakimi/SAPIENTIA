@@ -53,8 +53,9 @@ const OPEN_REQUEST = `e.status = 'pending' AND EXISTS (
    WHERE ra.task_id = e.task_id AND ra.user_id = e.requested_by AND ra.school_id = e.school_id AND ra.status <> 'done')`;
 
 /**
- * The task's requests, oldest first, without unanswered ones from people who have finished. With onlyBy, just that
- * person's: an assignee never sees a colleague's request.
+ * The task's requests, oldest first, without unanswered ones from people who have finished. Every open request is kept,
+ * since the sender has to see it to answer it; the rest of the limit goes to the latest answered ones. With onlyBy, just
+ * that person's: an assignee never sees a colleague's request.
  */
 export async function listExtensions(
   db: Queryable,
@@ -64,10 +65,19 @@ export async function listExtensions(
   limit: number,
 ): Promise<ExtensionRequest[]> {
   const { rows } = await db.query<ExtensionRow>(
-    `SELECT ${EXTENSION_COLUMNS} FROM extension_requests e ${EXTENSION_JOINS}
-      WHERE e.school_id = $1 AND e.task_id = $2 AND ($3::uuid IS NULL OR e.requested_by = $3)
-        AND (e.status <> 'pending' OR ${OPEN_REQUEST})
-      ORDER BY e.created_at, e.id LIMIT $4`,
+    `WITH visible AS (
+       SELECT e.id, e.created_at, e.status = 'pending' AS open FROM extension_requests e
+        WHERE e.school_id = $1 AND e.task_id = $2 AND ($3::uuid IS NULL OR e.requested_by = $3)
+          AND (e.status <> 'pending' OR ${OPEN_REQUEST})
+     ), ranked AS (
+       SELECT id, open, row_number() OVER (PARTITION BY open ORDER BY created_at DESC, id DESC) AS recency,
+              count(*) FILTER (WHERE open) OVER () AS open_count
+         FROM visible
+     )
+     SELECT ${EXTENSION_COLUMNS} FROM extension_requests e ${EXTENSION_JOINS}
+       JOIN ranked k ON k.id = e.id
+      WHERE e.school_id = $1 AND (k.open OR k.recency <= $4 - k.open_count)
+      ORDER BY e.created_at, e.id`,
     [schoolId, taskId, onlyBy, limit],
   );
   return rows.map(toExtension);

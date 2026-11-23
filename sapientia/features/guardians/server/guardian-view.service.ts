@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { writeAudit } from '@/features/audit/server/audit.repository';
 import { HOMEWORK_LIST_MAX, PUPIL_HOMEWORK_DAYS_BACK } from '@/features/homework/constants/homework.constants';
 import { listPupilHomework } from '@/features/homework/server/homework.repository';
-import { cancelPendingForLink } from '@/features/meetings/server/meetings.repository';
+import { cancelOpenForLink } from '@/features/meetings/server/meetings.repository';
 import type { ClassWeek } from '@/features/timetable/interfaces/timetable.interface';
 import { getClassWeek } from '@/features/timetable/server/class-week.service';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -50,13 +50,13 @@ export async function getChildWeek(
 
 /**
  * The guardian refuses one of their links with a reason code. The child leaves their view at once and any meeting request
- * still waiting is cancelled; it cannot be undone here.
+ * still waiting, or accepted for a time still to come, is cancelled; it cannot be undone here.
  */
 export async function refuseLink(guardian: SessionGuardian, linkId: string, reason: LinkRefusalReason, clock: Clock): Promise<void> {
   await withTransaction(async (client) => {
     const ended = await endLink(client, guardian.schoolId, { guardianId: guardian.id, linkId }, { status: 'refused', reason, now: clock.now() });
     if (!ended) throw new NotFoundError();
-    const meetingsCancelled = await cancelPendingForLink(client, guardian.schoolId, linkId, clock.now());
+    const meetingsCancelled = await cancelOpenForLink(client, guardian.schoolId, linkId, clock.now());
     await writeAudit(client, guardian.schoolId, [{
       actorId: guardian.id, action: 'guardian.link_refused', entityType: 'guardian', entityId: guardian.id,
       metadata: { linkId, reason, meetingsCancelled, actorKind: 'guardian' },

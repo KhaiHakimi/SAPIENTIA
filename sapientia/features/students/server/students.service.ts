@@ -2,6 +2,7 @@ import 'server-only';
 import { writeAudit } from '@/features/audit/server/audit.repository';
 import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import { hashPassword } from '@/features/auth/server/password.service';
+import { cancelOpenOutsideClass } from '@/features/meetings/server/meetings.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
@@ -106,7 +107,12 @@ export async function updateStudent(actor: SessionUser, id: string, input: Updat
       throw new ValidationError({ classId: 'invalid_class' });
     }
     await updateStudentDetails(client, actor.schoolId, id, input, now);
-    if (input.classId && input.classId !== before.class_id) await enrolStudent(client, actor.schoolId, id, input.classId, now);
+    let meetingsCancelled = 0;
+    if (input.classId && input.classId !== before.class_id) {
+      await enrolStudent(client, actor.schoolId, id, input.classId, now);
+      // Requests to the old class's teachers end with the move; the guardian can ask the new class's teachers instead.
+      meetingsCancelled = await cancelOpenOutsideClass(client, actor.schoolId, { studentId: id, classId: input.classId }, now);
+    }
     if (input.status === 'disabled') await revokeStudentSessions(client, actor.schoolId, id);
 
     const after = await findStudent(client, actor.schoolId, id);
@@ -118,6 +124,7 @@ export async function updateStudent(actor: SessionUser, id: string, input: Updat
         numberChanged: after.school_number !== before.school_number,
         classId: after.class_id !== before.class_id ? after.class_id : null,
         status: after.status !== before.status ? after.status : null,
+        meetingsCancelled,
       },
     }]);
     return toSchoolStudent(after);

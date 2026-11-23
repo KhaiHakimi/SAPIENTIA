@@ -5,7 +5,7 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import { hashPassword } from '@/features/auth/server/password.service';
 import { STARTING_PASSWORD_VALID_DAYS } from '@/features/students/constants/students.constants';
 import { generateStartingPassword, generateUsername } from '@/features/students/server/student-credentials.service';
-import { cancelPendingForLink } from '@/features/meetings/server/meetings.repository';
+import { cancelOpenForGuardian, cancelOpenForLink } from '@/features/meetings/server/meetings.repository';
 import { findStudent } from '@/features/students/server/students.repository';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -85,17 +85,26 @@ export async function addGuardian(actor: SessionUser, input: AddGuardianRequest,
   return result;
 }
 
-/** Changes a guardian's name or status. Disabling signs them out everywhere. */
+/**
+ * Changes a guardian's name or status. Disabling signs them out everywhere and ends their open meeting requests: they can no
+ * longer see or withdraw them, so a teacher would otherwise answer, or wait for, someone who cannot come.
+ */
 export async function updateGuardian(actor: SessionUser, id: string, input: UpdateGuardianRequest, clock: Clock): Promise<SchoolGuardian> {
   return withTransaction(async (client) => {
     const before = await findGuardian(client, actor.schoolId, id);
     if (!before) throw new NotFoundError();
     await updateGuardianDetails(client, actor.schoolId, id, input, clock.now());
-    if (input.status === 'disabled') await revokeGuardianSessions(client, actor.schoolId, id);
+    let meetingsCancelled = 0;
+    if (input.status === 'disabled') {
+      await revokeGuardianSessions(client, actor.schoolId, id);
+      meetingsCancelled = await cancelOpenForGuardian(client, actor.schoolId, id, clock.now());
+    }
     const after = await loadGuardian(client, actor.schoolId, id);
     await writeAudit(client, actor.schoolId, [{
       actorId: actor.id, action: 'guardian.updated', entityType: 'guardian', entityId: id,
-      metadata: { nameChanged: after.name !== before.name, status: after.status !== before.status ? after.status : null },
+      metadata: {
+        nameChanged: after.name !== before.name, status: after.status !== before.status ? after.status : null, meetingsCancelled,
+      },
     }]);
     return after;
   });
@@ -149,7 +158,10 @@ export async function addLink(actor: SessionUser, guardianId: string, input: Add
   });
 }
 
-/** Removes an active link with a reason code. The guardian stops seeing that child at once; waiting meeting requests end. */
+/**
+ * Removes an active link with a reason code. The guardian stops seeing that child at once; meeting requests still waiting,
+ * and accepted ones still to come, end.
+ */
 export async function removeLink(
   actor: SessionUser,
   target: { guardianId: string; linkId: string },
@@ -158,7 +170,7 @@ export async function removeLink(
 ): Promise<SchoolGuardian> {
   return withTransaction(async (client) => {
     if (!(await endLink(client, actor.schoolId, target, { status: 'removed', reason, now: clock.now() }))) throw new NotFoundError();
-    const meetingsCancelled = await cancelPendingForLink(client, actor.schoolId, target.linkId, clock.now());
+    const meetingsCancelled = await cancelOpenForLink(client, actor.schoolId, target.linkId, clock.now());
     await writeAudit(client, actor.schoolId, [{
       actorId: actor.id, action: 'guardian.link_removed', entityType: 'guardian', entityId: target.guardianId,
       metadata: { linkId: target.linkId, reason, meetingsCancelled },

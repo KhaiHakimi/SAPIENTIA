@@ -67,16 +67,16 @@ export async function countSlots(db: Queryable, schoolId: string, teacherId: str
  * Inserts a period and returns it with its class and subject names. The class and subject must belong to the same school:
  * the composite foreign keys refuse anything else, and so does the overlap constraint for a clashing time.
  */
-export async function insertSlot(db: Queryable, schoolId: string, slot: NewTimetableSlot): Promise<TimetableSlot> {
+export async function insertSlot(db: Queryable, schoolId: string, slot: NewTimetableSlot, now: Date): Promise<TimetableSlot> {
   const { rows } = await db.query<SlotRow>(
     `WITH s AS (
-       INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id, label)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
+       INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id, label, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
      )
      SELECT ${SLOT_COLUMNS} FROM s ${SLOT_JOINS}`,
     [
       schoolId, slot.teacherId, slot.weekday, slot.startTime, slot.endTime,
-      slot.classId ?? null, slot.subjectId ?? null, slot.label ?? null,
+      slot.classId ?? null, slot.subjectId ?? null, slot.label ?? null, now,
     ],
   );
   return toSlot(rows[0]);

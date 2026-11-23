@@ -11,6 +11,7 @@ import { GET as listTasks, POST as createTask } from '@/app/api/tasks/route';
 import { POST as addSlot } from '@/app/api/timetable/slots/route';
 import type { FeasibilityResponse, Workload } from '@/features/capacity/interfaces/capacity.interface';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
+import { countWaitingExtensions } from '@/features/digest/server/digest.repository';
 import type { AssignedTask, SentTask, TaskDetail } from '@/features/tasks/interfaces/task.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
@@ -235,6 +236,29 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(200);
       expect((await answer(task.id, request.id, sender, { decision: 'propose', dueOn: THURSDAY })).status).toBe(409);
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
+    });
+
+    it('a request is closed once the teacher finishes the task, and opens again if they move it back', async () => {
+      const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
+      const request = await askedFor(task.id, TUESDAY);
+      const move = (status: string) =>
+        call(setStatus, `/api/tasks/${task.id}/assignments/me`, { method: 'PATCH', cookie: teacher, body: { status }, params: { id: task.id } });
+      const pendingOnSentList = async () =>
+        ((await (await call(listTasks, '/api/tasks?view=sent', { cookie: sender })).json()) as { items: SentTask[] }).items[0].pendingExtensions;
+      const { rows: [owner] } = await getPool().query<{ school_id: string; created_by: string }>('SELECT school_id, created_by FROM tasks WHERE id = $1', [task.id]);
+      const waitingInDigest = () => countWaitingExtensions(getPool(), owner.school_id, owner.created_by);
+
+      expect((await move('done')).status).toBe(200);
+      expect(await pendingOnSentList()).toBe(0);
+      expect(await waitingInDigest()).toBe(0);
+      expect((await detail(task.id, sender)).extensions).toEqual([]);
+      expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(409);
+      expect((await detail(task.id, teacher)).myDueOn).toBe(MONDAY);
+
+      expect((await move('in_progress')).status).toBe(200);
+      expect(await pendingOnSentList()).toBe(1);
+      expect(await waitingInDigest()).toBe(1);
+      expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(200);
     });
 
     it('an extension moves the work in the capacity check with it', async () => {

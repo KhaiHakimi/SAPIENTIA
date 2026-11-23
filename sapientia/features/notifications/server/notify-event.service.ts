@@ -49,8 +49,8 @@ async function resolveNotice(db: Queryable, job: EventNoticeJob): Promise<{ noti
   switch (job.kind) {
     case 'extension.requested': {
       const request = await findExtensionForNotice(db, job.schoolId, job.extensionId);
-      // Answered already, or asked of oneself: there is nothing left to tell the sender.
-      if (!request || request.status !== 'pending' || request.sender_id === request.requested_by) return null;
+      // Answered already, closed because the teacher finished, or asked of oneself: nothing is left to tell the sender.
+      if (!request || request.status !== 'pending' || request.requester_done || request.sender_id === request.requested_by) return null;
       return {
         recipientId: request.sender_id,
         notice: {

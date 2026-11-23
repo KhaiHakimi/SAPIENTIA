@@ -56,12 +56,16 @@ export async function listOpenWork(db: Queryable, schoolId: string, userId: stri
   return rows;
 }
 
-/** Requests for more time on tasks this person sent that are still waiting for an answer. */
+/**
+ * Requests for more time on tasks this person sent that are still waiting for an answer. A request from someone who has
+ * since finished the task needs no answer.
+ */
 export async function countWaitingExtensions(db: Queryable, schoolId: string, userId: string): Promise<number> {
   const { rows } = await db.query<{ count: number }>(
     `SELECT count(*)::int AS count FROM extension_requests e
        JOIN tasks t ON t.id = e.task_id AND t.school_id = e.school_id
-      WHERE e.school_id = $1 AND t.created_by = $2 AND e.status = 'pending'`,
+       JOIN task_assignments a ON a.task_id = e.task_id AND a.user_id = e.requested_by AND a.school_id = e.school_id
+      WHERE e.school_id = $1 AND t.created_by = $2 AND e.status = 'pending' AND a.status <> 'done'`,
     [schoolId, userId],
   );
   return rows[0].count;

@@ -60,7 +60,7 @@ export function StudentDashboard() {
     if (!result) return;
     setFreshRelicIds(result.freshRelics.map((relic) => relic.id));
     if (result.nowDone) {
-      burstCoins();
+      if (result.firstTick) burstCoins();
       showToast(text.toastLoot(result.quest.xp, result.quest.coins));
     }
     const [firstRelic] = result.freshRelics;

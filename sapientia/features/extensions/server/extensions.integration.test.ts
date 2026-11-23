@@ -13,6 +13,7 @@ import type { FeasibilityResponse, Workload } from '@/features/capacity/interfac
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
 import { countWaitingExtensions } from '@/features/digest/server/digest.repository';
 import type { AssignedTask, SentTask, TaskDetail } from '@/features/tasks/interfaces/task.interface';
+import type { Page } from '@/shared/interfaces/api-error.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
@@ -236,6 +237,24 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(200);
       expect((await answer(task.id, request.id, sender, { decision: 'propose', dueOn: THURSDAY })).status).toBe(409);
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
+    });
+
+    it('the board orders and pages by each teacher\'s own date, so an extended task moves down', async () => {
+      const extended = await newTask({ title: 'Dilanjutkan', dueOn: MONDAY, assigneeIds: [guru] });
+      await newTask({ title: 'Selasa', dueOn: TUESDAY, assigneeIds: [guru] });
+      await newTask({ title: 'Rabu', dueOn: WEDNESDAY, assigneeIds: [guru] });
+      const request = await askedFor(extended.id, THURSDAY);
+      await answer(extended.id, request.id, sender, { decision: 'approve' });
+
+      const titles: string[] = [];
+      let cursor: string | null = null;
+      do {
+        const url: string = `/api/tasks?view=assigned&limit=1${cursor ? `&cursor=${cursor}` : ''}`;
+        const page = (await (await call(listTasks, url, { cookie: teacher })).json()) as Page<AssignedTask>;
+        titles.push(...page.items.map((item) => item.title));
+        cursor = page.nextCursor;
+      } while (cursor);
+      expect(titles).toEqual(['Selasa', 'Rabu', 'Dilanjutkan']);
     });
 
     it('a date that has gone by the time of the answer cannot be granted', async () => {

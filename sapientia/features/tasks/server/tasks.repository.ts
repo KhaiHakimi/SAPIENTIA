@@ -102,8 +102,8 @@ export async function listAssignees(db: Queryable, schoolId: string, taskId: str
 }
 
 /**
- * Board column for one assignee. Held tasks are not there until delivered. Ordered by the task's due date; my_due_on is
- * the assignee's own date, which is later after an extension.
+ * Board column for one assignee. Held tasks are not there until delivered. Ordered by my_due_on, the assignee's own date,
+ * which is later after an extension, so an extended task moves down the board with its date.
  */
 export async function listAssigned(
   db: Queryable,
@@ -119,8 +119,8 @@ export async function listAssigned(
        JOIN tasks t ON t.id = a.task_id AND t.school_id = a.school_id
        JOIN users c ON c.id = t.created_by AND c.school_id = t.school_id
       WHERE a.school_id = $1 AND a.user_id = $2 AND t.delivered_at IS NOT NULL AND ($3::assignment_status IS NULL OR a.status = $3)
-        AND ($4::date IS NULL OR (t.due_on, t.id) > ($4::date, $5::uuid))
-      ORDER BY t.due_on, t.id LIMIT $6`,
+        AND ($4::date IS NULL OR (COALESCE(a.due_on, t.due_on), t.id) > ($4::date, $5::uuid))
+      ORDER BY COALESCE(a.due_on, t.due_on), t.id LIMIT $6`,
     [schoolId, userId, status ?? null, after?.dueOn ?? null, after?.id ?? null, limit + 1],
   );
   return rows;

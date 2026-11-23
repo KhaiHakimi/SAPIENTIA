@@ -50,6 +50,17 @@ export async function queueDeliveryNotice(client: PoolClient, taskId: string): P
 }
 
 /**
+ * queueDeliveryNotice for many tasks in one statement, for the sweep. insert() takes the queue's own retry settings and,
+ * like send(), skips a task that already has a job queued, since each job keeps the task id as its singletonKey.
+ */
+export async function queueDeliveryNotices(client: PoolClient, taskIds: readonly string[]): Promise<void> {
+  if (taskIds.length === 0) return;
+  const boss = await senderBoss();
+  const jobs = taskIds.map((taskId) => ({ data: { taskId } satisfies NotifyTaskJob, singletonKey: taskId }));
+  await boss.insert(NOTIFY_TASK_QUEUE, jobs, { db: inTransaction(client) });
+}
+
+/**
  * Queues a message about an extension request or relief inside the transaction that saves the event, to run no earlier
  * than startAfter. singletonKey is the notice key, so one event queues one job.
  */

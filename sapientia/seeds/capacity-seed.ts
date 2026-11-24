@@ -23,6 +23,11 @@ const TEACHING: readonly { email: string; subject: string }[] = [
 const LESSON_TIMES: readonly [start: string, end: string][] = [['08:00', '09:10'], ['09:10', '10:20'], ['11:00', '12:10']];
 const SCHOOL_DAYS = [1, 2, 3, 4, 5];
 const ASSEMBLY = { weekday: 1, start: '07:30', end: '08:00', label: 'Perhimpunan' };
+/**
+ * Seeded periods are dated this far back, as if the timetable had been in use for a while: lesson records are refused for
+ * days before a period was added, so periods dated today would leave the 30-day recording window with nothing to record.
+ */
+const PERIODS_ADDED = "now() - interval '60 days'";
 
 async function idsByName(db: Queryable, table: 'subjects' | 'classes', schoolId: string): Promise<Map<string, string>> {
   const { rows } = await db.query<{ id: string; name: string }>(`SELECT id, name FROM ${table} WHERE school_id = $1`, [schoolId]);
@@ -55,8 +60,8 @@ export async function seedCapacity(db: Queryable, schoolId: string): Promise<voi
     if (!teacherId) continue;
     // A period that would overlap one already there (a second run, or one edited by hand) is skipped.
     await db.query(
-      `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, label) VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT DO NOTHING`,
+      `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, label, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, ${PERIODS_ADDED}) ON CONFLICT DO NOTHING`,
       [schoolId, teacherId, ASSEMBLY.weekday, ASSEMBLY.start, ASSEMBLY.end, ASSEMBLY.label],
     );
     for (const weekday of SCHOOL_DAYS) {
@@ -64,8 +69,8 @@ export async function seedCapacity(db: Queryable, schoolId: string): Promise<voi
         // Rotate the classes so the three teachers are never timetabled with the same class at once.
         const className = CLASSES[(teacherIndex + lessonIndex + weekday) % CLASSES.length];
         await db.query(
-          `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
+          `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, ${PERIODS_ADDED}) ON CONFLICT DO NOTHING`,
           [schoolId, teacherId, weekday, start, end, classes.get(className), subjects.get(subject)],
         );
       }

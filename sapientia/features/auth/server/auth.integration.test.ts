@@ -7,7 +7,7 @@ import { closePool, getPool } from '@/shared/server/database.service';
 import {
   call, cookieFrom, createSchool, createUser, errorCode, resetDatabase, TEST_PASSWORD,
 } from '@/shared/server/testing/api-test-kit';
-import { THROTTLE_MAX_PER_EMAIL } from '../constants/session.constants';
+import { THROTTLE_MAX_PER_ADDRESS, THROTTLE_MAX_PER_EMAIL } from '../constants/session.constants';
 import { createSession, resolveSession } from './session.service';
 
 const signIn = (email: string, password = TEST_PASSWORD) => call(login, '/api/auth/login', { method: 'POST', body: { email, password } });
@@ -51,6 +51,20 @@ describe('sign-in and sessions', () => {
     const blocked = await signIn('guru@a.test');
     expect(blocked.status).toBe(429);
     expect(Number(blocked.headers.get('retry-after'))).toBeGreaterThan(0);
+  });
+
+  it('checks no more than the limit of wrong passwords sent all at once', async () => {
+    const guesses = await Promise.all(
+      Array.from({ length: 40 }, () => signIn('guru@a.test', 'wrong-password')),
+    );
+    const statuses = guesses.map((response) => response.status);
+    expect(statuses.filter((status) => status === 401)).toHaveLength(THROTTLE_MAX_PER_EMAIL);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(40 - THROTTLE_MAX_PER_EMAIL);
+    expect((await signIn('guru@a.test')).status).toBe(429);
+  });
+
+  it('does not count right passwords against a shared address', async () => {
+    for (let attempt = 0; attempt <= THROTTLE_MAX_PER_ADDRESS; attempt++) expect((await signIn('guru@a.test')).status).toBe(204);
   });
 
   it('ends the session on sign-out', async () => {

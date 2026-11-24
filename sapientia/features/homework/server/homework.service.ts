@@ -49,6 +49,8 @@ import {
   listOwnHomework,
   listPupilHomework,
   listTeacherLessons,
+  lockClass,
+  lockHomework,
   recordHandIn,
   setMarked,
   teachesLesson,
@@ -117,6 +119,18 @@ async function findOwnOrThrow(db: Queryable, actor: SessionUser, homeworkId: str
   return homework;
 }
 
+/**
+ * The setter's homework, but only while they still teach that class and subject on the timetable, checked as when it was set.
+ * The hand-in list and the notes name the class's current pupils, which a teacher who has handed the class over must no longer
+ * see or write to. 404, as for anyone else's homework.
+ */
+async function findTaughtOrThrow(db: Queryable, actor: SessionUser, homeworkId: string): Promise<Homework> {
+  const homework = await findOwnOrThrow(db, actor, homeworkId);
+  const lesson = { classId: homework.class.id, subjectId: homework.subject.id };
+  if (!(await teachesLesson(db, actor.schoolId, actor.id, lesson))) throw new NotFoundError();
+  return homework;
+}
+
 /** The caller's lessons, for the form, and their homework from two weeks ago onwards. */
 export async function getMyHomework(actor: SessionUser, clock: Clock): Promise<MyHomework> {
   const db = getPool();
@@ -143,6 +157,7 @@ export async function setHomework(actor: SessionUser, input: SetHomeworkRequest,
   return withTransaction(async (client) => {
     const now = clock.now();
     const calendar = await checkRequest(client, actor, input, now);
+    await lockClass(client, actor.schoolId, input.classId);
     const { sameDay, loadWarning } = await classLoad(client, actor, input, calendar);
     const id = await insertHomework(client, actor.schoolId, {
       classId: input.classId,
@@ -193,18 +208,18 @@ export async function removeHomework(actor: SessionUser, homeworkId: string): Pr
     await writeAudit(client, actor.schoolId, [{ actorId: actor.id, action: 'homework.removed', entityType: 'homework', entityId: homeworkId }]);
   });
 }
-
+/** The class list for ticking paper hand-ins: the setter only, while they still teach the class. */
 /** The class list for ticking paper hand-ins: the setter only. */
 export async function getHandIns(actor: SessionUser, homeworkId: string): Promise<HandInList> {
   const db = getPool();
-  const homework = await findOwnOrThrow(db, actor, homeworkId);
+  const homework = await findTaughtOrThrow(db, actor, homeworkId);
   return { homework, pupils: await listHandIns(db, actor.schoolId, homeworkId, homework.class.id) };
 }
 
 /** Ticks or unticks one pupil. The pupil must be in the homework's class now; anyone else is treated as not existing. */
 export async function setHandIn(actor: SessionUser, target: { homeworkId: string; studentId: string }, handedIn: boolean, clock: Clock) {
   await withTransaction(async (client) => {
-    const homework = await findOwnOrThrow(client, actor, target.homeworkId);
+    const homework = await findTaughtOrThrow(client, actor, target.homeworkId);
     if (!(await isEnrolled(client, actor.schoolId, target.studentId, homework.class.id))) throw new NotFoundError();
     if (handedIn) {
       await recordHandIn(client, actor.schoolId, { ...target, by: actor.id, at: clock.now() });
@@ -242,17 +257,18 @@ export async function listHomeworkForPupil(student: SessionStudent, clock: Clock
  */
 export async function getComments(actor: SessionUser, homeworkId: string): Promise<HomeworkComments> {
   const db = getPool();
-  await findOwnOrThrow(db, actor, homeworkId);
-  return { comments: await listHomeworkComments(db, actor.schoolId, homeworkId, HOMEWORK_LIST_MAX) };
+  await findTaughtOrThrow(db, actor, homeworkId);
+  return { comments: await listHomeworkComments(db, actor.schoolId, homeworkId) };
 }
 
 /** A comment to one pupil of the class: 404 for a pupil not in it now; refused past HOMEWORK_COMMENTS_PER_PUPIL_MAX. */
 export async function addComment(actor: SessionUser, homeworkId: string, input: AddHomeworkCommentRequest, clock: Clock) {
   return withTransaction(async (client): Promise<HomeworkComment> => {
-    const homework = await findOwnOrThrow(client, actor, homeworkId);
+    const homework = await findTaughtOrThrow(client, actor, homeworkId);
     if (!(await isEnrolled(client, actor.schoolId, input.studentId, homework.class.id))) {
       throw new ValidationError({ studentId: 'invalid_student' });
     }
+    await lockHomework(client, actor.schoolId, homeworkId);
     if ((await countPupilComments(client, actor.schoolId, homeworkId, input.studentId)) >= HOMEWORK_COMMENTS_PER_PUPIL_MAX) {
       throw new ValidationError({ body: 'too_many_comments' });
     }

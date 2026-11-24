@@ -76,6 +76,15 @@ export async function teachesLesson(db: Queryable, schoolId: string, teacherId: 
   return rows.length > 0;
 }
 
+
+/**
+ * Holds the class's row until the transaction ends, so the homework due on a day is counted and added one teacher at a time:
+ * two teachers setting work for the same class at once cannot both miss the same-day warning. FOR NO KEY UPDATE, because
+ * other work for the class (enrolments, timetable slots, homework) only refers to the row and need not wait.
+ */
+export async function lockClass(db: Queryable, schoolId: string, classId: string): Promise<void> {
+  await db.query('SELECT 1 FROM classes WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, classId]);
+}
 /** The class's homework due between two dates (inclusive): date and subject only, never who set it. */
 export async function listClassHomeworkDays(db: Queryable, schoolId: string, classId: string, fromDate: string, toDate: string) {
   const { rows } = await db.query<{ due_on: string; subject_name: string }>(
@@ -282,20 +291,32 @@ async function listPupilComments(db: Queryable, schoolId: string, studentId: str
   return byHomework;
 }
 
-/** Every comment on one piece of homework, hidden ones included: for the teacher who set it. */
-export async function listHomeworkComments(db: Queryable, schoolId: string, homeworkId: string, limit: number): Promise<HomeworkComment[]> {
+/**
+ * Every comment on one piece of homework, hidden ones included: for the teacher who set it. No row limit: the teacher must be
+ * able to find, and hide, any of them, and HOMEWORK_COMMENTS_PER_PUPIL_MAX per pupil already bounds the list (a class of 40
+ * is at most 400 short notes). A fixed limit used to leave the newest ones out of reach once a class passed it.
+ */
+export async function listHomeworkComments(db: Queryable, schoolId: string, homeworkId: string): Promise<HomeworkComment[]> {
   const { rows } = await db.query<{ id: string; student_id: string; body: string; created_at: Date; hidden_at: Date | null }>(
     `SELECT id, student_id, body, created_at, hidden_at FROM homework_comments
       WHERE school_id = $1 AND homework_id = $2
-      ORDER BY created_at, id
-      LIMIT $3`,
-    [schoolId, homeworkId, limit],
+      ORDER BY created_at, id`,
+    [schoolId, homeworkId],
   );
   return rows.map((row) => ({
     id: row.id, studentId: row.student_id, body: row.body, createdAt: row.created_at.toISOString(), hidden: row.hidden_at !== null,
   }));
 }
 
+
+/**
+ * Holds the homework's row until the transaction ends, so a pupil's notes are counted and added one at a time and two quick
+ * submissions cannot pass HOMEWORK_COMMENTS_PER_PUPIL_MAX together. FOR NO KEY UPDATE, so hand-ins, which only refer to the
+ * row, need not wait.
+ */
+export async function lockHomework(db: Queryable, schoolId: string, homeworkId: string): Promise<void> {
+  await db.query('SELECT 1 FROM homework WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, homeworkId]);
+}
 export async function countPupilComments(db: Queryable, schoolId: string, homeworkId: string, studentId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     'SELECT count(*)::int AS total FROM homework_comments WHERE school_id = $1 AND homework_id = $2 AND student_id = $3',

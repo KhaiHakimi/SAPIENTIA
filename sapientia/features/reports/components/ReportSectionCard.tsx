@@ -1,3 +1,4 @@
+import { TableScroll } from '@/shared/components/TableScroll';
 import calm from '@/shared/calm/Calm.module.css';
 import type { ReportSection } from '../interfaces/report-document.interface';
 import styles from '../styles/Reports.module.css';
@@ -16,7 +17,7 @@ export function ReportSectionCard({ section }: { section: ReportSection }) {
         </div>
       )}
       {section.facts.length > 0 && (
-        <div className={calm.tableWrap}>
+        <TableScroll labelledBy={titleId}>
           <table className={`${calm.table} ${styles.facts}`}>
             <tbody>
               {section.facts.map((fact) => (
@@ -27,12 +28,12 @@ export function ReportSectionCard({ section }: { section: ReportSection }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
       {section.table && (section.table.rows.length === 0 ? (
         <p className={calm.muted}>{section.table.empty}</p>
       ) : (
-        <div className={calm.tableWrap}>
+        <TableScroll labelledBy={titleId}>
           <table className={calm.table} aria-labelledby={titleId}>
             <thead>
               <tr>
@@ -52,7 +53,7 @@ export function ReportSectionCard({ section }: { section: ReportSection }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       ))}
     </section>
   );

@@ -106,14 +106,23 @@ export async function deleteRelief(db: Queryable, schoolId: string, reliefId: st
 }
 
 /**
- * Removes every relief one person covers from a date on (their login is being removed); returns what each was for the
- * audit log.
+ * Removes every relief one person covers that is not over yet (their login is being removed): later dates, and periods
+ * today that have not ended. Relief already over is kept, as cancelRelief keeps it, because it happened and the relief
+ * teacher's lesson record depends on it. Returns what each removed relief was for the audit log.
  */
-export async function deleteReliefCoveredFrom(db: Queryable, schoolId: string, reliefTeacherId: string, fromDate: string) {
-  const { rows } = await db.query<{ id: string; slot_id: string; on_date: string }>(
-    `DELETE FROM relief_assignments WHERE school_id = $1 AND relief_teacher_id = $2 AND on_date >= $3::date
+export async function deleteReliefToCome(
+  db: Queryable,
+  schoolId: string,
+  reliefTeacherId: string,
+  today: string,
+  timeNow: string,
+) {
+  const { rows } = await db.query<{ id: string; slot_id: string | null; on_date: string }>(
+    `DELETE FROM relief_assignments
+      WHERE school_id = $1 AND relief_teacher_id = $2
+        AND (on_date > $3::date OR (on_date = $3::date AND end_time > $4::time))
      RETURNING id, slot_id, on_date::text AS on_date`,
-    [schoolId, reliefTeacherId, fromDate],
+    [schoolId, reliefTeacherId, today, timeNow],
   );
   return rows;
 }

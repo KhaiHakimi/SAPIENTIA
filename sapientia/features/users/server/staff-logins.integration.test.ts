@@ -141,6 +141,31 @@ describe('staff logins (Sprint 14)', () => {
     ]);
   });
 
+  it('removing a login keeps relief already over today and cancels today\'s periods still to come', async () => {
+    // 10:00 on Tuesday 24 November in Kuala Lumpur.
+    setTestClock(fixedClock('2026-11-24T02:00:00Z'));
+    const cookie = await signIn('admin@a.test');
+    for (const [start, end] of [['08:00', '09:00'], ['11:00', '12:00']]) {
+      const { rows: [slot] } = await getPool().query<{ id: string }>(
+        `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, label)
+         VALUES ($1, $2, 2, $3, $4, 'Bertugas') RETURNING id`,
+        [schoolA, adminId, start, end],
+      );
+      await getPool().query(
+        `INSERT INTO relief_assignments (school_id, slot_id, on_date, absent_teacher_id, relief_teacher_id, start_time, end_time,
+                                         deliver_at, created_by)
+         VALUES ($1, $2, '2026-11-24', $3, $4, $5, $6, now(), $3)`,
+        [schoolA, slot.id, adminId, guruId, start, end],
+      );
+    }
+
+    expect((await remove(guruId, cookie)).status).toBe(204);
+    const { rows: left } = await getPool().query<{ start_time: string }>(
+      "SELECT to_char(start_time, 'HH24:MI') AS start_time FROM relief_assignments",
+    );
+    expect(left.map((row) => row.start_time)).toEqual(['08:00']);
+  });
+
   it('refuses an administrator\'s own login, anyone but an administrator, and another school', async () => {
     const own = await remove(adminId);
     expect(own.status).toBe(409);

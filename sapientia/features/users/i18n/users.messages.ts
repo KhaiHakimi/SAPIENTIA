@@ -41,9 +41,11 @@ export const USERS_MESSAGES: Record<Lang, UsersMessages> = {
     resetMfa: 'Set semula log masuk dua langkah',
     confirmResetMfa: (name) => `Set semula log masuk dua langkah ${name}? Lakukan ini hanya jika telefon mereka hilang dan anda telah mengesahkan identiti mereka secara bersemuka. Mereka akan dilog keluar dan boleh log masuk dengan kata laluan sahaja sehingga menyediakannya semula.`,
     mfaReset: (name) => `Log masuk dua langkah ${name} telah ditetapkan semula.`,
+    yourPassword: 'Kata laluan anda',
 
     fieldErrors: {
       self: 'Anda tidak boleh mengubah log masuk anda sendiri.',
+      wrong_password: 'Kata laluan tidak betul.',
       invalid_status: 'Pilih status yang sah.',
     },
   },
@@ -86,9 +88,11 @@ export const USERS_MESSAGES: Record<Lang, UsersMessages> = {
     resetMfa: 'Reset two-step sign-in',
     confirmResetMfa: (name) => `Reset ${name}'s two-step sign-in? Do this only if their phone is lost and you have checked who they are in person. They are signed out and can sign in with their password alone until they set it up again.`,
     mfaReset: (name) => `${name}'s two-step sign-in has been reset.`,
+    yourPassword: 'Your password',
 
     fieldErrors: {
       self: 'You cannot change your own login.',
+      wrong_password: 'The password is not right.',
       invalid_status: 'Choose a valid status.',
     },
   },

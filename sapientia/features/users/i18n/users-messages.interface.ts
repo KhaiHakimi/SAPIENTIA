@@ -39,6 +39,8 @@ export interface UsersMessages {
   resetMfa: string;
   confirmResetMfa: (name: string) => string;
   mfaReset: (name: string) => string;
+  /** The administrator's own password, asked for again before a colleague's two-step sign-in is reset. */
+  yourPassword: string;
 
   /** Field reasons worded for this page; anything else falls back to the shared table. */
   fieldErrors: Record<string, string>;

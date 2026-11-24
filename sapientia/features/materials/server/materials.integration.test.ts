@@ -9,7 +9,11 @@ import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { uploadRoot } from '@/shared/server/files/file-storage.service';
-import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
+import { lockSchoolStorage } from '@/shared/server/files/stored-files.repository';
+import { SCHOOL_STORAGE_LIMIT_BYTES } from '@/shared/server/files/upload.service';
+import {
+  call, cookieFrom, createSchool, createUser, raceAgainstOpenTransaction, resetDatabase, TEST_PASSWORD,
+} from '@/shared/server/testing/api-test-kit';
 import type { Material, MaterialPage } from '../interfaces/material.interface';
 
 const NOW = '2026-11-13T10:00:00+08:00';
@@ -117,6 +121,22 @@ describe('material bank (Sprint 10)', () => {
     // A form carrying an unknown field is refused like a JSON body would be.
     expect((await addFile({ title: 'Nota', createdBy: 'someone' })).status).toBe(400);
     expect((await getPool().query('SELECT 1 FROM stored_files')).rowCount).toBe(0);
+  });
+
+  it('keeps to the school\'s storage limit when another upload is being saved at the same moment', async () => {
+    // Another upload holds the school and has recorded enough files to pass the limit, not yet committed.
+    const response = await raceAgainstOpenTransaction(async (client) => {
+      await lockSchoolStorage(client, schoolA);
+      const fileBytes = 20 * 1024 ** 2;
+      await client.query(
+        `INSERT INTO stored_files (school_id, uploaded_by, purpose, storage_key, content_type, byte_size, file_name, sha256)
+         SELECT $1, (SELECT id FROM users WHERE email = 'ali@a.test'), 'material', encode(sha256(n::text::bytea), 'hex'),
+                'application/pdf', $2, 'besar.pdf', sha256(n::text::bytea)
+           FROM generate_series(1, $3::int) AS n`,
+        [schoolA, fileBytes, Math.ceil(SCHOOL_STORAGE_LIMIT_BYTES / fileBytes)],
+      );
+    }, () => addFile({ title: 'Lembaran' }));
+    expect(await fieldsOf(response)).toEqual({ file: 'school_storage_full' });
   });
 
   it('filters by subject, level and words, and pages newest first', async () => {

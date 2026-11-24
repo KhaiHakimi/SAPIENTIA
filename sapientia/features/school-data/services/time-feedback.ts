@@ -1,7 +1,7 @@
 import type { TimeTaken } from '@/features/tasks/interfaces/task.interface';
 
-/** Answers are shown only from this many: fewer would point at the one or two people who answered. */
-export const FEEDBACK_MIN_ANSWERS = 3;
+/** Answers are shown only once this many different people have given them: fewer would point at the one or two who did. */
+export const FEEDBACK_MIN_PEOPLE = 3;
 
 /** How the answers compare with the estimate: most say longer, most say shorter, most agree, or no band has a majority. */
 export type FeedbackVerdict = 'longer' | 'shorter' | 'matches' | 'mixed';

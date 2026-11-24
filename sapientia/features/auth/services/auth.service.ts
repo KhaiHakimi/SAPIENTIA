@@ -1,5 +1,6 @@
 import { GUARDIAN_USERNAME_PREFIX } from '@/features/guardians/constants/guardians.constants';
-import type { LoginFieldErrors } from '../interfaces/account.interface';
+import { ApiError } from '@/shared/api/api-client';
+import type { LoginFailureReason, LoginFieldErrors } from '../interfaces/account.interface';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -20,4 +21,16 @@ export function checkLoginFields(identifier: string, password: string): LoginFie
   else if (isEmailIdentifier(trimmed) && !EMAIL_PATTERN.test(trimmed)) errors.identifier = 'emailInvalid';
   if (!password) errors.password = 'passwordRequired';
   return errors;
+}
+
+/**
+ * The login form's own reason for a failed sign-in, or null when the shared error texts should describe it. Only the
+ * server's invalid_credentials means a wrong email or password: a server fault or a refused request must not send the
+ * person off retyping a password that was right.
+ */
+export function loginFailureReason(error: unknown): LoginFailureReason | null {
+  if (!(error instanceof ApiError) || error.code === 'network') return 'networkError';
+  if (error.code === 'rate_limited') return 'rateLimited';
+  if (error.code === 'invalid_credentials') return 'badCredentials';
+  return null;
 }

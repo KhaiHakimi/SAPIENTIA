@@ -11,11 +11,14 @@ import { GET as listTasks, POST as createTask } from '@/app/api/tasks/route';
 import { POST as addSlot } from '@/app/api/timetable/slots/route';
 import type { FeasibilityResponse, Workload } from '@/features/capacity/interfaces/capacity.interface';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
+import { countWaitingExtensions } from '@/features/digest/server/digest.repository';
 import type { AssignedTask, SentTask, TaskDetail } from '@/features/tasks/interfaces/task.interface';
+import type { Page } from '@/shared/interfaces/api-error.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
 import type { ExtensionRequest, ExtensionSuggestion } from '../interfaces/extension.interface';
+import { listExtensions } from './extensions.repository';
 
 const signIn = async (email: string) =>
   cookieFrom(await call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } }));
@@ -135,6 +138,10 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await ask(task.id, teacher, { requestedDueOn: 'esok' })).status).toBe(400);
       expect((await ask(task.id, teacher, { requestedDueOn: WEDNESDAY, reason: 'a'.repeat(501) })).status).toBe(400);
       expect((await ask(task.id, teacher, { requestedDueOn: WEDNESDAY, status: 'approved' })).status).toBe(400);
+      // More than a year ahead: the capacity check behind the figures would walk every day to it.
+      const tooFar = await ask(task.id, teacher, { requestedDueOn: '9999-12-31' });
+      expect(tooFar.status).toBe(400);
+      expect(await fieldsOf(tooFar)).toEqual({ requestedDueOn: 'too_far_ahead' });
     });
 
     it('refusal: only an assignee with unfinished, delivered work may ask', async () => {
@@ -197,6 +204,8 @@ describe('extensions and workload (Sprint 7)', () => {
       const tooEarly = await answer(task.id, first.id, sender, { decision: 'propose', dueOn: MONDAY });
       expect(tooEarly.status).toBe(400);
       expect(await fieldsOf(tooEarly)).toEqual({ dueOn: 'not_later' });
+      const tooFar = await answer(task.id, first.id, sender, { decision: 'propose', dueOn: '2027-11-04' });
+      expect(await fieldsOf(tooFar)).toEqual({ dueOn: 'too_far_ahead' });
       const countered = await answer(task.id, first.id, sender, { decision: 'propose', dueOn: TUESDAY });
       expect((await countered.json()) as ExtensionRequest).toMatchObject({ status: 'countered', requestedDueOn: THURSDAY, decidedDueOn: TUESDAY });
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
@@ -229,6 +238,82 @@ describe('extensions and workload (Sprint 7)', () => {
       expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(200);
       expect((await answer(task.id, request.id, sender, { decision: 'propose', dueOn: THURSDAY })).status).toBe(409);
       expect((await detail(task.id, teacher)).myDueOn).toBe(TUESDAY);
+    });
+
+    it('a long exchange keeps every open request and drops the oldest answered ones first', async () => {
+      const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
+      let minute = 30;
+      const nextMinute = () => setTestClock(fixedClock(`2026-11-02T07:${minute++}:00+08:00`));
+      for (const day of [TUESDAY, WEDNESDAY, THURSDAY]) {
+        nextMinute();
+        const request = await askedFor(task.id, day);
+        nextMinute();
+        await answer(task.id, request.id, sender, { decision: 'approve' });
+      }
+      nextMinute();
+      await askedFor(task.id, NEXT_MONDAY);
+
+      const { rows: [owner] } = await getPool().query<{ school_id: string }>('SELECT school_id FROM tasks WHERE id = $1', [task.id]);
+      const shown = await listExtensions(getPool(), owner.school_id, task.id, null, 2);
+      expect(shown.map((item) => [item.requestedDueOn, item.status])).toEqual([[THURSDAY, 'approved'], [NEXT_MONDAY, 'pending']]);
+      // Even a limit smaller than the open requests never hides one.
+      expect((await listExtensions(getPool(), owner.school_id, task.id, null, 0)).map((item) => item.status)).toEqual(['pending']);
+    });
+
+    it('the board orders and pages by each teacher\'s own date, so an extended task moves down', async () => {
+      const extended = await newTask({ title: 'Dilanjutkan', dueOn: MONDAY, assigneeIds: [guru] });
+      await newTask({ title: 'Selasa', dueOn: TUESDAY, assigneeIds: [guru] });
+      await newTask({ title: 'Rabu', dueOn: WEDNESDAY, assigneeIds: [guru] });
+      const request = await askedFor(extended.id, THURSDAY);
+      await answer(extended.id, request.id, sender, { decision: 'approve' });
+
+      const titles: string[] = [];
+      let cursor: string | null = null;
+      do {
+        const url: string = `/api/tasks?view=assigned&limit=1${cursor ? `&cursor=${cursor}` : ''}`;
+        const page = (await (await call(listTasks, url, { cookie: teacher })).json()) as Page<AssignedTask>;
+        titles.push(...page.items.map((item) => item.title));
+        cursor = page.nextCursor;
+      } while (cursor);
+      expect(titles).toEqual(['Selasa', 'Rabu', 'Dilanjutkan']);
+    });
+
+    it('a date that has gone by the time of the answer cannot be granted', async () => {
+      const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
+      const request = await askedFor(task.id, TUESDAY);
+      // Answered on Wednesday: Tuesday, asked for or proposed, is already past.
+      setTestClock(fixedClock('2026-11-04T09:00:00+08:00'));
+      const late = await signIn('pk@a.test');
+      for (const decision of [{ decision: 'approve' }, { decision: 'propose', dueOn: TUESDAY }]) {
+        const response = await answer(task.id, request.id, late, decision);
+        expect(response.status).toBe(400);
+        expect(await fieldsOf(response)).toEqual({ dueOn: 'past_date' });
+      }
+      const today = await answer(task.id, request.id, late, { decision: 'propose', dueOn: WEDNESDAY });
+      expect((await today.json()) as ExtensionRequest).toMatchObject({ status: 'countered', decidedDueOn: WEDNESDAY });
+    });
+
+    it('a request is closed once the teacher finishes the task, and opens again if they move it back', async () => {
+      const task = await newTask({ dueOn: MONDAY, assigneeIds: [guru] });
+      const request = await askedFor(task.id, TUESDAY);
+      const move = (status: string) =>
+        call(setStatus, `/api/tasks/${task.id}/assignments/me`, { method: 'PATCH', cookie: teacher, body: { status }, params: { id: task.id } });
+      const pendingOnSentList = async () =>
+        ((await (await call(listTasks, '/api/tasks?view=sent', { cookie: sender })).json()) as { items: SentTask[] }).items[0].pendingExtensions;
+      const { rows: [owner] } = await getPool().query<{ school_id: string; created_by: string }>('SELECT school_id, created_by FROM tasks WHERE id = $1', [task.id]);
+      const waitingInDigest = () => countWaitingExtensions(getPool(), owner.school_id, owner.created_by);
+
+      expect((await move('done')).status).toBe(200);
+      expect(await pendingOnSentList()).toBe(0);
+      expect(await waitingInDigest()).toBe(0);
+      expect((await detail(task.id, sender)).extensions).toEqual([]);
+      expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(409);
+      expect((await detail(task.id, teacher)).myDueOn).toBe(MONDAY);
+
+      expect((await move('in_progress')).status).toBe(200);
+      expect(await pendingOnSentList()).toBe(1);
+      expect(await waitingInDigest()).toBe(1);
+      expect((await answer(task.id, request.id, sender, { decision: 'approve' })).status).toBe(200);
     });
 
     it('an extension moves the work in the capacity check with it', async () => {

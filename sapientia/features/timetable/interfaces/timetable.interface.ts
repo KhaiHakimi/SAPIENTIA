@@ -14,9 +14,22 @@ export interface TimetableSlot {
   label: string | null;
 }
 
-/** GET /api/timetable: one teacher's week. */
+/** Whether a member of staff still works here: a disabled login can come back, a removed one (former staff) cannot. */
+export type TeacherStatus = 'active' | 'disabled' | 'removed';
+
+/**
+ * A row of GET /api/timetable/teachers (administrators): everyone whose timetable they may need. Active staff, and staff
+ * no longer active who still have periods, so that those periods can be covered or removed.
+ */
+export interface TimetableTeacher {
+  id: string;
+  name: string;
+  status: TeacherStatus;
+}
+
+/** GET /api/timetable: one teacher's week. Periods can be added for an active teacher only. */
 export interface Timetable {
-  teacher: { id: string; name: string };
+  teacher: TimetableTeacher;
   slots: TimetableSlot[];
 }
 

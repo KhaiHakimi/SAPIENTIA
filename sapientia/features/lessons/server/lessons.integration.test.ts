@@ -17,6 +17,8 @@ const myt = (local: string) => new Date(`${local}:00+08:00`);
 const WEDNESDAY = '2026-11-04';
 const THURSDAY = '2026-11-05';
 const MONDAY = '2026-11-02';
+/** Tuesday 1 September 2026. */
+const TERM_START = '2026-09-01';
 
 const signIn = async (email: string) =>
   cookieFrom(await call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } }));
@@ -32,6 +34,8 @@ describe('lesson records (Sprint 9)', () => {
   let monday: TimetableSlot;
   let thursday: TimetableSlot;
   let ali: string;
+  let schoolA: string;
+  let adminId: string;
 
   const newSlot = async (weekday: number, startTime: string, endTime: string, label: string, teacherId = guru) => {
     const response = await call(addSlot, '/api/timetable/slots', {
@@ -51,22 +55,22 @@ describe('lesson records (Sprint 9)', () => {
   };
 
   beforeEach(async () => {
-    setTestClock(fixedClock(myt(`${WEDNESDAY}T10:00`)));
+    // The timetable is entered at the start of term, well before the dates recorded, as a lesson cannot predate its period.
+    setTestClock(fixedClock(myt(`${TERM_START}T10:00`)));
     await resetDatabase();
-    const schoolA = await createSchool('A001');
+    schoolA = await createSchool('A001');
     const schoolB = await createSchool('B001');
-    await createUser(schoolA, 'admin@a.test', 'admin');
+    adminId = await createUser(schoolA, 'admin@a.test', 'admin');
     guru = await createUser(schoolA, 'guru@a.test', 'teacher');
     ali = await createUser(schoolA, 'ali@a.test', 'teacher');
     await createUser(schoolB, 'guru@b.test', 'teacher');
     admin = await signIn('admin@a.test');
-    teacher = await signIn('guru@a.test');
-    colleague = await signIn('ali@a.test');
-    outsider = await signIn('guru@b.test');
     morning = await newSlot(3, '08:00', '09:00', '4 Bestari');
     lateMorning = await newSlot(3, '11:00', '12:00', '5 Cerdik');
     monday = await newSlot(1, '08:00', '09:00', '3 Arif');
     thursday = await newSlot(4, '08:00', '09:00', '2 Bijak');
+    await moveTo(`${WEDNESDAY}T10:00`);
+    outsider = await signIn('guru@b.test');
   });
 
   afterEach(() => setTestClock(null));
@@ -121,6 +125,28 @@ describe('lesson records (Sprint 9)', () => {
     expect((await record({ slotId: monday.id, onDate: '2026-10-05', status: 'held' })).status).toBe(200);
     const tooOld = await record({ slotId: monday.id, onDate: '2026-09-28', status: 'held' });
     expect(await fieldsOf(tooOld)).toEqual({ onDate: 'too_old' });
+  });
+
+  it('refuses a past holiday, though the delivery rules only look from yesterday', async () => {
+    // Monday 26 October, ten days back, was a holiday: no lesson to record.
+    await getPool().query(
+      `INSERT INTO calendar_events (school_id, on_date, kind, title, created_by) VALUES ($1, '2026-10-26', 'holiday', 'Cuti', $2)`,
+      [schoolA, adminId],
+    );
+    const holiday = await record({ slotId: monday.id, onDate: '2026-10-26', status: 'held' });
+    expect(holiday.status).toBe(400);
+    expect(await fieldsOf(holiday)).toEqual({ onDate: 'not_working_day' });
+    expect((await day('2026-10-26')).recordable).toBe(false);
+  });
+
+  it('refuses a date before the period was added, as the monthly report does', async () => {
+    // Added today (Wednesday), so last Monday it was not yet on the timetable.
+    const added = await newSlot(1, '10:00', '11:00', '1 Amanah');
+    const early = await record({ slotId: added.id, onDate: MONDAY, status: 'held' });
+    expect(early.status).toBe(400);
+    expect(await fieldsOf(early)).toEqual({ onDate: 'before_period' });
+    const periods = (await day(MONDAY)).periods.map((period) => [period.slot.label, period.canRecord]);
+    expect(periods).toEqual([['3 Arif', true], ['1 Amanah', false]]);
   });
 
   it('keeps only https e-RPH links', async () => {

@@ -3,6 +3,7 @@ import { PgBoss } from 'pg-boss';
 import type { PoolClient } from 'pg';
 import { readDatabaseUrl } from '@/shared/server/database.service';
 import { DIGEST_SWEEP_CRON, DIGEST_SWEEP_QUEUE } from '@/features/digest/constants/digest.constants';
+import { EXPIRED_ROWS_SWEEP_CRON, EXPIRED_ROWS_SWEEP_QUEUE } from '@/features/housekeeping/constants/housekeeping.constants';
 import type { EventNoticeJob } from '@/features/notifications/interfaces/event-notice.interface';
 import { logger } from '@/shared/server/logger.service';
 import {
@@ -50,6 +51,17 @@ export async function queueDeliveryNotice(client: PoolClient, taskId: string): P
 }
 
 /**
+ * queueDeliveryNotice for many tasks in one statement, for the sweep. insert() takes the queue's own retry settings and,
+ * like send(), skips a task that already has a job queued, since each job keeps the task id as its singletonKey.
+ */
+export async function queueDeliveryNotices(client: PoolClient, taskIds: readonly string[]): Promise<void> {
+  if (taskIds.length === 0) return;
+  const boss = await senderBoss();
+  const jobs = taskIds.map((taskId) => ({ data: { taskId } satisfies NotifyTaskJob, singletonKey: taskId }));
+  await boss.insert(NOTIFY_TASK_QUEUE, jobs, { db: inTransaction(client) });
+}
+
+/**
  * Queues a message about an extension request or relief inside the transaction that saves the event, to run no earlier
  * than startAfter. singletonKey is the notice key, so one event queues one job.
  */
@@ -87,8 +99,11 @@ export async function ensureQueues(boss: PgBoss): Promise<void> {
   }
   // The weekly digest sweep (Phase 6): a missed run is simply caught by the next one, so no retries.
   if (!existing.has(DIGEST_SWEEP_QUEUE)) await boss.createQueue(DIGEST_SWEEP_QUEUE, { policy: 'short', retryLimit: 0 });
+  // Removing expired sign-in rows: likewise, the next hourly run takes whatever one missed.
+  if (!existing.has(EXPIRED_ROWS_SWEEP_QUEUE)) await boss.createQueue(EXPIRED_ROWS_SWEEP_QUEUE, { policy: 'short', retryLimit: 0 });
   await boss.schedule(DELIVER_DUE_QUEUE, DELIVER_DUE_CRON);
   await boss.schedule(DIGEST_SWEEP_QUEUE, DIGEST_SWEEP_CRON);
+  await boss.schedule(EXPIRED_ROWS_SWEEP_QUEUE, EXPIRED_ROWS_SWEEP_CRON);
 }
 
 /** Stops the web process's sender (tests and shutdown). */

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { looksLikeMyKad } from '@/shared/services/mykad.service';
 import {
   GUARDIAN_NAME_MAX,
   GUARDIAN_PASSWORD_MAX_LENGTH,
@@ -15,7 +16,9 @@ export const linkIdSchema = z.uuid({ error: 'not_found' });
 
 const guardianNameSchema = z.string({ error: 'required' }).trim()
   .min(1, { error: 'required' })
-  .max(GUARDIAN_NAME_MAX, { error: 'too_long' });
+  .max(GUARDIAN_NAME_MAX, { error: 'too_long' })
+  // Only the guardian's name is kept (plan Phase 4); a MyKad number typed with it is refused, however it is written.
+  .refine((value) => !looksLikeMyKad(value), { error: 'name_has_mykad' });
 
 const studentIdSchema = z.uuid({ error: 'invalid_student' });
 const relationshipSchema = z.enum(GUARDIAN_RELATIONSHIPS, { error: 'invalid_relationship' });

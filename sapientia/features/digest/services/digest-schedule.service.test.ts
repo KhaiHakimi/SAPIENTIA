@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkingCalendar } from '@/features/delivery/interfaces/working-calendar.interface';
-import { digestWeekDue } from './digest-schedule.service';
+import { digestWeekDue, schoolWeekStart } from './digest-schedule.service';
 
 const calendar = (holidays: string[] = [], weekendDays: WorkingCalendar['weekendDays'] = [6, 7]): WorkingCalendar => ({
   timeZone: 'Asia/Kuala_Lumpur', workStart: '07:30', workEnd: '17:00', weekendDays,
@@ -24,9 +24,22 @@ describe('digestWeekDue', () => {
     expect(digestWeekDue(at('2026-11-24T07:30:00'), holidayMonday)).toEqual({ ...WEEK, today: '2026-11-24' });
   });
 
-  it('follows a Friday-Saturday weekend, where the week still starts on Monday', () => {
-    expect(digestWeekDue(at('2026-11-22T09:00:00'), calendar([], [5, 6]))).toBeNull();
-    expect(digestWeekDue(at('2026-11-23T09:00:00'), calendar([], [5, 6]))).toEqual({ ...WEEK, today: '2026-11-23' });
+  it('follows a Friday-Saturday weekend, where the school week runs from Sunday to Saturday', () => {
+    const fridaySaturday = calendar([], [5, 6]);
+    const sundayWeek = { weekOf: '2026-11-22', weekEndsOn: '2026-11-28' };
+    expect(digestWeekDue(at('2026-11-22T07:29:00'), fridaySaturday)).toBeNull();
+    expect(digestWeekDue(at('2026-11-22T09:00:00'), fridaySaturday)).toEqual({ ...sundayWeek, today: '2026-11-22' });
+    // Monday is that week's second working day, so nothing more is due.
+    expect(digestWeekDue(at('2026-11-23T09:00:00'), fridaySaturday)).toBeNull();
+    // A Sunday holiday moves it to Monday, still for the week that began on Sunday.
+    expect(digestWeekDue(at('2026-11-23T09:00:00'), calendar(['2026-11-22'], [5, 6]))).toEqual({ ...sundayWeek, today: '2026-11-23' });
+  });
+
+  it('starts the school week the day after the weekend ends', () => {
+    expect(schoolWeekStart([6, 7])).toBe(1);
+    expect(schoolWeekStart([5, 6])).toBe(7);
+    expect(schoolWeekStart([7])).toBe(1);
+    expect(schoolWeekStart([])).toBe(1);
   });
 
   it('has no digest in a week with no working day', () => {

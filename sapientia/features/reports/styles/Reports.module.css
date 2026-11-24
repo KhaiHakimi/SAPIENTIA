@@ -8,4 +8,6 @@
 .facts th[scope='row'] { font-size: 1em; color: inherit; font-weight: 400; }
 .number { text-align: right !important; font-variant-numeric: tabular-nums; }
 .facts td { font-weight: 600; }
-.sections { display: grid; gap: 1em; margin-top: 1em; }
+/* minmax(0, 1fr): a grid column otherwise grows to its widest table, making the page wider than a phone; this way each
+   table scrolls inside its own .tableWrap instead. */
+.sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1em; margin-top: 1em; }

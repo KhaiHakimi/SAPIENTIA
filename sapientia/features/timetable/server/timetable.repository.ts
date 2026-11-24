@@ -1,7 +1,7 @@
 import 'server-only';
 import type { IsoWeekday } from '@/features/delivery/interfaces/working-calendar.interface';
 import type { Queryable } from '@/shared/server/database.service';
-import type { NewTimetableSlot, TimetableSlot } from '../interfaces/timetable.interface';
+import type { NewTimetableSlot, TimetableSlot, TimetableTeacher } from '../interfaces/timetable.interface';
 
 /** Every function takes schoolId first and filters on it. */
 
@@ -34,6 +34,33 @@ export const toSlot = (row: SlotRow): TimetableSlot => ({
   label: row.label,
 });
 
+const TEACHER_STATUS = `CASE WHEN u.removed_at IS NOT NULL THEN 'removed' WHEN u.status = 'active' THEN 'active' ELSE 'disabled' END`;
+
+/**
+ * A member of staff whose timetable an administrator may open: active, or no longer active (disabled or removed) so that
+ * their periods can still be covered or taken off. An invited login never had a timetable.
+ */
+export async function findTimetableTeacher(db: Queryable, schoolId: string, teacherId: string): Promise<TimetableTeacher | null> {
+  const { rows } = await db.query<TimetableTeacher>(
+    `SELECT u.id, u.name, ${TEACHER_STATUS} AS status FROM users u WHERE u.school_id = $1 AND u.id = $2 AND u.status <> 'invited'`,
+    [schoolId, teacherId],
+  );
+  return rows[0] ?? null;
+}
+
+/** Active staff, and staff no longer active who still have a period, by name: the timetable and relief pickers. */
+export async function listTimetableTeachers(db: Queryable, schoolId: string): Promise<TimetableTeacher[]> {
+  const { rows } = await db.query<TimetableTeacher>(
+    `SELECT u.id, u.name, ${TEACHER_STATUS} AS status FROM users u
+      WHERE u.school_id = $1
+        AND (u.status = 'active'
+          OR (u.status = 'disabled' AND EXISTS (SELECT 1 FROM timetable_slots s WHERE s.school_id = u.school_id AND s.teacher_id = u.id)))
+      ORDER BY u.name, u.id`,
+    [schoolId],
+  );
+  return rows;
+}
+
 /** One teacher's week, Monday first, earliest period first. */
 export async function listSlots(db: Queryable, schoolId: string, teacherId: string, limit: number): Promise<TimetableSlot[]> {
   const { rows } = await db.query<SlotRow>(
@@ -55,6 +82,38 @@ export async function listSlotTimes(db: Queryable, schoolId: string, teacherIds:
   return rows;
 }
 
+/**
+ * Holds one teacher's timetable until the transaction ends, so two periods added at once are counted one after the other
+ * and cannot both slip under the cap. NO KEY UPDATE leaves the row free for the foreign-key checks of everything else that
+ * points at the teacher.
+ */
+export async function lockTeacherTimetable(db: Queryable, schoolId: string, teacherId: string): Promise<void> {
+  await db.query('SELECT 1 FROM users WHERE school_id = $1 AND id = $2 FOR NO KEY UPDATE', [schoolId, teacherId]);
+}
+
+/**
+ * True if a weekly period at this time would clash with relief the teacher already covers and that is not yet over: on a
+ * later date with that weekday, or today ending after the given school-local time. The relief overlap constraint cannot
+ * see the timetable, so this is checked here.
+ */
+export async function hasReliefDutyClash(
+  db: Queryable,
+  schoolId: string,
+  slot: Pick<NewTimetableSlot, 'teacherId' | 'weekday' | 'startTime' | 'endTime'>,
+  today: string,
+  time: string,
+): Promise<boolean> {
+  const { rows } = await db.query(
+    `SELECT 1 FROM relief_assignments
+      WHERE school_id = $1 AND relief_teacher_id = $2 AND extract(isodow FROM on_date) = $3
+        AND start_time < $5::time AND end_time > $4::time
+        AND (on_date > $6::date OR (on_date = $6::date AND end_time > $7::time))
+      LIMIT 1`,
+    [schoolId, slot.teacherId, slot.weekday, slot.startTime, slot.endTime, today, time],
+  );
+  return rows.length > 0;
+}
+
 export async function countSlots(db: Queryable, schoolId: string, teacherId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     'SELECT count(*)::int AS total FROM timetable_slots WHERE school_id = $1 AND teacher_id = $2',
@@ -67,22 +126,45 @@ export async function countSlots(db: Queryable, schoolId: string, teacherId: str
  * Inserts a period and returns it with its class and subject names. The class and subject must belong to the same school:
  * the composite foreign keys refuse anything else, and so does the overlap constraint for a clashing time.
  */
-export async function insertSlot(db: Queryable, schoolId: string, slot: NewTimetableSlot): Promise<TimetableSlot> {
+export async function insertSlot(db: Queryable, schoolId: string, slot: NewTimetableSlot, now: Date): Promise<TimetableSlot> {
   const { rows } = await db.query<SlotRow>(
     `WITH s AS (
-       INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id, label)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
+       INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, class_id, subject_id, label, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
      )
      SELECT ${SLOT_COLUMNS} FROM s ${SLOT_JOINS}`,
     [
       schoolId, slot.teacherId, slot.weekday, slot.startTime, slot.endTime,
-      slot.classId ?? null, slot.subjectId ?? null, slot.label ?? null,
+      slot.classId ?? null, slot.subjectId ?? null, slot.label ?? null, now,
     ],
   );
   return toSlot(rows[0]);
 }
 
-/** Removes the period; returns whose it was, or null if there is no such period in this school. */
+/**
+ * Locks one period until the transaction ends; true if it is in this school. Relief being arranged for it at the same
+ * moment holds a key-share lock on it, so this waits for that relief to commit, and a later one waits for this.
+ */
+export async function lockSlot(db: Queryable, schoolId: string, slotId: string): Promise<boolean> {
+  const { rows } = await db.query('SELECT 1 FROM timetable_slots WHERE school_id = $1 AND id = $2 FOR UPDATE', [schoolId, slotId]);
+  return rows.length > 0;
+}
+
+/** True if the period has relief not yet over: on a later date, or on today's date ending after the given school-local time. */
+export async function hasReliefToCome(db: Queryable, schoolId: string, slotId: string, today: string, time: string): Promise<boolean> {
+  const { rows } = await db.query(
+    `SELECT 1 FROM relief_assignments
+      WHERE school_id = $1 AND slot_id = $2 AND (on_date > $3::date OR (on_date = $3::date AND end_time > $4::time))
+      LIMIT 1`,
+    [schoolId, slotId, today, time],
+  );
+  return rows.length > 0;
+}
+
+/**
+ * Removes the period; returns whose it was, or null if there is no such period in this school. Its lesson records and
+ * relief already over stay, with slot_id cleared.
+ */
 export async function deleteSlot(db: Queryable, schoolId: string, slotId: string): Promise<string | null> {
   const { rows } = await db.query<{ teacher_id: string }>(
     'DELETE FROM timetable_slots WHERE school_id = $1 AND id = $2 RETURNING teacher_id',

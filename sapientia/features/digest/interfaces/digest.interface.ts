@@ -1,8 +1,8 @@
 /** The week a digest covers, once its sending time has come. Dates are school-local YYYY-MM-DD. */
 export interface DigestWeek {
-  /** The Monday. */
+  /** The first day of the school's week: Monday, or Sunday where the weekend is Friday and Saturday. */
   weekOf: string;
-  /** The Sunday. */
+  /** Six days later. */
   weekEndsOn: string;
   today: string;
 }

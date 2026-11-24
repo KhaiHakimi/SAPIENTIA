@@ -4,6 +4,7 @@ import { POST as login } from '@/app/api/auth/login/route';
 import { GET as me } from '@/app/api/me/route';
 import { GET as staff } from '@/app/api/staff/route';
 import { GET as listUsers, POST as inviteUser } from '@/app/api/users/route';
+import { generateToken, hashToken } from '@/features/auth/server/token.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import {
   call, cookieFrom, createSchool, createUser, errorCode, resetDatabase, TEST_PASSWORD,
@@ -82,6 +83,55 @@ describe('accounts, invites and roles (G2)', () => {
     const password = 'a-new-long-password';
     expect((await call(acceptInvite, '/api/auth/invites/accept', { method: 'POST', body: { token: tokenOf(old.inviteUrl), password } })).status).toBe(404);
     expect((await call(acceptInvite, '/api/auth/invites/accept', { method: 'POST', body: { token: tokenOf(fresh.inviteUrl), password } })).status).toBe(204);
+  });
+
+  it('inviting a still-invited person again takes the new name and role, and leaves one open link', async () => {
+    const admin = await signIn('admin@a.test');
+    const invite = (name: string, role: string) => call(inviteUser, '/api/users', {
+      method: 'POST', cookie: admin, body: { email: 'semula@a.test', name, role },
+    });
+    await invite('Semula', 'teacher');
+    const again = (await (await invite('Cikgu Semula', 'sender')).json()) as InviteUserResult;
+    expect(again.user).toMatchObject({ name: 'Cikgu Semula', role: 'sender', status: 'invited' });
+    const { rows } = await getPool().query("SELECT name, role FROM users WHERE email = 'semula@a.test'");
+    expect(rows).toEqual([{ name: 'Cikgu Semula', role: 'sender' }]);
+
+    const results = await Promise.all([invite('Semula', 'teacher'), invite('Semula', 'teacher'), invite('Semula', 'teacher')]);
+    expect(results.map((response) => response.status)).toEqual([201, 201, 201]);
+    const { rows: open } = await getPool().query<{ count: number }>(
+      'SELECT count(*)::int AS count FROM invites WHERE used_at IS NULL AND revoked_at IS NULL',
+    );
+    expect(open[0].count).toBe(1);
+  });
+
+  it('an invite only sets up an account still waiting, and accepting one ends the person\'s other links', async () => {
+    const admin = await signIn('admin@a.test');
+    const { rows: [adminRow] } = await getPool().query<{ id: string }>("SELECT id FROM users WHERE email = 'admin@a.test'");
+    /** An open link made straight in the database: the state a race or an older bug could leave behind. */
+    const extraLink = async (email: string) => {
+      const token = generateToken();
+      await getPool().query(
+        `INSERT INTO invites (token_hash, school_id, user_id, created_by, created_at, expires_at)
+         SELECT $1, school_id, id, $2, now(), now() + interval '1 day' FROM users WHERE email = $3`,
+        [hashToken(token), adminRow.id, email],
+      );
+      return token;
+    };
+    const accept = (token: string, password = 'a-new-long-password') =>
+      call(acceptInvite, '/api/auth/invites/accept', { method: 'POST', body: { token, password } });
+
+    // An active account: the link must not reset its password.
+    const stray = await extraLink('guru@a.test');
+    expect((await accept(stray, 'taken-over-password')).status).toBe(404);
+    expect((await call(login, '/api/auth/login', { method: 'POST', body: { email: 'guru@a.test', password: TEST_PASSWORD } })).status).toBe(204);
+
+    // Two open links for one invited person: using one ends the other.
+    const first = (await (await call(inviteUser, '/api/users', {
+      method: 'POST', cookie: admin, body: { email: 'dua.pautan@a.test', name: 'Dua Pautan', role: 'teacher' },
+    })).json()) as InviteUserResult;
+    const second = await extraLink('dua.pautan@a.test');
+    expect((await accept(tokenOf(first.inviteUrl))).status).toBe(204);
+    expect((await accept(second, 'taken-over-password')).status).toBe(404);
   });
 
   it('refuses a short password when accepting', async () => {

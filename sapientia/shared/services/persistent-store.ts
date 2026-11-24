@@ -12,7 +12,8 @@ export interface PersistentStore<T> {
   subscribe: (listener: () => void) => () => void;
   getSnapshot: () => T;
   getServerSnapshot: () => T;
-  set: (next: T | ((current: T) => T)) => void;
+  /** Returns false when the browser would not keep the value (private mode, full storage); it still holds until a reload. */
+  set: (next: T | ((current: T) => T)) => boolean;
   clear: () => void;
 }
 
@@ -34,10 +35,23 @@ export function createPersistentStore<T>(options: PersistentStoreOptions<T>): Pe
     return value;
   };
 
+  // Another tab changed the value (a purchase, a new photo). Re-read it, or this tab's next write would undo that change.
+  // A null key means the other tab cleared all of storage.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== options.key) return;
+    value = options.parse(readItem(options.key));
+    loaded = true;
+    notify();
+  };
+
   return {
     subscribe(listener) {
+      if (listeners.size === 0) window.addEventListener('storage', onStorage);
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) window.removeEventListener('storage', onStorage);
+      };
     },
     getSnapshot,
     getServerSnapshot() {
@@ -46,8 +60,9 @@ export function createPersistentStore<T>(options: PersistentStoreOptions<T>): Pe
     set(next) {
       const current = getSnapshot();
       value = typeof next === 'function' ? (next as (current: T) => T)(current) : next;
-      writeItem(options.key, options.serialize(value));
+      const kept = writeItem(options.key, options.serialize(value));
       notify();
+      return kept;
     },
     clear() {
       value = options.defaultValue;

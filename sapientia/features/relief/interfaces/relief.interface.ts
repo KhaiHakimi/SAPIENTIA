@@ -20,6 +20,11 @@ export interface ReliefDay {
   /** False on a weekend or holiday, and for a date already past: nothing can be arranged then. */
   canArrange: boolean;
   periods: { slot: TimetableSlot; relief: ReliefCover | null }[];
+  /**
+   * Relief this teacher was given to cover that day, held or not. If they are away, these classes need someone else too:
+   * cancel the relief and arrange it again.
+   */
+  ownDuties: ReliefDuty[];
 }
 
 /**

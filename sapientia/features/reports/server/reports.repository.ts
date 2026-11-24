@@ -18,15 +18,25 @@ export interface ReportRange {
   timeZone: string;
 }
 
-/** Lesson periods (those with a class) on the timetable now, with the school-local day each was added. */
+/**
+ * Lesson periods (those with a class) on the timetable now, with the school-local day each was added and, if its teacher's
+ * login has been removed, the day that happened.
+ */
 export async function listLessonSlots(db: Queryable, schoolId: string, timeZone: string): Promise<ScheduledSlot[]> {
-  const { rows } = await db.query<{ id: string; weekday: number; subject_name: string | null; created_on: string }>(
-    `SELECT s.id, s.weekday, sub.name AS subject_name, (s.created_at AT TIME ZONE $2)::date::text AS created_on
-       FROM timetable_slots s LEFT JOIN subjects sub ON sub.id = s.subject_id AND sub.school_id = s.school_id
+  const { rows } = await db.query<{
+    id: string; weekday: number; subject_name: string | null; created_on: string; teacher_removed_on: string | null;
+  }>(
+    `SELECT s.id, s.weekday, sub.name AS subject_name, (s.created_at AT TIME ZONE $2)::date::text AS created_on,
+            (u.removed_at AT TIME ZONE $2)::date::text AS teacher_removed_on
+       FROM timetable_slots s
+       JOIN users u ON u.id = s.teacher_id AND u.school_id = s.school_id
+       LEFT JOIN subjects sub ON sub.id = s.subject_id AND sub.school_id = s.school_id
       WHERE s.school_id = $1 AND s.class_id IS NOT NULL`,
     [schoolId, timeZone],
   );
-  return rows.map((row) => ({ id: row.id, weekday: row.weekday, subjectName: row.subject_name, createdOn: row.created_on }));
+  return rows.map((row) => ({
+    id: row.id, weekday: row.weekday, subjectName: row.subject_name, createdOn: row.created_on, teacherRemovedOn: row.teacher_removed_on,
+  }));
 }
 
 /** Records of lessons (periods with a class) in the period. Notes and links are not read. */
@@ -43,12 +53,17 @@ export async function listLessonRecordFacts(db: Queryable, schoolId: string, ran
   }));
 }
 
-/** Relief arranged in the period, and how many of those classes were recorded as held. */
+/**
+ * Relief arranged in the period, and how many of those classes were recorded as held. Once a period is removed, its relief
+ * and its records both lose slot_id, so they are matched on what each copied: the date, the absent teacher and the start.
+ */
 export async function countRelief(db: Queryable, schoolId: string, range: ReportRange) {
   const { rows } = await db.query<{ arranged: number; recorded_held: number }>(
     `SELECT count(*)::int AS arranged, count(*) FILTER (WHERE l.status = 'held')::int AS recorded_held
        FROM relief_assignments r
-       LEFT JOIN lesson_records l ON l.school_id = r.school_id AND l.slot_id = r.slot_id AND l.on_date = r.on_date
+       LEFT JOIN lesson_records l ON l.school_id = r.school_id AND l.on_date = r.on_date
+        AND (l.slot_id = r.slot_id
+          OR (r.slot_id IS NULL AND l.slot_id IS NULL AND l.scheduled_teacher_id = r.absent_teacher_id AND l.start_time = r.start_time))
       WHERE r.school_id = $1 AND r.on_date BETWEEN $2::date AND $3::date`,
     [schoolId, range.from, range.to],
   );

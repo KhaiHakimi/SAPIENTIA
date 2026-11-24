@@ -1,6 +1,6 @@
 import 'server-only';
 import { hashPassword, timingDummyHash, verifyPassword } from '@/features/auth/server/password.service';
-import { assertNotThrottled, clearAccountFailures, recordFailure } from '@/features/auth/server/throttle.service';
+import { releaseAttempt, reserveAttempt } from '@/features/auth/server/throttle.service';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { InvalidCredentialsError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
@@ -33,7 +33,7 @@ export async function signInGuardian(
   db: Queryable = getPool(),
 ): Promise<string> {
   const keys = { account: guardianThrottleKey(input.username), address };
-  await assertNotThrottled(db, keys, clock);
+  const reservation = await reserveAttempt(db, keys, clock);
 
   const { rows } = await db.query<CredentialRow>(
     'SELECT id, school_id, status, password_hash, starting_password_expires_at FROM guardians WHERE username = $1',
@@ -43,12 +43,11 @@ export async function signInGuardian(
   const passwordOk = await verifyPassword(guardian?.password_hash ?? (await timingDummyHash()), input.password);
   const slipExpired = Boolean(guardian?.starting_password_expires_at && guardian.starting_password_expires_at <= clock.now());
   if (!guardian || !passwordOk || guardian.status !== 'active' || slipExpired) {
-    await recordFailure(db, keys, clock);
     logger.info('guardian_auth.sign_in_failed', { guardianId: guardian?.id ?? null });
     throw new InvalidCredentialsError();
   }
 
-  await clearAccountFailures(db, keys.account);
+  await releaseAttempt(db, reservation);
   logger.info('guardian_auth.signed_in', { guardianId: guardian.id, schoolId: guardian.school_id });
   return createGuardianSession(db, guardian.school_id, guardian.id, clock);
 }
@@ -65,7 +64,7 @@ export async function changeGuardianPassword(
 ): Promise<string> {
   const db = getPool();
   const keys = { account: guardianThrottleKey(guardian.username), address };
-  await assertNotThrottled(db, keys, clock);
+  const reservation = await reserveAttempt(db, keys, clock);
 
   const { rows } = await db.query<{ password_hash: string }>('SELECT password_hash FROM guardians WHERE school_id = $1 AND id = $2', [
     guardian.schoolId,
@@ -74,9 +73,9 @@ export async function changeGuardianPassword(
   const stored = rows[0]?.password_hash;
   if (!stored) throw new NotFoundError();
   if (!(await verifyPassword(stored, input.currentPassword))) {
-    await recordFailure(db, keys, clock);
     throw new ValidationError({ currentPassword: 'wrong_password' });
   }
+  await releaseAttempt(db, reservation);
   if (input.newPassword === input.currentPassword) throw new ValidationError({ newPassword: 'same_password' });
 
   const hash = await hashPassword(input.newPassword);
@@ -89,7 +88,6 @@ export async function changeGuardianPassword(
     await revokeGuardianSessions(client, guardian.schoolId, guardian.id);
     return createGuardianSession(client, guardian.schoolId, guardian.id, clock);
   });
-  await clearAccountFailures(db, keys.account);
   logger.info('guardian_auth.password_changed', { guardianId: guardian.id, schoolId: guardian.schoolId });
   return token;
 }

@@ -7,6 +7,8 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
     introOwn: 'Waktu mengajar dan tugas tetap anda setiap minggu. Pentadbir yang mengemas kininya.',
     introAdmin: 'Waktu mengajar dan tugas tetap setiap guru, berulang setiap minggu. Semakan tarikh akhir menolak waktu ini daripada masa lapang guru.',
     teacher: 'Guru',
+    teacherOption: (name, status) => (status === 'active' ? name : `${name} (${status === 'removed' ? 'bekas staf' : 'dinyahaktifkan'})`),
+    inactiveNote: 'Guru ini tidak lagi aktif. Waktunya boleh dibuang atau diberi guru ganti, tetapi waktu baharu tidak boleh ditambah.',
     weekTitle: (name) => `Minggu ${name}`,
     weekdays: { 1: 'Isnin', 2: 'Selasa', 3: 'Rabu', 4: 'Khamis', 5: 'Jumaat', 6: 'Sabtu', 7: 'Ahad' },
     columns: { day: 'Hari', time: 'Masa', what: 'Kelas atau tugas', actions: 'Tindakan' },
@@ -34,6 +36,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
     removeLabel: (day, start) => `Buang waktu ${day} ${start}`,
     fieldErrors: {
       overlaps: 'Bertindih dengan waktu lain guru ini.',
+      relief_clash: 'Bertindih dengan kelas ganti yang diberi kepada guru ini. Batalkan guru ganti itu di halaman Guru Ganti dahulu.',
       end_before_start: 'Waktu tamat mesti selepas waktu mula.',
       lesson_needs_both: 'Pilih kelas dan subjek.',
       lesson_or_label: 'Masukkan nama tugas.',
@@ -41,6 +44,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
       invalid_class: 'Pilih kelas.',
       invalid_subject: 'Pilih subjek.',
       too_many: 'Guru ini sudah mempunyai terlalu banyak waktu.',
+      has_relief: 'Waktu ini ada guru ganti yang belum selesai. Batalkan guru ganti itu di halaman Guru Ganti dahulu.',
     },
   },
   en: {
@@ -48,6 +52,8 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
     introOwn: 'Your lessons and fixed duties each week. An administrator keeps it up to date.',
     introAdmin: 'Each teacher\'s lessons and fixed duties, repeating every week. The deadline check takes these periods out of a teacher\'s free time.',
     teacher: 'Teacher',
+    teacherOption: (name, status) => (status === 'active' ? name : `${name} (${status === 'removed' ? 'former staff' : 'disabled'})`),
+    inactiveNote: 'This teacher is no longer active. Their periods can be removed or given relief, but no new periods can be added.',
     weekTitle: (name) => `${name}: weekly timetable`,
     weekdays: { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' },
     columns: { day: 'Day', time: 'Time', what: 'Class or duty', actions: 'Actions' },
@@ -75,6 +81,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
     removeLabel: (day, start) => `Remove the ${day} ${start} period`,
     fieldErrors: {
       overlaps: 'This overlaps another period for this teacher.',
+      relief_clash: 'This overlaps a relief class this teacher covers. Cancel that relief on the Relief page first.',
       end_before_start: 'The end time must be after the start time.',
       lesson_needs_both: 'Choose a class and a subject.',
       lesson_or_label: 'Enter the duty name.',
@@ -82,6 +89,7 @@ export const TIMETABLE_MESSAGES: Record<Lang, TimetableMessages> = {
       invalid_class: 'Choose a class.',
       invalid_subject: 'Choose a subject.',
       too_many: 'This teacher already has too many periods.',
+      has_relief: 'This period has relief still to come. Cancel that relief on the Relief page first.',
     },
   },
 };

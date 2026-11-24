@@ -5,13 +5,14 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import type { Feasibility } from '@/features/capacity/interfaces/capacity.interface';
 import { assessAssignees } from '@/features/capacity/server/feasibility.service';
 import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.repository';
+import { isBeyondDueHorizon } from '@/features/delivery/services/due-horizon.service';
 import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import { findVisibleTask } from '@/features/tasks/server/tasks.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, withTransaction, type Queryable } from '@/shared/server/database.service';
 import type { ExtensionDecision, ExtensionRequest, ExtensionSuggestion, NewExtensionRequest } from '../interfaces/extension.interface';
-import { decideExtension, findExtension, findOpenAssignment, insertExtension } from './extensions.repository';
+import { decideExtension, findExtension, findOpenAssignment, insertExtension, isRequestOpen } from './extensions.repository';
 
 const UNIQUE_VIOLATION = '23505';
 
@@ -72,6 +73,7 @@ export async function requestExtension(
       const today = DateTime.fromJSDate(now, { zone: actor.timeZone }).toISODate() ?? '';
       if (input.requestedDueOn <= assignment.due_on) throw new ValidationError({ requestedDueOn: 'not_later' });
       if (input.requestedDueOn < today) throw new ValidationError({ requestedDueOn: 'past_date' });
+      if (isBeyondDueHorizon(input.requestedDueOn, today)) throw new ValidationError({ requestedDueOn: 'too_far_ahead' });
       const figures = assignment.estimated_minutes === null
         ? null
         : await assessOwnTask(client, actor, { id: taskId, dueOn: assignment.due_on, estimatedMinutes: assignment.estimated_minutes }, now);
@@ -98,8 +100,8 @@ export async function requestExtension(
 
 /**
  * The task's sender answers a request: accept the date asked for, or give another later date. Either way the assignee's
- * due date moves and the exchange stays on the task. Anyone but the sender gets 404; a request already answered gets 409.
- * The teacher is told at the next working moment.
+ * due date moves and the exchange stays on the task. Anyone but the sender gets 404; a request already answered, or closed
+ * because the teacher has finished the task, gets 409. The teacher is told at the next working moment.
  */
 export async function answerExtension(
   actor: SessionUser,
@@ -114,9 +116,16 @@ export async function answerExtension(
     const request = await findExtension(client, actor.schoolId, taskId, requestId);
     if (!request) throw new NotFoundError();
     if (request.status !== 'pending') throw new ConflictError('This request has already been answered.');
+    if (!(await isRequestOpen(client, actor.schoolId, taskId, requestId))) {
+      throw new ConflictError('The teacher has finished this task, so the request is closed.');
+    }
     // Proposing the very date that was asked for is an approval, and is recorded as one.
     const dueOn = decision.decision === 'propose' && decision.dueOn !== request.requestedDueOn ? decision.dueOn : null;
     if (dueOn !== null && dueOn <= request.currentDueOn) throw new ValidationError({ dueOn: 'not_later' });
+    const today = DateTime.fromJSDate(clock.now(), { zone: actor.timeZone }).toISODate() ?? '';
+    // A request answered late may ask for a day that has gone; granting it would leave the work overdue at once.
+    if ((dueOn ?? request.requestedDueOn) < today) throw new ValidationError({ dueOn: 'past_date' });
+    if (dueOn !== null && isBeyondDueHorizon(dueOn, today)) throw new ValidationError({ dueOn: 'too_far_ahead' });
 
     const decided = await decideExtension(client, actor.schoolId, { taskId, requestId, decidedBy: actor.id, dueOn, now: clock.now() });
     // Lost a race with another answer between the read above and the update.

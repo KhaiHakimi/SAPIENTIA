@@ -27,10 +27,14 @@ const toSummary = (row: ApiTokenRow): ApiTokenSummary => ({
   expiresAt: row.expires_at.toISOString(),
 });
 
+/**
+ * The caller's live tokens, listed even while the MCP server is switched off: a token still works once it is switched back
+ * on, so its owner must be able to see and revoke it (a leaked one above all) in the meantime.
+ */
 export async function listMyTokens(actor: SessionUser, clock: Clock, origin: string): Promise<ApiTokenList> {
-  if (!isMcpEnabled()) return { available: false, endpoint: null, items: [] };
+  const available = isMcpEnabled();
   const rows = await listActiveTokens(getPool(), actor.schoolId, actor.id, clock.now());
-  return { available: true, endpoint: `${origin}/api/mcp`, items: rows.map(toSummary) };
+  return { available, endpoint: available ? `${origin}/api/mcp` : null, items: rows.map(toSummary) };
 }
 
 /** Asks for the password again (an unattended signed-in screen is not enough), then shows the token once. */

@@ -59,6 +59,15 @@ export async function deleteStoredFile(db: Queryable, schoolId: string, fileId: 
   return rows[0]?.storage_key ?? null;
 }
 
+
+/**
+ * Holds the school's row until the transaction ends, so the school's stored bytes are summed and added one upload at a time:
+ * uploads arriving together cannot each see room under the limit. FOR NO KEY UPDATE, because the many rows that only refer
+ * to the school need not wait.
+ */
+export async function lockSchoolStorage(db: Queryable, schoolId: string): Promise<void> {
+  await db.query('SELECT 1 FROM schools WHERE id = $1 FOR NO KEY UPDATE', [schoolId]);
+}
 /** Bytes the school has stored, for the storage limit. */
 export async function sumSchoolBytes(db: Queryable, schoolId: string): Promise<number> {
   const { rows } = await db.query<{ total: string }>('SELECT COALESCE(sum(byte_size), 0)::text AS total FROM stored_files WHERE school_id = $1', [schoolId]);

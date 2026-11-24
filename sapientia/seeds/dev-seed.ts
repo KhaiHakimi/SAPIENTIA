@@ -3,13 +3,15 @@
  * a weekly timetable and three pupils. Every name is invented and every address uses the reserved .test
  * domain, so nothing can reach a real person. Safe to run again: it updates the same rows.
  *
- * The shared password comes from SEED_PASSWORD in .env, never from this file. Run with `npm run db:seed`.
+ * The shared password comes from SEED_PASSWORD in .env, never from this file. Run with `npm run db:seed`. It refuses to
+ * run where NODE_ENV is production unless given --force-dev (see seed-guard.ts).
  */
 import { hashPassword } from '@/features/auth/server/password.service';
 import { closePool, withTransaction } from '@/shared/server/database.service';
 import { PASSWORD_MIN_LENGTH } from '@/features/auth/constants/password.constants';
 import { seedCapacity } from './capacity-seed';
 import { seedGuardians } from './guardians-seed';
+import { devSeedRefusal } from './seed-guard';
 import { seedStudents } from './students-seed';
 
 interface SeedUser {
@@ -50,6 +52,8 @@ const SEED_SCHOOLS: SeedSchool[] = [
 const CAPACITY_DEMO_SCHOOL = 'DEMO001';
 
 async function main(): Promise<void> {
+  const refusal = devSeedRefusal(process.env, process.argv.slice(2));
+  if (refusal) throw new Error(refusal);
   const password = process.env.SEED_PASSWORD ?? '';
   if (password.length < PASSWORD_MIN_LENGTH) {
     throw new Error(`Set SEED_PASSWORD in .env (at least ${PASSWORD_MIN_LENGTH} characters) before seeding.`);

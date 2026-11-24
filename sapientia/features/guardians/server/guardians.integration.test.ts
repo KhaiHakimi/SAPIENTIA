@@ -24,9 +24,12 @@ import type { AddStudentsResult } from '@/features/students/interfaces/student.i
 import type { ClassWeek } from '@/features/timetable/interfaces/timetable.interface';
 import type { Page } from '@/shared/interfaces/api-error.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
-import { closePool, getPool } from '@/shared/server/database.service';
-import { call, cookieFrom, createSchool, createUser, errorCode, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
+import { closePool, getPool, type Queryable } from '@/shared/server/database.service';
+import {
+  call, cookieFrom, createSchool, createUser, errorCode, raceAgainstOpenTransaction, resetDatabase, TEST_PASSWORD,
+} from '@/shared/server/testing/api-test-kit';
 import type { AddGuardianResult, CurrentGuardian, GuardianChildren, SchoolGuardian } from '../interfaces/guardian.interface';
+import { lockGuardian } from './guardians.repository';
 
 // Monday 22 March 2027, 09:00 at the school (Asia/Kuala_Lumpur).
 const NOW = new Date('2027-03-22T01:00:00Z');
@@ -137,6 +140,39 @@ describe('guardians (Sprint 13)', () => {
       expect((await link(pupils.kavitha, otherSchoolAdmin)).status).toBe(404);
       expect((await add({ name: 'Ali', studentId: '00000000-0000-4000-8000-000000000000', relationship: 'father' })).status).toBe(400);
       expect((await add({ name: 'Ali', studentId: pupils.aisyah, relationship: 'uncle' })).status).toBe(400);
+    });
+
+    it('stop at GUARDIAN_LINKS_MAX children when another link is being added at the same moment', async () => {
+      const { guardian } = await addOk();
+      // Ten more pupils in 4 Bestari, straight into the tables (no slips needed); eight linked already, so the guardian has nine.
+      const { rows: extra } = await getPool().query<{ id: string }>(
+        `INSERT INTO students (school_id, name, username, password_hash, must_change_password)
+         SELECT $1, 'Murid ' || n, 'murid' || lpad(n::text, 4, '0'), 'not-a-hash', false FROM generate_series(1, 10) AS n
+         RETURNING id`,
+        [schoolA],
+      );
+      await getPool().query('INSERT INTO class_enrolments (school_id, student_id, class_id) SELECT $1, s, $2 FROM unnest($3::uuid[]) AS s', [
+        schoolA, classA, extra.map((row) => row.id),
+      ]);
+      const insertLinks = (db: Queryable, studentIds: string[]) => db.query(
+        `INSERT INTO guardian_links (school_id, guardian_id, student_id, relationship, created_by)
+         SELECT $1, $2, s, 'father', (SELECT id FROM users WHERE email = 'admin@a.test') FROM unnest($3::uuid[]) AS s`,
+        [schoolA, guardian.id, studentIds],
+      );
+      await insertLinks(getPool(), extra.slice(0, 8).map((row) => row.id));
+
+      // Another administrator holds the guardian and has added the tenth link, not yet committed.
+      const response = await raceAgainstOpenTransaction(async (client) => {
+        await lockGuardian(client, schoolA, guardian.id);
+        await insertLinks(client, [extra[8].id]);
+      }, () => call(addLink, `/api/guardians/${guardian.id}/links`, {
+        params: { id: guardian.id }, method: 'POST', cookie: admin, body: { studentId: extra[9].id, relationship: 'father' },
+      }));
+      expect(response.status).toBe(400);
+      const { rows } = await getPool().query("SELECT count(*)::int AS total FROM guardian_links WHERE guardian_id = $1 AND status = 'active'", [
+        guardian.id,
+      ]);
+      expect(rows[0].total).toBe(10);
     });
 
     it('remove a link with a reason code; the audit log keeps ids and the code only', async () => {

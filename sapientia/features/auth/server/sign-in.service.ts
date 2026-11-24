@@ -7,7 +7,7 @@ import { logger } from '@/shared/server/logger.service';
 import type { AcceptInviteRequest, SignInRequest } from '../interfaces/session-user.interface';
 import { hashPassword, timingDummyHash, verifyPassword } from './password.service';
 import { createSession, revokeUserSessions } from './session.service';
-import { assertNotThrottled, clearAccountFailures, emailThrottleKey, recordFailure } from './throttle.service';
+import { emailThrottleKey, releaseAttempt, reserveAttempt } from './throttle.service';
 import { hashToken } from './token.service';
 
 interface CredentialRow {
@@ -27,7 +27,7 @@ export type SignInOutcome = { kind: 'session'; token: string } | { kind: 'mfa'; 
  */
 export async function signIn(input: SignInRequest, address: string, clock: Clock, db: Queryable = getPool()): Promise<SignInOutcome> {
   const keys = { account: emailThrottleKey(input.email), address };
-  await assertNotThrottled(db, keys, clock);
+  const reservation = await reserveAttempt(db, keys, clock);
 
   const { rows } = await db.query<CredentialRow>(
     'SELECT id, school_id, status, password_hash FROM users WHERE lower(email) = $1',
@@ -36,12 +36,11 @@ export async function signIn(input: SignInRequest, address: string, clock: Clock
   const user = rows[0];
   const passwordOk = await verifyPassword(user?.password_hash ?? (await timingDummyHash()), input.password);
   if (!user || !passwordOk || user.status !== 'active') {
-    await recordFailure(db, keys, clock);
     logger.info('auth.sign_in_failed', { userId: user?.id ?? null });
     throw new InvalidCredentialsError();
   }
 
-  await clearAccountFailures(db, keys.account);
+  await releaseAttempt(db, reservation);
   if (await hasMfa(db, user.school_id, user.id)) {
     logger.info('auth.password_ok_mfa_next', { userId: user.id, schoolId: user.school_id });
     return { kind: 'mfa', challenge: await startChallenge(db, user.school_id, user.id, clock) };
@@ -53,7 +52,9 @@ export async function signIn(input: SignInRequest, address: string, clock: Clock
 
 /**
  * Uses a one-time invite: sets the password, activates the account and signs the person in. The invite row is locked, so
- * the same link used twice at once still succeeds only once. Any other state is a plain 404.
+ * the same link used twice at once still succeeds only once. Only an account still waiting to be set up can be taken over
+ * this way, and its other open links stop working, so a second link can never reset an active account's password. Any
+ * other state is a plain 404.
  */
 export async function acceptInvite(input: AcceptInviteRequest, clock: Clock): Promise<string> {
   const passwordHash = await hashPassword(input.password);
@@ -61,7 +62,7 @@ export async function acceptInvite(input: AcceptInviteRequest, clock: Clock): Pr
     const { rows } = await client.query<{ id: string; school_id: string; user_id: string }>(
       `SELECT i.id, i.school_id, i.user_id
          FROM invites i JOIN users u ON u.id = i.user_id AND u.school_id = i.school_id
-        WHERE i.token_hash = $1 AND i.used_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > $2 AND u.status <> 'disabled'
+        WHERE i.token_hash = $1 AND i.used_at IS NULL AND i.revoked_at IS NULL AND i.expires_at > $2 AND u.status = 'invited'
         FOR UPDATE OF i`,
       [hashToken(input.token), clock.now()],
     );
@@ -69,6 +70,10 @@ export async function acceptInvite(input: AcceptInviteRequest, clock: Clock): Pr
     if (!invite) throw new NotFoundError('This invite link is not valid. Ask your administrator for a new one.');
 
     await client.query('UPDATE invites SET used_at = $2 WHERE id = $1', [invite.id, clock.now()]);
+    await client.query(
+      'UPDATE invites SET revoked_at = $3 WHERE school_id = $1 AND user_id = $2 AND used_at IS NULL AND revoked_at IS NULL',
+      [invite.school_id, invite.user_id, clock.now()],
+    );
     await client.query(
       `UPDATE users SET password_hash = $3, status = 'active', updated_at = $4 WHERE school_id = $1 AND id = $2`,
       [invite.school_id, invite.user_id, passwordHash, clock.now()],

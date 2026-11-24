@@ -9,7 +9,7 @@ import { loadWorkingCalendar } from '@/features/delivery/server/school-calendar.
 import { isWorkingDay } from '@/features/delivery/services/working-time.service';
 import { queueEventNotice } from '@/features/notifications/server/event-notice-queue.service';
 import { SLOTS_PER_TEACHER_MAX } from '@/features/timetable/constants/timetable.constants';
-import { listSlots } from '@/features/timetable/server/timetable.repository';
+import { findTimetableTeacher, listSlots } from '@/features/timetable/server/timetable.repository';
 import type { StaffMember } from '@/features/users/interfaces/staff-user.interface';
 import { listActiveStaff } from '@/features/users/server/users.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
@@ -20,7 +20,7 @@ import type { NewRelief, ReliefAssigned, ReliefDay, ReliefDuty, ReliefSuggestion
 import { busyTeacherIds, rankReliefCandidates } from '../services/relief-ranking.service';
 import {
   countReliefBetween, deleteRelief, findSlotForRelief, insertRelief, listAbsentTeacherIds, listBusyPeriods, listDuties,
-  listReliefForDay, listTeachingStaffIds, type SlotForRelief,
+  listDutiesOnDay, listReliefForDay, listTeachingStaffIds, type SlotForRelief,
 } from './relief.repository';
 
 const UNIQUE_VIOLATION = '23505';
@@ -34,6 +34,17 @@ function canArrangeOn(onDate: string, now: Date, calendar: WorkingCalendar): boo
 }
 
 /**
+ * Why relief for a period on a date can no longer be arranged or cancelled: the date has passed, or it is today and the
+ * period has ended. Once over, the relief is what happened, and the relief teacher's lesson record depends on it.
+ */
+function overReason(onDate: string, endTime: string, now: Date, timeZone: string): 'past_date' | 'period_over' | null {
+  const local = DateTime.fromJSDate(now, { zone: timeZone });
+  const today = local.toISODate() ?? '';
+  if (onDate < today) return 'past_date';
+  return onDate === today && endTime <= local.toFormat('HH:mm') ? 'period_over' : null;
+}
+
+/**
  * The period relief is wanted for, checked against the date: it must be that period's weekday, a working day, and not
  * already over. Each refusal names the field and the reason.
  */
@@ -41,12 +52,11 @@ async function loadPeriod(db: Queryable, schoolId: string, slotId: string, onDat
   const slot = await findSlotForRelief(db, schoolId, slotId);
   if (!slot) throw new ValidationError({ slotId: 'invalid_slot' });
   const calendar = await loadWorkingCalendar(db, schoolId, now);
-  const local = localNow(now, calendar);
-  const today = local.toISODate() ?? '';
   if (DateTime.fromISO(onDate, { zone: calendar.timeZone }).weekday !== slot.weekday) throw new ValidationError({ onDate: 'wrong_weekday' });
-  if (onDate < today) throw new ValidationError({ onDate: 'past_date' });
+  const over = overReason(onDate, slot.end_time, now, calendar.timeZone);
+  if (over === 'past_date') throw new ValidationError({ onDate: 'past_date' });
   if (!isWorkingDay(onDate, calendar)) throw new ValidationError({ onDate: 'not_working_day' });
-  if (onDate === today && slot.end_time <= local.toFormat('HH:mm')) throw new ValidationError({ onDate: 'period_over' });
+  if (over === 'period_over') throw new ValidationError({ onDate: 'period_over' });
   return slot;
 }
 
@@ -63,11 +73,15 @@ async function listFreeStaff(db: Queryable, schoolId: string, slot: SlotForRelie
   return staff.filter((person) => person.id !== slot.teacher_id && !busy.has(person.id) && !away.has(person.id));
 }
 
-/** Administrators: one teacher's periods on a date, each with the relief arranged for it, if any. */
+/**
+ * Administrators: one teacher's periods on a date, each with the relief arranged for it, if any. The teacher may be active,
+ * disabled or removed; only active staff are ever suggested or accepted as cover.
+ */
 export async function getReliefDay(actor: SessionUser, teacherId: string, onDate: string, clock: Clock): Promise<ReliefDay> {
   const db = getPool();
   const now = clock.now();
-  const [teacher] = await listActiveStaff(db, actor.schoolId, [teacherId]);
+  // A disabled or removed teacher's periods still need cover until they are taken off the timetable.
+  const teacher = await findTimetableTeacher(db, actor.schoolId, teacherId);
   if (!teacher) throw new NotFoundError();
   const calendar = await loadWorkingCalendar(db, actor.schoolId, now);
   const weekday = DateTime.fromISO(onDate, { zone: calendar.timeZone }).weekday;
@@ -77,6 +91,7 @@ export async function getReliefDay(actor: SessionUser, teacherId: string, onDate
     teacher: { id: teacher.id, name: teacher.name },
     onDate,
     canArrange: canArrangeOn(onDate, now, calendar),
+    ownDuties: await listDutiesOnDay(db, actor.schoolId, teacherId, onDate),
     periods: slots.map((slot) => {
       const relief = cover.get(slot.id);
       if (!relief) return { slot, relief: null };
@@ -156,11 +171,16 @@ export async function assignRelief(actor: SessionUser, input: NewRelief, clock: 
 /**
  * An administrator cancels a relief; the period is uncovered again and can be given to someone else. A relief teacher who
  * had already been told is told it is cancelled, at the next working moment. One still held never knew, so hears nothing.
+ * Relief already over is refused (409): it happened, and cancelling it would hand the lesson record back to the absent
+ * teacher.
  */
 export async function cancelRelief(actor: SessionUser, reliefId: string, clock: Clock): Promise<void> {
   await withTransaction(async (client) => {
     const removed = await deleteRelief(client, actor.schoolId, reliefId);
     if (!removed) throw new NotFoundError();
+    // Checked after the delete so the row is read once; throwing rolls the delete back.
+    const over = overReason(removed.on_date, removed.end_time, clock.now(), actor.timeZone);
+    if (over) throw new ConflictError('This relief is already over.', { onDate: over });
     await writeAudit(client, actor.schoolId, [{
       actorId: actor.id, action: 'relief.cancelled', entityType: 'relief_assignment', entityId: reliefId,
       metadata: { slotId: removed.slot_id, onDate: removed.on_date, reliefTeacherId: removed.relief_teacher_id },

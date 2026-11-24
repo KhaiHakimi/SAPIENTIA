@@ -87,6 +87,11 @@ export interface ScheduledSlot {
   weekday: number;
   subjectName: string | null;
   createdOn: string;
+  /**
+   * The school-local day the teacher's login was removed, or null. From then on nobody records the period, so it is not
+   * scheduled: it would only ever read as "not recorded" until an administrator takes it off.
+   */
+  teacherRemovedOn: string | null;
 }
 
 /** A lesson record in the period. slotId is null when its period has since been deleted. */

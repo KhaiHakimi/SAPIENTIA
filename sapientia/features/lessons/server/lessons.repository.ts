@@ -15,6 +15,8 @@ export interface CoverRow {
 }
 
 export interface DayPeriodRow extends SlotRow {
+  /** When the period was added: it was not on the timetable, so cannot have been taught, before then. */
+  created_at: Date;
   /** Relief arranged for this period on the date, if any. */
   cover: CoverRow | null;
 }
@@ -31,8 +33,8 @@ export async function listDayPeriods(
   onDate: string,
   now: Date,
 ): Promise<DayPeriodRow[]> {
-  const { rows } = await db.query<SlotRow & Partial<CoverRow> & { relief_slot: string | null }>(
-    `SELECT ${SLOT_COLUMNS}, r.slot_id AS relief_slot, r.relief_teacher_id, rt.name AS relief_teacher_name,
+  const { rows } = await db.query<SlotRow & Partial<CoverRow> & { relief_slot: string | null; created_at: Date }>(
+    `SELECT ${SLOT_COLUMNS}, s.created_at, r.slot_id AS relief_slot, r.relief_teacher_id, rt.name AS relief_teacher_name,
             r.absent_teacher_id, ab.name AS absent_teacher_name, r.deliver_at
        FROM timetable_slots s ${SLOT_JOINS}
        LEFT JOIN relief_assignments r ON r.slot_id = s.id AND r.school_id = s.school_id AND r.on_date = $4::date
@@ -60,8 +62,8 @@ export async function listDayPeriods(
 
 /** One period and the relief arranged for it on the date, if any; null when the period is not in this school. */
 export async function findPeriodOnDate(db: Queryable, schoolId: string, slotId: string, onDate: string): Promise<DayPeriodRow | null> {
-  const { rows } = await db.query<SlotRow & { relief_teacher_id: string | null; deliver_at: Date | null }>(
-    `SELECT ${SLOT_COLUMNS}, r.relief_teacher_id, r.deliver_at
+  const { rows } = await db.query<SlotRow & { created_at: Date; relief_teacher_id: string | null; deliver_at: Date | null }>(
+    `SELECT ${SLOT_COLUMNS}, s.created_at, r.relief_teacher_id, r.deliver_at
        FROM timetable_slots s ${SLOT_JOINS}
        LEFT JOIN relief_assignments r ON r.slot_id = s.id AND r.school_id = s.school_id AND r.on_date = $3::date
       WHERE s.school_id = $1 AND s.id = $2`,

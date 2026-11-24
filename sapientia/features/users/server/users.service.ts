@@ -10,7 +10,7 @@ import { type AuditEntry, writeAudit } from '@/features/audit/server/audit.repos
 import { revokeUserSessions } from '@/features/auth/server/session.service';
 import { deleteAllOwnEntries } from '@/features/hours/server/hours.repository';
 import { cancelPendingForTeacher } from '@/features/meetings/server/meetings.repository';
-import { deleteReliefCoveredFrom } from '@/features/relief/server/relief.repository';
+import { deleteReliefToCome } from '@/features/relief/server/relief.repository';
 import { ConflictError, NotFoundError, UnauthenticatedError } from '@/shared/server/app-errors';
 import { getPool, withTransaction } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
@@ -106,7 +106,8 @@ export async function updateUserStatus(actor: SessionUser, id: string, input: Up
  * Removes a login for good: access ends at once (sessions, invites, devices) and the person can never sign in with it again.
  * The row stays so tasks, homework and records keep the name as former staff; the email is replaced so it can be invited
  * afresh, and the private hours log is deleted. Meeting requests still waiting for them are cancelled, and so is relief
- * they were to cover from today on (each audited as a cancelled relief), so those periods show as uncovered again.
+ * they were to cover that is not over yet (each audited as a cancelled relief), so those periods show as uncovered again.
+ * Relief already over is history and stays.
  */
 export async function removeUser(actor: SessionUser, id: string, clock: Clock): Promise<void> {
   const now = clock.now();
@@ -117,8 +118,8 @@ export async function removeUser(actor: SessionUser, id: string, clock: Clock): 
     // The private hours log is the teacher's own and goes with the login.
     await deleteAllOwnEntries(client, actor.schoolId, id);
     const meetingsCancelled = await cancelPendingForTeacher(client, actor.schoolId, id, now);
-    const today = DateTime.fromJSDate(now, { zone: actor.timeZone }).toISODate() ?? '';
-    const reliefCancelled = await deleteReliefCoveredFrom(client, actor.schoolId, id, today);
+    const local = DateTime.fromJSDate(now, { zone: actor.timeZone });
+    const reliefCancelled = await deleteReliefToCome(client, actor.schoolId, id, local.toISODate() ?? '', local.toFormat('HH:mm'));
     await writeAudit(client, actor.schoolId, [
       ...reliefCancelled.map((relief): AuditEntry => ({
         actorId: actor.id, action: 'relief.cancelled', entityType: 'relief_assignment', entityId: relief.id,

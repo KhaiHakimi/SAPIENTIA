@@ -18,7 +18,7 @@ import { HoursShareCard } from './HoursShareCard';
  * Private hours log (plan Phase 3, Sprint 9): the caller's own entries for a month, the total, and sharing that total.
  * initialMonth (YYYY-MM) is the month it opens on, this month unless given.
  */
-export function HoursPage({ initialMonth }: { initialMonth?: string } = {}) {
+export function HoursPage({ initialMonth }: { initialMonth?: string }) {
   const text = useMessages(HOURS_MESSAGES);
   const { lang } = useLanguage();
   const user = useStaffUser();

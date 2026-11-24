@@ -222,30 +222,42 @@ function RecoveryCodes({ text, codes, onDone }: { text: MfaMessages; codes: stri
   );
 }
 
-/** Administrators: require two-step sign-in for every administrator of the school. */
+/**
+ * Administrators: require two-step sign-in for every administrator of the school. Ticking the box only proposes the change;
+ * it is saved with the administrator's password, as the personal changes are.
+ */
 function AdminRequirement({ text, required }: { text: MfaMessages; required: boolean }) {
   const queryClient = useQueryClient();
   const fieldText = useFieldText(text);
-  const { lang } = useLanguage();
+  const [wanted, setWanted] = useState(required);
+  const [password, setPassword] = useState('');
   const save = useMutation({
-    mutationFn: (next: boolean) => setAdminMfaRequirement(next),
-    onSuccess: (status) => queryClient.setQueryData(MFA_STATUS_KEY, status),
+    mutationFn: () => setAdminMfaRequirement({ requiredForAdmins: wanted, password }),
+    onSuccess: (status) => {
+      setPassword('');
+      queryClient.setQueryData(MFA_STATUS_KEY, status);
+    },
+    onError: () => setPassword(''),
   });
   const error = fieldText(save.error, 'requiredForAdmins');
+  const passwordError = fieldText(save.error, 'password');
 
   return (
     <section className={calm.card} aria-labelledby="mfa-admin-title">
       <h2 id="mfa-admin-title">{text.adminTitle}</h2>
       <label className={calm.checkbox}>
-        <input type="checkbox" checked={required} disabled={save.isPending} onChange={(event) => save.mutate(event.target.checked)}
+        <input type="checkbox" checked={wanted} disabled={save.isPending} onChange={(event) => setWanted(event.target.checked)}
           aria-describedby="mfa-admin-help" />
         {text.adminRequire}
       </label>
       <p id="mfa-admin-help" className={calm.help}>{text.adminHelp}</p>
-      {save.isSuccess && <div className={`${calm.alert} ${calm.alertOk}`} role="status">{text.saved}</div>}
-      {save.isError && (
-        <div className={`${calm.alert} ${calm.alertError}`} role="alert">{error ?? describeApiError(save.error, lang)}</div>
+      {wanted !== required && (
+        <PasswordForm text={text} id="mfa-admin" help={text.adminPasswordHelp} submit={text.adminSave} pending={save.isPending}
+          error={passwordError} otherError={save.isError && !passwordError && !error ? save.error : null}
+          password={password} onPassword={setPassword} onSubmit={() => save.mutate()} />
       )}
+      {save.isSuccess && wanted === required && <div className={`${calm.alert} ${calm.alertOk}`} role="status">{text.saved}</div>}
+      {error && <div className={`${calm.alert} ${calm.alertError}`} role="alert">{error}</div>}
     </section>
   );
 }

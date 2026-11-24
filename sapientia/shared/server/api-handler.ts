@@ -74,8 +74,7 @@ export async function readJson<S extends z.ZodType>(request: Request, schema: S)
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
     throw new ValidationError({ body: 'json_required' }, 'Send the body as application/json.');
   }
-  const text = await request.text();
-  if (text.length > MAX_BODY_BYTES) throw new ValidationError({ body: 'too_large' }, 'The request body is too large.');
+  const text = await readBodyText(request);
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -83,6 +82,30 @@ export async function readJson<S extends z.ZodType>(request: Request, schema: S)
     throw new ValidationError({ body: 'invalid_json' }, 'The request body is not valid JSON.');
   }
   return parseWith(schema, raw);
+}
+
+const bodyTooLarge = () => new ValidationError({ body: 'too_large' }, 'The request body is too large.');
+
+/**
+ * Reads the body as text but stops at MAX_BODY_BYTES: a declared length over it is refused before reading, and a body
+ * that runs past it (no length given, or a false one) is cut off and its stream cancelled, so an oversized body is never
+ * held whole in memory.
+ */
+async function readBodyText(request: Request): Promise<string> {
+  if (Number(request.headers.get('content-length')) > MAX_BODY_BYTES) throw bodyTooLarge();
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+    total += chunk.value.byteLength;
+    if (total > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw bodyTooLarge();
+    }
+    chunks.push(chunk.value);
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
 /** Validates query-string parameters with the same schemas and error shape as bodies. */

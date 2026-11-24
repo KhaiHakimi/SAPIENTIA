@@ -149,10 +149,22 @@ describe('MCP server', () => {
     expect((await rpc(token, 'tools/list')).status).toBe(401);
   });
 
-  it('is switched off by default: no endpoint and no tokens', async () => {
+  it('is switched off by default: no endpoint and no new tokens', async () => {
     delete process.env.MCP_SERVER;
     expect((await call(mcp, '/api/mcp', { method: 'POST', body: {} })).status).toBe(404);
     expect(await (await call(listTokens, '/api/me/api-tokens', { cookie: guru })).json()).toEqual({ available: false, endpoint: null, items: [] });
     expect((await newToken(guru)).status).toBe(404);
+  });
+
+  it('still lists a token while switched off, so it can be revoked before MCP comes back', async () => {
+    const { body: { token, item } } = await newToken(guru);
+    delete process.env.MCP_SERVER;
+    const list = (await (await call(listTokens, '/api/me/api-tokens', { cookie: guru })).json()) as ApiTokenList;
+    expect(list).toMatchObject({ available: false, endpoint: null, items: [{ id: item.id, name: 'Claude' }] });
+    const revoked = await call(revokeToken, `/api/me/api-tokens/${item.id}`, { method: 'DELETE', cookie: guru, params: { id: item.id } });
+    expect(revoked.status).toBe(204);
+
+    process.env.MCP_SERVER = 'on';
+    expect((await rpc(token, 'tools/list')).status).toBe(401);
   });
 });

@@ -1,6 +1,6 @@
 import 'server-only';
 import { hashPassword, timingDummyHash, verifyPassword } from '@/features/auth/server/password.service';
-import { assertNotThrottled, clearAccountFailures, recordFailure } from '@/features/auth/server/throttle.service';
+import { releaseAttempt, reserveAttempt } from '@/features/auth/server/throttle.service';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { InvalidCredentialsError, NotFoundError, ValidationError } from '@/shared/server/app-errors';
 import { getPool, type Queryable, withTransaction } from '@/shared/server/database.service';
@@ -34,7 +34,7 @@ export async function signInStudent(
   db: Queryable = getPool(),
 ): Promise<string> {
   const keys = { account: studentThrottleKey(input.username), address };
-  await assertNotThrottled(db, keys, clock);
+  const reservation = await reserveAttempt(db, keys, clock);
 
   const { rows } = await db.query<CredentialRow>(
     `SELECT id, school_id, status, password_hash, must_change_password, starting_password_expires_at FROM students WHERE username = $1`,
@@ -44,12 +44,11 @@ export async function signInStudent(
   const passwordOk = await verifyPassword(student?.password_hash ?? (await timingDummyHash()), input.password);
   const slipExpired = Boolean(student?.starting_password_expires_at && student.starting_password_expires_at <= clock.now());
   if (!student || !passwordOk || student.status !== 'active' || slipExpired) {
-    await recordFailure(db, keys, clock);
     logger.info('student_auth.sign_in_failed', { studentId: student?.id ?? null });
     throw new InvalidCredentialsError();
   }
 
-  await clearAccountFailures(db, keys.account);
+  await releaseAttempt(db, reservation);
   logger.info('student_auth.signed_in', { studentId: student.id, schoolId: student.school_id });
   return createStudentSession(db, student.school_id, student.id, clock);
 }
@@ -66,7 +65,7 @@ export async function changeStudentPassword(
 ): Promise<string> {
   const db = getPool();
   const keys = { account: studentThrottleKey(student.username), address };
-  await assertNotThrottled(db, keys, clock);
+  const reservation = await reserveAttempt(db, keys, clock);
 
   const { rows } = await db.query<{ password_hash: string }>('SELECT password_hash FROM students WHERE school_id = $1 AND id = $2', [
     student.schoolId,
@@ -75,9 +74,9 @@ export async function changeStudentPassword(
   const stored = rows[0]?.password_hash;
   if (!stored) throw new NotFoundError();
   if (!(await verifyPassword(stored, input.currentPassword))) {
-    await recordFailure(db, keys, clock);
     throw new ValidationError({ currentPassword: 'wrong_password' });
   }
+  await releaseAttempt(db, reservation);
   if (input.newPassword === input.currentPassword) throw new ValidationError({ newPassword: 'same_password' });
 
   const hash = await hashPassword(input.newPassword);
@@ -90,7 +89,6 @@ export async function changeStudentPassword(
     await revokeStudentSessions(client, student.schoolId, student.id);
     return createStudentSession(client, student.schoolId, student.id, clock);
   });
-  await clearAccountFailures(db, keys.account);
   logger.info('student_auth.password_changed', { studentId: student.id, schoolId: student.schoolId });
   return token;
 }

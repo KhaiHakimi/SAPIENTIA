@@ -104,6 +104,19 @@ export async function deleteRelief(db: Queryable, schoolId: string, reliefId: st
   return rows[0] ?? null;
 }
 
+/**
+ * Removes every relief one person covers from a date on (their login is being removed); returns what each was for the
+ * audit log.
+ */
+export async function deleteReliefCoveredFrom(db: Queryable, schoolId: string, reliefTeacherId: string, fromDate: string) {
+  const { rows } = await db.query<{ id: string; slot_id: string; on_date: string }>(
+    `DELETE FROM relief_assignments WHERE school_id = $1 AND relief_teacher_id = $2 AND on_date >= $3::date
+     RETURNING id, slot_id, on_date::text AS on_date`,
+    [schoolId, reliefTeacherId, fromDate],
+  );
+  return rows;
+}
+
 /** The relief arranged for one teacher's periods on one date. */
 export async function listReliefForDay(db: Queryable, schoolId: string, absentTeacherId: string, onDate: string) {
   interface CoverRow {

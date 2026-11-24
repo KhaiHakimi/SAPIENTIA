@@ -4,6 +4,8 @@ export interface McpMessages {
   intro: string;
   scope: string;
   endpoint: string;
+  /** Shown instead of the address and the new-token form while the server has MCP switched off but tokens remain. */
+  switchedOff: string;
   none: string;
   created: (day: string) => string;
   lastUsed: (day: string) => string;

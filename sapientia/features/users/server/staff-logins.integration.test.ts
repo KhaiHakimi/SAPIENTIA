@@ -1,12 +1,15 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { POST as login } from '@/app/api/auth/login/route';
 import { GET as me } from '@/app/api/me/route';
 import { DELETE as removeUser, PATCH as updateUser } from '@/app/api/users/[id]/route';
 import { GET as listUsers, POST as inviteUser } from '@/app/api/users/route';
+import type { SessionUser } from '@/features/auth/interfaces/session-user.interface';
 import type { Page } from '@/shared/interfaces/api-error.interface';
+import { appClock, fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
 import type { StaffUser } from '../interfaces/staff-user.interface';
+import { removeUser as removeUserService, updateUserStatus } from './users.service';
 
 const signInResponse = (email: string) => call(login, '/api/auth/login', { method: 'POST', body: { email, password: TEST_PASSWORD } });
 const signIn = async (email: string) => cookieFrom(await signInResponse(email));
@@ -33,6 +36,7 @@ describe('staff logins (Sprint 14)', () => {
     admin = await signIn('admin@a.test');
   });
 
+  afterEach(() => setTestClock(null));
   afterAll(closePool);
 
   it('disabling signs the person out at once and stops sign-in; enabling lets them back', async () => {
@@ -84,6 +88,57 @@ describe('staff logins (Sprint 14)', () => {
       method: 'POST', cookie: admin, body: { email: 'guru@a.test', name: 'Guru Kembali', role: 'teacher' },
     });
     expect(invited.status).toBe(201);
+  });
+
+  it('re-checks the acting administrator under lock, so two cannot disable each other and leave none', async () => {
+    const admin2Id = await createUser(schoolA, 'admin2@a.test', 'admin');
+    const admin2 = await signIn('admin2@a.test');
+    const asAdmin2 = ((await (await call(me, '/api/me', { cookie: admin2 })).json()) as { user: SessionUser }).user;
+
+    // admin2 passed the sign-in check before admin disabled them; their own change must then be refused.
+    expect((await patch(admin2Id, 'disabled')).status).toBe(200);
+    await expect(updateUserStatus(asAdmin2, adminId, { status: 'disabled' }, appClock())).rejects.toMatchObject({ status: 401 });
+    await expect(removeUserService(asAdmin2, adminId, appClock())).rejects.toMatchObject({ status: 401 });
+    expect((await call(me, '/api/me', { cookie: admin })).status).toBe(200);
+
+    // Both at once: one wins, and the school keeps an active administrator.
+    expect((await patch(admin2Id, 'active')).status).toBe(200);
+    const again = await signIn('admin2@a.test');
+    const results = await Promise.all([patch(admin2Id, 'disabled'), patch(adminId, 'disabled', again)]);
+    expect(results.map((response) => response.status).filter((status) => status === 200)).toHaveLength(1);
+    const { rows } = await getPool().query<{ count: number }>(
+      "SELECT count(*)::int AS count FROM users WHERE school_id = $1 AND role = 'admin' AND status = 'active'", [schoolA],
+    );
+    expect(rows[0].count).toBe(1);
+  });
+
+  it('removing a login cancels the relief they were to cover from today, in the school\'s time zone', async () => {
+    // 00:30 on Tuesday 24 November in Kuala Lumpur, still the 23rd in UTC.
+    setTestClock(fixedClock('2026-11-23T16:30:00Z'));
+    const cookie = await signIn('admin@a.test');
+    const { rows: [slot] } = await getPool().query<{ id: string }>(
+      `INSERT INTO timetable_slots (school_id, teacher_id, weekday, start_time, end_time, label)
+       VALUES ($1, $2, 2, '08:00', '09:00', 'Bertugas') RETURNING id`,
+      [schoolA, adminId],
+    );
+    for (const onDate of ['2026-11-23', '2026-11-24', '2026-12-01']) {
+      await getPool().query(
+        `INSERT INTO relief_assignments (school_id, slot_id, on_date, absent_teacher_id, relief_teacher_id, start_time, end_time,
+                                         deliver_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, '08:00', '09:00', now(), $4)`,
+        [schoolA, slot.id, onDate, adminId, guruId],
+      );
+    }
+
+    expect((await remove(guruId, cookie)).status).toBe(204);
+    const { rows: left } = await getPool().query<{ on_date: string }>('SELECT on_date::text AS on_date FROM relief_assignments');
+    expect(left.map((row) => row.on_date)).toEqual(['2026-11-23']);
+    const { rows: audit } = await getPool().query<{ action: string; metadata: { onDate?: string } }>(
+      "SELECT action, metadata FROM audit_logs WHERE action IN ('relief.cancelled', 'user.removed') ORDER BY id",
+    );
+    expect(audit.map((row) => [row.action, row.metadata.onDate ?? null])).toEqual([
+      ['relief.cancelled', '2026-11-24'], ['relief.cancelled', '2026-12-01'], ['user.removed', null],
+    ]);
   });
 
   it('refuses an administrator\'s own login, anyone but an administrator, and another school', async () => {

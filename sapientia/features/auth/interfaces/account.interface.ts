@@ -16,6 +16,9 @@ export interface DemoGuardian {
 
 export type LoginFieldError = 'identifierRequired' | 'emailInvalid' | 'passwordRequired';
 
+/** Sign-in failures the login form has its own words for; any other is described by the shared error texts. */
+export type LoginFailureReason = 'badCredentials' | 'rateLimited' | 'networkError';
+
 export interface LoginFieldErrors {
   identifier?: LoginFieldError;
   password?: LoginFieldError;

@@ -5,11 +5,13 @@ import type { CurrentGuardian } from '@/features/guardians/interfaces/guardian.i
 import { signInGuardian } from '@/features/guardians/services/guardian-auth.client';
 import type { CurrentStudent } from '@/features/students/interfaces/student.interface';
 import { signInStudent } from '@/features/students/services/student-auth.client';
-import { ApiError } from '@/shared/api/api-client';
-import type { LoginFieldErrors } from '../interfaces/account.interface';
+import { describeApiError } from '@/shared/api/api-error.messages';
+import type { Lang } from '@/shared/interfaces/localized-text.interface';
+import { useLanguage } from '@/shared/i18n/useLanguage';
+import type { LoginFailureReason, LoginFieldErrors } from '../interfaces/account.interface';
 import type { SessionUser } from '../interfaces/session-user.interface';
 import type { LoginMessages } from '../i18n/login-messages.interface';
-import { checkLoginFields, isEmailIdentifier, isGuardianIdentifier } from '../services/auth.service';
+import { checkLoginFields, isEmailIdentifier, isGuardianIdentifier, loginFailureReason } from '../services/auth.service';
 import { signInStaff } from '../services/staff-auth.client';
 import styles from '../styles/Login.module.css';
 import { DemoAccounts, type DemoChoice } from './DemoAccounts';
@@ -17,12 +19,13 @@ import { MfaCodeStep } from './MfaCodeStep';
 
 /** Alerts keep what happened, not the words, so switching language re-translates an alert already on screen. */
 type LoginAlert =
-  | { kind: 'error'; reason: 'badCredentials' | 'rateLimited' | 'networkError' }
+  | { kind: 'error'; reason: LoginFailureReason }
+  | { kind: 'error'; reason: 'other'; error: unknown }
   | { kind: 'ok'; reason: 'forgot' }
   | { kind: 'ok'; reason: 'filled'; who: string };
 
-function alertText(alert: LoginAlert, text: LoginMessages): string {
-  if (alert.kind === 'error') return text[alert.reason];
+function alertText(alert: LoginAlert, text: LoginMessages, lang: Lang): string {
+  if (alert.kind === 'error') return alert.reason === 'other' ? describeApiError(alert.error, lang) : text[alert.reason];
   if (alert.reason === 'forgot') return text.forgotInfo;
   return text.filled(alert.who);
 }
@@ -47,6 +50,7 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardian
   const [loading, setLoading] = useState(false);
   /** The password was right and the account wants a code: show the code step instead of the form. */
   const [codeStep, setCodeStep] = useState(false);
+  const { lang } = useLanguage();
   const identifierInput = useRef<HTMLInputElement>(null);
   const passwordInput = useRef<HTMLInputElement>(null);
 
@@ -91,9 +95,8 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardian
       }
     } catch (error) {
       if (!mounted.current) return;
-      const reason = !(error instanceof ApiError) || error.code === 'network' ? 'networkError'
-        : error.code === 'rate_limited' ? 'rateLimited' : 'badCredentials';
-      setAlert({ kind: 'error', reason });
+      const reason = loginFailureReason(error);
+      setAlert(reason ? { kind: 'error', reason } : { kind: 'error', reason: 'other', error });
       setPassword('');
       passwordInput.current?.focus();
     } finally {
@@ -127,7 +130,7 @@ export function LoginForm({ text, onStaffSignedIn, onStudentSignedIn, onGuardian
   return (
     <>
       <div className={`${styles.alert} ${alert ? styles[alert.kind] : ''}`} role="alert" aria-live="assertive">
-        {alert ? alertText(alert, text) : null}
+        {alert ? alertText(alert, text, lang) : null}
       </div>
 
       <form onSubmit={onSubmit} noValidate>

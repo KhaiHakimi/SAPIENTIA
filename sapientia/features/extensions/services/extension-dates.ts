@@ -8,10 +8,20 @@ export function dayAfter(isoDay: string): string {
 }
 
 /**
- * The date an extension request starts from: the earliest day the work fits, when the capacity check found one later than
- * the current due date; otherwise the next day, which is the least that can be asked for.
+ * The earliest date an extension can be asked for or given: later than the current due date, and never in the past, which
+ * matters once the work is overdue. `today` is the school's date.
  */
-export function suggestedDueOn(currentDueOn: string, feasibility: Feasibility | null): string {
+export function earliestExtensionDay(currentDueOn: string, today: string): string {
+  const next = dayAfter(currentDueOn);
+  return next > today ? next : today;
+}
+
+/**
+ * The date an extension request starts from: the earliest day the work fits, when the capacity check found one later than
+ * that least date; otherwise the least that can be asked for (see earliestExtensionDay).
+ */
+export function suggestedDueOn(currentDueOn: string, feasibility: Feasibility | null, today: string): string {
+  const least = earliestExtensionDay(currentDueOn, today);
   const earliest = feasibility?.earliestDueOn;
-  return earliest && earliest > currentDueOn ? earliest : dayAfter(currentDueOn);
+  return earliest && earliest > least ? earliest : least;
 }

@@ -1,9 +1,9 @@
 import 'server-only';
-import { writeAudit } from '@/features/audit/server/audit.repository';
+import { writeAudit, writeSchoolAudits } from '@/features/audit/server/audit.repository';
 import type { Clock } from '@/shared/interfaces/clock.interface';
 import { withTransaction } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
-import { queueDeliveryNotice } from './delivery-queue.service';
+import { queueDeliveryNotice, queueDeliveryNotices } from './delivery-queue.service';
 
 /** How many overdue tasks one sweep delivers; the next sweep a minute later takes the rest. */
 const SWEEP_BATCH = 500;
@@ -29,7 +29,11 @@ export async function deliverTask(taskId: string, clock: Clock): Promise<boolean
   });
 }
 
-/** The safety net: delivers every held task whose time has passed, whatever happened to its job. Returns how many. */
+/**
+ * The safety net: delivers every held task whose time has passed, whatever happened to its job. Returns how many. After a
+ * long stop a batch can be hundreds of tasks, so their log entries and notice jobs go in one statement each rather than
+ * two round trips per task inside the transaction.
+ */
 export async function deliverDueTasks(clock: Clock): Promise<number> {
   return withTransaction(async (client) => {
     const { rows } = await client.query<{ id: string; school_id: string }>(
@@ -40,12 +44,11 @@ export async function deliverDueTasks(clock: Clock): Promise<number> {
         RETURNING id, school_id`,
       [clock.now(), SWEEP_BATCH],
     );
-    for (const task of rows) {
-      await writeAudit(client, task.school_id, [
-        { actorId: null, action: 'task.delivered', entityType: 'task', entityId: task.id, metadata: { via: 'sweep' } },
-      ]);
-      await queueDeliveryNotice(client, task.id);
-    }
+    await writeSchoolAudits(client, rows.map((task) => ({
+      schoolId: task.school_id, actorId: null, action: 'task.delivered' as const, entityType: 'task' as const, entityId: task.id,
+      metadata: { via: 'sweep' },
+    })));
+    await queueDeliveryNotices(client, rows.map((task) => task.id));
     if (rows.length > 0) logger.info('delivery.swept', { count: rows.length });
     return rows.length;
   });

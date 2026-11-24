@@ -43,7 +43,20 @@ const toExtension = (row: ExtensionRow): ExtensionRequest => ({
   createdAt: row.created_at.toISOString(),
 });
 
-/** The task's requests, oldest first. With onlyBy, just that person's: an assignee never sees a colleague's request. */
+/**
+ * A request still waiting for the sender. Once the person who asked has finished the task there is nothing left to
+ * decide, so their unanswered request is closed: left out of the lists and counts, and refused if answered. It opens again
+ * if they move the task back.
+ */
+const OPEN_REQUEST = `e.status = 'pending' AND EXISTS (
+  SELECT 1 FROM task_assignments ra
+   WHERE ra.task_id = e.task_id AND ra.user_id = e.requested_by AND ra.school_id = e.school_id AND ra.status <> 'done')`;
+
+/**
+ * The task's requests, oldest first, without unanswered ones from people who have finished. Every open request is kept,
+ * since the sender has to see it to answer it; the rest of the limit goes to the latest answered ones. With onlyBy, just
+ * that person's: an assignee never sees a colleague's request.
+ */
 export async function listExtensions(
   db: Queryable,
   schoolId: string,
@@ -52,9 +65,19 @@ export async function listExtensions(
   limit: number,
 ): Promise<ExtensionRequest[]> {
   const { rows } = await db.query<ExtensionRow>(
-    `SELECT ${EXTENSION_COLUMNS} FROM extension_requests e ${EXTENSION_JOINS}
-      WHERE e.school_id = $1 AND e.task_id = $2 AND ($3::uuid IS NULL OR e.requested_by = $3)
-      ORDER BY e.created_at, e.id LIMIT $4`,
+    `WITH visible AS (
+       SELECT e.id, e.created_at, e.status = 'pending' AS open FROM extension_requests e
+        WHERE e.school_id = $1 AND e.task_id = $2 AND ($3::uuid IS NULL OR e.requested_by = $3)
+          AND (e.status <> 'pending' OR ${OPEN_REQUEST})
+     ), ranked AS (
+       SELECT id, open, row_number() OVER (PARTITION BY open ORDER BY created_at DESC, id DESC) AS recency,
+              count(*) FILTER (WHERE open) OVER () AS open_count
+         FROM visible
+     )
+     SELECT ${EXTENSION_COLUMNS} FROM extension_requests e ${EXTENSION_JOINS}
+       JOIN ranked k ON k.id = e.id
+      WHERE e.school_id = $1 AND (k.open OR k.recency <= $4 - k.open_count)
+      ORDER BY e.created_at, e.id`,
     [schoolId, taskId, onlyBy, limit],
   );
   return rows.map(toExtension);
@@ -100,7 +123,7 @@ export async function insertExtension(db: Queryable, schoolId: string, request: 
 
 /**
  * Decides a pending request and moves that assignee's due date, in one statement so two decisions cannot both apply.
- * dueOn null means "the date asked for". Returns who asked and the date granted, or null if the request is not pending,
+ * dueOn null means "the date asked for". Returns who asked and the date granted, or null if the request is not open,
  * not on this task, or the date is not later than the one it replaces.
  */
 export async function decideExtension(
@@ -110,10 +133,10 @@ export async function decideExtension(
 ) {
   const { rows } = await db.query<{ requested_by: string; decided_due_on: string }>(
     `WITH decided AS (
-       UPDATE extension_requests
+       UPDATE extension_requests e
           SET status = CASE WHEN $5::date IS NULL THEN 'approved' ELSE 'countered' END::extension_status,
               decided_by = $4, decided_at = $6, decided_due_on = COALESCE($5::date, requested_due_on)
-        WHERE school_id = $1 AND task_id = $2 AND id = $3 AND status = 'pending'
+        WHERE e.school_id = $1 AND e.task_id = $2 AND e.id = $3 AND ${OPEN_REQUEST}
           AND COALESCE($5::date, requested_due_on) > current_due_on
         RETURNING task_id, requested_by, decided_due_on
      ), moved AS (
@@ -133,4 +156,13 @@ export async function findExtension(db: Queryable, schoolId: string, taskId: str
     [schoolId, taskId, requestId],
   );
   return rows[0] ? toExtension(rows[0]) : null;
+}
+
+/** Whether the request is still waiting for an answer: pending, and the person who asked has not finished the task. */
+export async function isRequestOpen(db: Queryable, schoolId: string, taskId: string, requestId: string): Promise<boolean> {
+  const { rows } = await db.query(
+    `SELECT 1 FROM extension_requests e WHERE e.school_id = $1 AND e.task_id = $2 AND e.id = $3 AND ${OPEN_REQUEST}`,
+    [schoolId, taskId, requestId],
+  );
+  return rows.length > 0;
 }

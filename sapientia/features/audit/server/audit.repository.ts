@@ -78,13 +78,23 @@ export interface AuditEntry {
   metadata?: Record<string, string | number | boolean | null>;
 }
 
+/** An entry for a job that works across schools, such as the delivery sweep. */
+export interface SchoolAuditEntry extends AuditEntry {
+  schoolId: string;
+}
+
 /** Writes in the caller's transaction, so the log entry exists exactly when the change does. */
 export async function writeAudit(db: Queryable, schoolId: string, entries: readonly AuditEntry[]): Promise<void> {
+  await writeSchoolAudits(db, entries.map((entry) => ({ ...entry, schoolId })));
+}
+
+/** As writeAudit, for entries that may belong to different schools: still one statement for them all. */
+export async function writeSchoolAudits(db: Queryable, entries: readonly SchoolAuditEntry[]): Promise<void> {
   if (entries.length === 0) return;
   const values: unknown[] = [];
   const rows = entries.map((entry, index) => {
     const base = index * 6;
-    values.push(schoolId, entry.actorId, entry.action, entry.entityType, entry.entityId, JSON.stringify(entry.metadata ?? {}));
+    values.push(entry.schoolId, entry.actorId, entry.action, entry.entityType, entry.entityId, JSON.stringify(entry.metadata ?? {}));
     return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}::jsonb)`;
   });
   await db.query(

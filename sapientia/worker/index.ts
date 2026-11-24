@@ -1,7 +1,8 @@
 /**
  * Background worker (plan D1, Sprint 4): a separate long-running process beside the web app. It delivers held tasks when
  * their job comes due, sweeps every minute for anything due whose job went missing, and sends the notifications (Sprint 5;
- * extension and relief messages from Phase 2) and the weekly digest (Phase 6). Run with `npm run worker`.
+ * extension and relief messages from Phase 2) and the weekly digest (Phase 6), and removes expired sign-in rows every hour.
+ * Run with `npm run worker`.
  */
 import { PgBoss } from 'pg-boss';
 import {
@@ -9,6 +10,8 @@ import {
 } from '@/features/delivery/constants/queue.constants';
 import { DIGEST_SWEEP_QUEUE } from '@/features/digest/constants/digest.constants';
 import { sendWeeklyDigests } from '@/features/digest/server/digest.service';
+import { EXPIRED_ROWS_SWEEP_QUEUE } from '@/features/housekeeping/constants/housekeeping.constants';
+import { deleteExpiredRows } from '@/features/housekeeping/server/expired-rows.service';
 import { closeQueue, ensureQueues } from '@/features/delivery/server/delivery-queue.service';
 import { deliverDueTasks, deliverTask } from '@/features/delivery/server/delivery.service';
 import type { NotificationSenders } from '@/features/notifications/interfaces/notification.interface';
@@ -21,11 +24,15 @@ import { createPushSender } from '@/features/notifications/server/push.sender';
 import { systemClock } from '@/shared/server/clock.service';
 import { closePool, readDatabaseUrl } from '@/shared/server/database.service';
 import { logger } from '@/shared/server/logger.service';
+import { runWorker } from '@/shared/server/worker-lifecycle.service';
 
 const SHUTDOWN_TIMEOUT_MS = 15_000;
 
-async function main(): Promise<void> {
-  const boss = new PgBoss({ connectionString: readDatabaseUrl() });
+/** Set once start-up has created it, so stopping knows whether there is anything to stop. */
+let boss: PgBoss | null = null;
+
+async function start(): Promise<void> {
+  boss = new PgBoss({ connectionString: readDatabaseUrl() });
   boss.on('error', (error: Error) => logger.error('worker.queue_error', { error }));
   await boss.start();
   await ensureQueues(boss);
@@ -67,24 +74,31 @@ async function main(): Promise<void> {
     await sendWeeklyDigests(systemClock, senders.email, appOrigin);
   });
 
+  // Hourly: expired sessions, two-step challenges, idempotency keys and sign-in throttle rows.
+  await boss.work(EXPIRED_ROWS_SWEEP_QUEUE, async () => {
+    await deleteExpiredRows(systemClock);
+  });
+
   // Anything that came due while the worker was stopped goes out now rather than at the next sweep.
   const caughtUp = await deliverDueTasks(systemClock);
   logger.info('worker.started', { caughtUp });
+}
 
-  const shutdown = async (signal: string) => {
-    logger.info('worker.stopping', { signal });
+/**
+ * Closes everything start-up may have opened, each step even if an earlier one failed, so a half-started worker still
+ * ends. The sender instance queues notify jobs from inside deliveries; it is stopped too or the process stays alive.
+ */
+async function stop(): Promise<void> {
+  const steps = [() => boss?.stop({ graceful: true, timeout: SHUTDOWN_TIMEOUT_MS }), closeQueue, closePool];
+  const failures: unknown[] = [];
+  for (const step of steps) {
     try {
-      await boss.stop({ graceful: true, timeout: SHUTDOWN_TIMEOUT_MS });
-      // The sender instance queues notify jobs from inside deliveries; stop it too or the process stays alive.
-      await closeQueue();
-      await closePool();
+      await step();
     } catch (error) {
-      logger.error('worker.stop_failed', { error });
-      process.exitCode = 1;
+      failures.push(error);
     }
-  };
-  process.once('SIGINT', () => void shutdown('SIGINT'));
-  process.once('SIGTERM', () => void shutdown('SIGTERM'));
+  }
+  if (failures.length > 0) throw failures[0];
 }
 
 /** A channel without its environment variables is off, and the log says so once at start. */
@@ -96,7 +110,7 @@ function buildSenders(): NotificationSenders {
   return { email: email && createEmailSender(email), push: push && createPushSender(push) };
 }
 
-main().catch((error: unknown) => {
-  logger.error('worker.start_failed', { error });
-  process.exitCode = 1;
+void runWorker({ start, stop }, {
+  onSignal: (signal, handler) => process.once(signal, handler),
+  exit: (code) => process.exit(code),
 });

@@ -16,16 +16,19 @@ export interface ExtensionNoticeRow {
   requested_due_on: string;
   decided_due_on: string | null;
   decider_name: string | null;
+  /** The person who asked has finished the task since, which closes a request still unanswered. */
+  requester_done: boolean;
 }
 
 export async function findExtensionForNotice(db: Queryable, schoolId: string, extensionId: string): Promise<ExtensionNoticeRow | null> {
   const { rows } = await db.query<ExtensionNoticeRow>(
     `SELECT e.task_id, t.title AS task_title, t.created_by AS sender_id, e.requested_by, r.name AS requester_name, e.status,
             e.current_due_on::text AS current_due_on, e.requested_due_on::text AS requested_due_on,
-            e.decided_due_on::text AS decided_due_on, d.name AS decider_name
+            e.decided_due_on::text AS decided_due_on, d.name AS decider_name, a.status = 'done' AS requester_done
        FROM extension_requests e
        JOIN tasks t ON t.id = e.task_id AND t.school_id = e.school_id
        JOIN users r ON r.id = e.requested_by AND r.school_id = e.school_id
+       JOIN task_assignments a ON a.task_id = e.task_id AND a.user_id = e.requested_by AND a.school_id = e.school_id
        LEFT JOIN users d ON d.id = e.decided_by AND d.school_id = e.school_id
       WHERE e.school_id = $1 AND e.id = $2`,
     [schoolId, extensionId],

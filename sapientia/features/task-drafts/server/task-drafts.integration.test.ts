@@ -97,6 +97,24 @@ describe('task drafts', () => {
     await expect(draftTask(sender, 'Hantar markah', later, model)).resolves.toMatchObject({ draft: { title: 'T' } });
   });
 
+  it('holds to the hourly limit when requests arrive at once, and counts each while the model is still working', async () => {
+    const slow: LlmClient = {
+      provider: 'ollama',
+      complete: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return JSON.stringify({ title: 'T' });
+      },
+    };
+    const results = await Promise.allSettled(
+      Array.from({ length: TASK_DRAFTS_PER_HOUR + 5 }, () => draftTask(sender, 'Hantar markah', clock, slow)),
+    );
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(TASK_DRAFTS_PER_HOUR);
+    const refused = results.filter((result) => result.status === 'rejected');
+    expect(refused.every((result) => result.reason instanceof RateLimitError)).toBe(true);
+    const { rows } = await getPool().query<{ count: number }>(`SELECT count(*)::int AS count FROM ai_requests WHERE outcome = 'ok'`);
+    expect(rows[0].count).toBe(TASK_DRAFTS_PER_HOUR);
+  });
+
   it('over HTTP: senders only, and 503 while AI is switched off', async () => {
     const teacher = await signIn('guru@a.test');
     expect(await (await call(aiStatus, '/api/ai/status', { cookie: teacher })).json()).toEqual({ taskDrafts: false });

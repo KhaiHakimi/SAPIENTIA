@@ -27,7 +27,7 @@ Seeded staff for SMK Taman Contoh (password: your `SEED_PASSWORD`): `pentadbir@g
 | `npm run lint` | ESLint: Next.js rules plus the Google style rules |
 | `npm run typecheck` | Generates route types, then `tsc --noEmit` |
 | `npm run build` | Production build |
-| `npm run worker` | Background worker: held-task delivery jobs, a sweep every minute, and email and push notifications (tasks, extension requests and answers, relief) |
+| `npm run worker` | Background worker: held-task delivery jobs, a sweep every minute, email and push notifications (tasks, extension requests and answers, relief), and an hourly removal of expired sessions, two-step challenges, idempotency keys and sign-in counters |
 | `node scripts/make-app-icons.mjs` | Remakes the app icons in `public/icons/` from the logo |
 | `npm run db:migrate:down` | Rolls back the last migration |
 | `npm run db:migrate:create -- <name>` | New SQL migration in `migrations/`. Never edit one that has been released; add another |
@@ -157,7 +157,7 @@ In Pahlawan Saya the student picks a colour for the baju, trousers and tengkolok
 ## Notes and known limits
 
 - Capacity is a deliberate simplification: committed work is one total, not a schedule. An unfinished task counts in full once its due date falls inside the period being checked, and not at all before that. Only tasks with an estimate count, so the check is only as good as the estimates. A task's flag is worked out once, when it is sent, and does not change if the timetable changes later.
-- Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers). The board still sorts by the task's own due date, while each card shows the assignee's date. The figures on a request are a snapshot from when it was made.
+- Extensions: the sender can approve or set another date but cannot refuse (the plan names only those two answers). The board sorts by each assignee's own date, so an extended task moves down it. The figures on a request are a snapshot from when it was made.
 - Relief: there is no absence register: a teacher counts as away on a date only once relief is arranged for one of their own periods. Only staff with at least one timetable period are suggested. There is no urgent override for relief arranged outside working hours.
 - Pupil accounts: fictional data only until a legal review covers children's data (see `../docs/phase-4-students.md`). One class per pupil. The 14-day slip, the 8-character minimum and the 50-pupil batch are judgements to check with schools. A pupil who forgets their password needs a new slip from an administrator; there is no self-service reset, since pupils have no email. Usernames come from the first name's Latin letters, so a name in another script gets `murid` plus digits.
 - Homework: the warning at three pieces due on one day, the 60-day limits and the two-week list are judgements to check with schools. The warning counts every subject's homework for the class, whoever set it. Marking time is one total due on the planned day, like a task's estimate. Hand-ins are ticked by the teacher only; pupils do not hand in through the app yet. A pupil who moves class drops out of the old class's hand-in counts.

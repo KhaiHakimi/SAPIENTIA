@@ -4,6 +4,7 @@ import type { SessionUser } from '@/features/auth/interfaces/session-user.interf
 import { assessAssignees } from '@/features/capacity/server/feasibility.service';
 import { planDelivery, type DeliveryPlan } from '@/features/delivery/server/delivery-plan.service';
 import { queueDeliveryNotice, scheduleDelivery } from '@/features/delivery/server/delivery-queue.service';
+import { isBeyondDueHorizon } from '@/features/delivery/services/due-horizon.service';
 import { EXTENSIONS_SHOWN_MAX } from '@/features/extensions/constants/extension.constants';
 import { listExtensions } from '@/features/extensions/server/extensions.repository';
 import { findTaskTypeEstimate } from '@/features/school-data/server/school-data.repository';
@@ -23,10 +24,14 @@ import {
   listSent, updateOwnAssignment, updateOwnTimeTaken,
 } from './tasks.repository';
 
-/** The due date cannot be before today, nor before the day the task actually reaches the assignees. */
+/**
+ * The due date cannot be before today, nor before the day the task actually reaches the assignees, nor further ahead than
+ * the calendar the app checks it against.
+ */
 function checkDueDate(dueOn: string, plan: DeliveryPlan): void {
   if (dueOn < plan.today) throw new ValidationError({ dueOn: 'past_date' });
   if (dueOn < plan.deliveryDay) throw new ValidationError({ dueOn: 'due_before_delivery' });
+  if (isBeyondDueHorizon(dueOn, plan.today)) throw new ValidationError({ dueOn: 'too_far_ahead' });
 }
 
 function deliveryAudit(actorId: string, taskId: string, input: CreateTaskRequest, plan: DeliveryPlan): AuditEntry[] {
@@ -112,7 +117,7 @@ export async function listAssignedTasks(
     myStatus: row.my_status,
     urgent: row.urgent,
     estimatedMinutes: row.estimated_minutes,
-  }), (row) => encodeCursor(row.due_on, row.id));
+  }), (row) => encodeCursor(row.my_due_on, row.id));
 }
 
 /** Tasks the caller sent, newest first; heldOnly is the held list (plan Sprint 4: senders see what is waiting). */

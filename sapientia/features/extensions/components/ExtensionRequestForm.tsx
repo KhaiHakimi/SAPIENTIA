@@ -12,7 +12,7 @@ import { formatDay } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { EXTENSION_REASON_MAX } from '../constants/extension.constants';
 import { EXTENSIONS_MESSAGES } from '../i18n/extensions.messages';
-import { dayAfter, suggestedDueOn } from '../services/extension-dates';
+import { earliestExtensionDay, suggestedDueOn } from '../services/extension-dates';
 import { extensionSuggestionKey, fetchExtensionSuggestion, requestExtension } from '../services/extensions.client';
 import styles from '../styles/Extensions.module.css';
 
@@ -20,6 +20,8 @@ interface ExtensionRequestFormProps {
   taskId: string;
   /** The assignee's own due date now. */
   dueOn: string;
+  /** The school's date today: overdue work cannot be extended to a day already gone. */
+  today: string;
   onClose: () => void;
 }
 
@@ -27,7 +29,7 @@ interface ExtensionRequestFormProps {
  * The assignee's request for more time (plan Phase 2). It opens already filled in: their own free-time figures for this
  * task and the earliest date the work fits, so sending is one more tap. The date can be changed and a reason is optional.
  */
-export function ExtensionRequestForm({ taskId, dueOn, onClose }: ExtensionRequestFormProps) {
+export function ExtensionRequestForm({ taskId, dueOn, today, onClose }: ExtensionRequestFormProps) {
   const text = useMessages(EXTENSIONS_MESSAGES);
   const capacity = useMessages(CAPACITY_MESSAGES);
   const { lang } = useLanguage();
@@ -39,7 +41,8 @@ export function ExtensionRequestForm({ taskId, dueOn, onClose }: ExtensionReques
   const [reason, setReason] = useState('');
 
   const figures = suggestion.data?.feasibility ?? null;
-  const suggested = suggestedDueOn(dueOn, figures);
+  const earliestDay = earliestExtensionDay(dueOn, today);
+  const suggested = suggestedDueOn(dueOn, figures, today);
   const requestedDueOn = chosenDate ?? suggested;
 
   const send = useMutation({
@@ -74,14 +77,14 @@ export function ExtensionRequestForm({ taskId, dueOn, onClose }: ExtensionReques
               {(figures.feasible ? text.figuresFit : text.figuresShort)(duration(figures.neededMinutes), duration(figures.freeMinutes))}
             </strong>
             <p className={calm.help}>{capacity.breakdown(duration(figures.teachingMinutes), duration(figures.committedMinutes))}</p>
-            {suggested !== dayAfter(dueOn) && <p className={calm.help}>{text.suggested(formatDay(suggested, lang, { weekday: true }))}</p>}
+            {suggested !== earliestDay && <p className={calm.help}>{text.suggested(formatDay(suggested, lang, { weekday: true }))}</p>}
           </div>
         )}
       </div>
 
       <div className={calm.field}>
         <label className={calm.label} htmlFor="extension-date">{text.newDate}</label>
-        <input id="extension-date" type="date" className={calm.input} value={requestedDueOn} min={dayAfter(dueOn)}
+        <input id="extension-date" type="date" className={calm.input} value={requestedDueOn} min={earliestDay}
           onChange={(event) => setChosenDate(event.target.value)} aria-invalid={Boolean(dateError)} aria-describedby="extension-date-error" />
         <div id="extension-date-error" className={calm.fieldError} role={dateError ? 'alert' : undefined}>{dateError ?? ''}</div>
       </div>

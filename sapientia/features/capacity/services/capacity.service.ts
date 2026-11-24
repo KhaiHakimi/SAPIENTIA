@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { CALENDAR_LOOKAHEAD_DAYS } from '@/features/delivery/constants/delivery.constants';
 import type { WorkingCalendar } from '@/features/delivery/interfaces/working-calendar.interface';
 import { isWorkingDay } from '@/features/delivery/services/working-time.service';
 import { FEASIBILITY_LOOKAHEAD_DAYS } from '../constants/capacity.constants';
@@ -90,7 +91,11 @@ export function checkFeasibility(input: FeasibilityInput): Feasibility {
   const start = DateTime.fromJSDate(input.from, { zone: calendar.timeZone });
   const firstDay = start.startOf('day');
   const dueDay = DateTime.fromISO(input.dueOn, { zone: calendar.timeZone });
-  const lastDay = (dueDay > firstDay ? dueDay : firstDay).plus({ days: FEASIBILITY_LOOKAHEAD_DAYS });
+  // One step per day, so the walk stops at a fixed horizon from the start whatever date it is given: a due date years
+  // ahead must not tie up the server. Nothing past the horizon is counted, so such a date shows no free time.
+  const horizon = firstDay.plus({ days: CALENDAR_LOOKAHEAD_DAYS + FEASIBILITY_LOOKAHEAD_DAYS });
+  const wanted = (dueDay > firstDay ? dueDay : firstDay).plus({ days: FEASIBILITY_LOOKAHEAD_DAYS });
+  const lastDay = wanted < horizon ? wanted : horizon;
   const committedBy = (isoDate: string) =>
     commitments.reduce((total, commitment) => (commitment.dueOn <= isoDate ? total + commitment.minutes : total), 0);
 

@@ -5,7 +5,7 @@ import { formatDuration } from '@/features/capacity/services/duration-text';
 import { useStaffUser } from '@/features/staff/hooks/useStaffUser';
 import type { TaskDetail } from '@/features/tasks/interfaces/task.interface';
 import calm from '@/shared/calm/Calm.module.css';
-import { formatDate, formatDay } from '@/shared/i18n/format-date';
+import { formatDate, formatDay, todayInZone } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import type { Lang } from '@/shared/interfaces/localized-text.interface';
 import type { ExtensionsMessages } from '../i18n/extensions-messages.interface';
@@ -36,6 +36,7 @@ export function ExtensionPanel({ task }: { task: TaskDetail }) {
   const canAsk = task.myDueOn !== null && task.myStatus !== null && task.myStatus !== 'done' && task.deliveredAt !== null && !hasOpenRequest;
   if (task.extensions.length === 0 && !canAsk) return null;
   const duration = (minutes: number) => formatDuration(minutes, lang);
+  const today = todayInZone(task.timeZone);
 
   return (
     <section className={calm.card} aria-labelledby="extensions-title">
@@ -61,14 +62,14 @@ export function ExtensionPanel({ task }: { task: TaskDetail }) {
                   {describeOutcome(request, text, lang)}
                 </span>
               </p>
-              {task.isSender && request.status === 'pending' && <ExtensionAnswer taskId={task.id} request={request} />}
+              {task.isSender && request.status === 'pending' && <ExtensionAnswer taskId={task.id} request={request} today={today} />}
             </li>
           ))}
         </ul>
       )}
       {canAsk && task.myDueOn !== null && (
         asking
-          ? <ExtensionRequestForm taskId={task.id} dueOn={task.myDueOn} onClose={() => setAsking(false)} />
+          ? <ExtensionRequestForm taskId={task.id} dueOn={task.myDueOn} today={today} onClose={() => setAsking(false)} />
           : <button type="button" className={calm.button} onClick={() => setAsking(true)}>{text.ask}</button>
       )}
     </section>

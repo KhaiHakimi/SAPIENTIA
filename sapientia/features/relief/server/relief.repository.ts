@@ -87,7 +87,8 @@ export async function insertRelief(db: Queryable, schoolId: string, relief: NewR
 /** Removes the relief; returns what it was for the audit log and the cancellation notice, or null if there is none in this school. */
 export async function deleteRelief(db: Queryable, schoolId: string, reliefId: string) {
   interface RemovedRow {
-    slot_id: string;
+    /** Null once the period has been removed from the timetable (relief already over is kept). */
+    slot_id: string | null;
     on_date: string;
     relief_teacher_id: string;
     absent_teacher_id: string;
@@ -149,6 +150,26 @@ interface DutyRow {
   absent_teacher_name: string;
 }
 
+const DUTY_SELECT = `SELECT r.id, r.on_date::text AS on_date, to_char(r.start_time, 'HH24:MI') AS start_time,
+            to_char(r.end_time, 'HH24:MI') AS end_time, s.class_id, c.name AS class_name, s.subject_id, j.name AS subject_name, s.label,
+            r.absent_teacher_id, a.name AS absent_teacher_name
+       FROM relief_assignments r
+       JOIN timetable_slots s ON s.id = r.slot_id AND s.school_id = r.school_id
+       JOIN users a ON a.id = r.absent_teacher_id AND a.school_id = r.school_id
+       LEFT JOIN classes c ON c.id = s.class_id AND c.school_id = s.school_id
+       LEFT JOIN subjects j ON j.id = s.subject_id AND j.school_id = s.school_id`;
+
+const toDuty = (row: DutyRow): ReliefDuty => ({
+  id: row.id,
+  onDate: row.on_date,
+  startTime: row.start_time,
+  endTime: row.end_time,
+  class: row.class_id && row.class_name ? { id: row.class_id, name: row.class_name } : null,
+  subject: row.subject_id && row.subject_name ? { id: row.subject_id, name: row.subject_name } : null,
+  label: row.label,
+  absentTeacher: { id: row.absent_teacher_id, name: row.absent_teacher_name },
+});
+
 /**
  * The relief one person covers from a date on, soonest first. A duty still held (deliver_at in the future) is left out:
  * until then it does not exist for them, exactly as a held task does not.
@@ -162,28 +183,26 @@ export async function listDuties(
   limit: number,
 ): Promise<ReliefDuty[]> {
   const { rows } = await db.query<DutyRow>(
-    `SELECT r.id, r.on_date::text AS on_date, to_char(r.start_time, 'HH24:MI') AS start_time, to_char(r.end_time, 'HH24:MI') AS end_time,
-            s.class_id, c.name AS class_name, s.subject_id, j.name AS subject_name, s.label,
-            r.absent_teacher_id, a.name AS absent_teacher_name
-       FROM relief_assignments r
-       JOIN timetable_slots s ON s.id = r.slot_id AND s.school_id = r.school_id
-       JOIN users a ON a.id = r.absent_teacher_id AND a.school_id = r.school_id
-       LEFT JOIN classes c ON c.id = s.class_id AND c.school_id = s.school_id
-       LEFT JOIN subjects j ON j.id = s.subject_id AND j.school_id = s.school_id
+    `${DUTY_SELECT}
       WHERE r.school_id = $1 AND r.relief_teacher_id = $2 AND r.on_date >= $3::date AND r.deliver_at <= $4
       ORDER BY r.on_date, r.start_time LIMIT $5`,
     [schoolId, reliefTeacherId, fromDate, now, limit],
   );
-  return rows.map((row) => ({
-    id: row.id,
-    onDate: row.on_date,
-    startTime: row.start_time,
-    endTime: row.end_time,
-    class: row.class_id && row.class_name ? { id: row.class_id, name: row.class_name } : null,
-    subject: row.subject_id && row.subject_name ? { id: row.subject_id, name: row.subject_name } : null,
-    label: row.label,
-    absentTeacher: { id: row.absent_teacher_id, name: row.absent_teacher_name },
-  }));
+  return rows.map(toDuty);
+}
+
+/**
+ * The relief one person covers on one date, held or not: for the administrator, who arranged it, so that a teacher who is
+ * away is seen to leave these classes uncovered too.
+ */
+export async function listDutiesOnDay(db: Queryable, schoolId: string, reliefTeacherId: string, onDate: string): Promise<ReliefDuty[]> {
+  const { rows } = await db.query<DutyRow>(
+    `${DUTY_SELECT}
+      WHERE r.school_id = $1 AND r.relief_teacher_id = $2 AND r.on_date = $3::date
+      ORDER BY r.start_time`,
+    [schoolId, reliefTeacherId, onDate],
+  );
+  return rows.map(toDuty);
 }
 
 /** Relief periods of several people from a date on, for the capacity check: time covering a class is not free time. */

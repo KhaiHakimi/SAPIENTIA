@@ -11,12 +11,15 @@ import { PUT as setTimeTaken } from '@/app/api/tasks/[id]/assignments/me/time-ta
 import { GET as getTask } from '@/app/api/tasks/[id]/route';
 import { POST as checkFeasibility } from '@/app/api/tasks/feasibility/route';
 import { POST as createTask } from '@/app/api/tasks/route';
+import { DELETE as removeSlot } from '@/app/api/timetable/slots/[id]/route';
 import { POST as addSlot } from '@/app/api/timetable/slots/route';
+import { GET as getTimetableTeachers } from '@/app/api/timetable/teachers/route';
+import { GET as getTimetable } from '@/app/api/timetable/route';
 import type { FeasibilityResponse } from '@/features/capacity/interfaces/capacity.interface';
 import { closeQueue } from '@/features/delivery/server/delivery-queue.service';
 import type { SchoolDataItem, TaskTypeFeedback } from '@/features/school-data/interfaces/school-data.interface';
 import type { TaskDetail } from '@/features/tasks/interfaces/task.interface';
-import type { TimetableSlot } from '@/features/timetable/interfaces/timetable.interface';
+import type { Timetable, TimetableSlot, TimetableTeacher } from '@/features/timetable/interfaces/timetable.interface';
 import { fixedClock, setTestClock } from '@/shared/server/clock.service';
 import { closePool, getPool } from '@/shared/server/database.service';
 import { call, cookieFrom, createSchool, createUser, resetDatabase, TEST_PASSWORD } from '@/shared/server/testing/api-test-kit';
@@ -244,6 +247,96 @@ describe('relief and the completion question (Sprint 8)', () => {
       expect(rows.map((row) => row.action)).toEqual(['relief.assigned', 'relief.cancelled']);
     });
 
+    it('refuses to cancel relief once the period is over, so the relief teacher\'s record stands', async () => {
+      const assigned = (await (await assign(lesson.id, MONDAY, bala)).json()) as ReliefAssigned;
+      const cancel = () => call(cancelRelief, `/api/relief/${assigned.id}`, { method: 'DELETE', cookie: admin, params: { id: assigned.id } });
+
+      // 09:00 on the day: the 08:00 to 09:00 period has just ended.
+      setTestClock(fixedClock('2026-11-02T09:00:00+08:00'));
+      admin = await signIn('admin@a.test');
+      const over = await cancel();
+      expect(over.status).toBe(409);
+      expect(await fieldsOf(over)).toEqual({ onDate: 'period_over' });
+
+      setTestClock(fixedClock('2026-11-03T08:00:00+08:00'));
+      admin = await signIn('admin@a.test');
+      const past = await cancel();
+      expect(past.status).toBe(409);
+      expect(await fieldsOf(past)).toEqual({ onDate: 'past_date' });
+      const { rows } = await getPool().query('SELECT id FROM relief_assignments WHERE id = $1', [assigned.id]);
+      expect(rows).toHaveLength(1);
+    });
+
+    it('will not remove a period with relief still to come, and keeps relief already over when it goes', async () => {
+      const remove = () => call(removeSlot, `/api/timetable/slots/${lesson.id}`, { method: 'DELETE', cookie: admin, params: { id: lesson.id } });
+      const today = (await (await assign(lesson.id, MONDAY, bala)).json()) as ReliefAssigned;
+      const later = (await (await assign(lesson.id, NEXT_MONDAY, chong)).json()) as ReliefAssigned;
+      const refused = await remove();
+      expect(refused.status).toBe(409);
+      expect(await fieldsOf(refused)).toEqual({ slotId: 'has_relief' });
+
+      // Next week's relief is cancelled the normal way; today's is over once the period ends at 09:00.
+      expect((await call(cancelRelief, `/api/relief/${later.id}`, { method: 'DELETE', cookie: admin, params: { id: later.id } })).status).toBe(204);
+      expect((await remove()).status).toBe(409);
+      setTestClock(fixedClock('2026-11-02T09:00:00+08:00'));
+      admin = await signIn('admin@a.test');
+      expect((await remove()).status).toBe(204);
+
+      const { rows } = await getPool().query('SELECT id, slot_id, on_date::text AS on_date FROM relief_assignments');
+      expect(rows).toEqual([{ id: today.id, slot_id: null, on_date: MONDAY }]);
+    });
+
+    it('warns that a teacher chosen as away also has relief to give, and keeps new periods off it', async () => {
+      const assigned = (await (await assign(lesson.id, MONDAY, bala)).json()) as ReliefAssigned;
+      const day = (await (await call(getReliefDay, `/api/relief?teacherId=${bala}&onDate=${MONDAY}`, { cookie: admin })).json()) as ReliefDay;
+      expect(day.ownDuties).toEqual([{
+        id: assigned.id, onDate: MONDAY, startTime: '08:00', endTime: '09:00', class: null, subject: null, label: 'Kelas',
+        absentTeacher: { id: absent, name: 'absent' },
+      }]);
+      const other = (await (await call(getReliefDay, `/api/relief?teacherId=${chong}&onDate=${MONDAY}`, { cookie: admin })).json()) as ReliefDay;
+      expect(other.ownDuties).toEqual([]);
+
+      const slot = (startTime: string, endTime: string, weekday = 1) => call(addSlot, '/api/timetable/slots', {
+        method: 'POST', cookie: admin, body: { teacherId: bala, weekday, startTime, endTime, label: 'Tugas' },
+      });
+      const clash = await slot('08:30', '09:30');
+      expect(clash.status).toBe(409);
+      expect(await fieldsOf(clash)).toEqual({ startTime: 'relief_clash' });
+      // Right after the relief class, or on another day, is fine.
+      expect((await slot('09:00', '10:00')).status).toBe(201);
+      expect((await slot('08:30', '09:30', 2)).status).toBe(201);
+    });
+
+    it('lets administrators open, cover and clear the periods of a teacher who is disabled or removed', async () => {
+      await getPool().query(`UPDATE users SET status = 'disabled' WHERE id = ANY($1::uuid[])`, [[absent, devi]]);
+      await getPool().query(`UPDATE users SET status = 'disabled', removed_at = now(), password_hash = NULL WHERE id = $1`, [chong]);
+      // Devi and Chong have periods (Friday), so they stay in the picker, marked; nobody else inactive is listed.
+      const listed = await call(getTimetableTeachers, '/api/timetable/teachers', { cookie: admin });
+      expect(((await listed.json()) as { items: TimetableTeacher[] }).items.map((person) => [person.name, person.status])).toEqual([
+        ['absent', 'disabled'], ['admin', 'active'], ['ali', 'active'], ['bala', 'active'], ['chong', 'removed'], ['devi', 'disabled'],
+        ['pk', 'active'],
+      ]);
+      expect((await call(getTimetableTeachers, '/api/timetable/teachers', { cookie: sender })).status).toBe(404);
+
+      const week = await call(getTimetable, `/api/timetable?teacherId=${absent}`, { cookie: admin });
+      expect(((await week.json()) as Timetable).teacher).toEqual({ id: absent, name: 'absent', status: 'disabled' });
+      const day = await call(getReliefDay, `/api/relief?teacherId=${absent}&onDate=${MONDAY}`, { cookie: admin });
+      expect(((await day.json()) as ReliefDay).periods).toHaveLength(1);
+      // Only active staff cover: Chong and Devi are not suggested, and cannot be chosen.
+      expect(await suggestedNames(lesson.id, MONDAY)).toEqual(['ali', 'bala']);
+      expect(await fieldsOf(await assign(lesson.id, MONDAY, devi))).toEqual({ reliefTeacherId: 'not_free' });
+      expect((await assign(lesson.id, MONDAY, ali)).status).toBe(201);
+
+      // No new periods for someone no longer active, but the old ones can go.
+      const added = await call(addSlot, '/api/timetable/slots', {
+        method: 'POST', cookie: admin, body: { teacherId: chong, weekday: 2, startTime: '08:00', endTime: '09:00', label: 'x' },
+      });
+      expect(await fieldsOf(added)).toEqual({ teacherId: 'invalid_teacher' });
+      const chongWeek = (await (await call(getTimetable, `/api/timetable?teacherId=${chong}`, { cookie: admin })).json()) as Timetable;
+      const [friday] = chongWeek.slots;
+      expect((await call(removeSlot, `/api/timetable/slots/${friday.id}`, { method: 'DELETE', cookie: admin, params: { id: friday.id } })).status).toBe(204);
+    });
+
     it('a relief class is not free time in the deadline check', async () => {
       const check = async () => {
         const body = { assigneeIds: [bala], dueOn: MONDAY, estimatedMinutes: 560 };
@@ -328,19 +421,21 @@ describe('relief and the completion question (Sprint 8)', () => {
       });
       const type = (await added.json()) as SchoolDataItem;
       const task = await newTask({ dueOn: TUESDAY, assigneeIds: [ali, bala, chong], taskTypeId: type.id });
-      const finish = async (email: string, timeTaken: string) => {
+      const another = await newTask({ dueOn: TUESDAY, assigneeIds: [ali], taskTypeId: type.id });
+      const finish = async (email: string, timeTaken: string, taskId = task.id) => {
         const cookie = await signIn(email);
-        await move(task.id, cookie, 'done');
-        expect((await answer(task.id, cookie, timeTaken)).status).toBe(200);
+        await move(taskId, cookie, 'done');
+        expect((await answer(taskId, cookie, timeTaken)).status).toBe(200);
       };
       await finish('ali@a.test', '1_to_3h');
       await finish('bala@a.test', '1_to_3h');
-      // Two answers could be traced to two people: nothing is shown yet.
+      // Ali answers for a second task of the type: three answers, but still only two people, so nothing is shown yet.
+      await finish('ali@a.test', 'under_1h', another.id);
       expect((await feedback()).items).toEqual([]);
 
       await finish('chong@a.test', 'over_3h');
       expect((await feedback()).items).toEqual([{
-        taskTypeId: type.id, name: 'Kunci masuk markah', estimatedMinutes: 45, answers: { 'under_1h': 0, '1_to_3h': 2, 'over_3h': 1 },
+        taskTypeId: type.id, name: 'Kunci masuk markah', estimatedMinutes: 45, answers: { 'under_1h': 1, '1_to_3h': 2, 'over_3h': 1 },
       }]);
       expect((await feedback(sender)).status).toBe(404);
       expect((await feedback(await signIn('ali@a.test'))).status).toBe(404);

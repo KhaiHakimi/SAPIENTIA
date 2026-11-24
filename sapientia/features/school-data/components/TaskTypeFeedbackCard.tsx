@@ -8,7 +8,7 @@ import calm from '@/shared/calm/Calm.module.css';
 import { useLanguage } from '@/shared/i18n/useLanguage';
 import type { SchoolDataMessages } from '../i18n/school-data-messages.interface';
 import { fetchTaskTypeFeedback, TASK_TYPE_FEEDBACK_KEY } from '../services/school-data.client';
-import { FEEDBACK_MIN_ANSWERS, feedbackVerdict } from '../services/time-feedback';
+import { FEEDBACK_MIN_PEOPLE, feedbackVerdict } from '../services/time-feedback';
 
 /**
  * What teachers said finished tasks took, counted per task type beside its estimate (plan Phase 2: the completion question
@@ -27,7 +27,7 @@ export function TaskTypeFeedbackCard({ text }: { text: SchoolDataMessages }) {
       ) : feedback.isError ? (
         <div className={`${calm.alert} ${calm.alertError}`} role="alert">{describeApiError(feedback.error, lang)}</div>
       ) : feedback.data.length === 0 ? (
-        <p className={calm.empty}>{text.feedback.empty(FEEDBACK_MIN_ANSWERS)}</p>
+        <p className={calm.empty}>{text.feedback.empty(FEEDBACK_MIN_PEOPLE)}</p>
       ) : (
         <div className={calm.tableWrap}>
           <table className={calm.table}>

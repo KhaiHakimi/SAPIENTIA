@@ -29,6 +29,17 @@ function schoolMoment(now: Date, calendar: WorkingCalendar) {
 }
 
 /**
+ * The calendar with every holiday back to the oldest date still open. The delivery rules need holidays only from
+ * yesterday, but a lesson can be recorded up to LESSON_RECORD_DAYS_BACK days back, and a holiday then was no working day.
+ */
+function loadRecordingCalendar(db: Queryable, schoolId: string, now: Date): Promise<WorkingCalendar> {
+  return loadWorkingCalendar(db, schoolId, DateTime.fromJSDate(now).minus({ days: LESSON_RECORD_DAYS_BACK }).toJSDate());
+}
+
+/** The school-local day a period was added. Before it the period was not on the timetable, as the monthly report counts. */
+const addedOn = (period: DayPeriodRow, timeZone: string) => DateTime.fromJSDate(period.created_at, { zone: timeZone }).toISODate() ?? '';
+
+/**
  * Who records a period on a date: its own teacher, or, once relief is arranged, the relief teacher, and only after the
  * relief has been delivered to them. Until then nobody does, the absent teacher included.
  */
@@ -39,7 +50,7 @@ function recorderOf(period: DayPeriodRow, now: Date): string | null {
 
 /**
  * The period, when the caller may record it on that date: they are its recorder (anyone else gets 404), and the date is the
- * period's weekday, a working day, already started, and no more than 30 days back.
+ * period's weekday, a working day, already started, no more than 30 days back, and not before the period was added.
  */
 async function findRecordablePeriod(
   client: Queryable,
@@ -50,7 +61,7 @@ async function findRecordablePeriod(
   const period = await findPeriodOnDate(client, actor.schoolId, target.slotId, target.onDate);
   if (!period || recorderOf(period, now) !== actor.id) throw new NotFoundError();
 
-  const calendar = await loadWorkingCalendar(client, actor.schoolId, now);
+  const calendar = await loadRecordingCalendar(client, actor.schoolId, now);
   const moment = schoolMoment(now, calendar);
   if (DateTime.fromISO(target.onDate, { zone: calendar.timeZone }).weekday !== period.weekday) {
     throw new ValidationError({ onDate: 'wrong_weekday' });
@@ -59,6 +70,7 @@ async function findRecordablePeriod(
     throw new ValidationError({ onDate: 'not_started' });
   }
   if (target.onDate < moment.oldest) throw new ValidationError({ onDate: 'too_old' });
+  if (target.onDate < addedOn(period, calendar.timeZone)) throw new ValidationError({ onDate: 'before_period' });
   if (!isWorkingDay(target.onDate, calendar)) throw new ValidationError({ onDate: 'not_working_day' });
   return period;
 }
@@ -67,7 +79,7 @@ async function findRecordablePeriod(
 export async function getLessonDay(actor: SessionUser, onDate: string, clock: Clock): Promise<LessonDay> {
   const db = getPool();
   const now = clock.now();
-  const calendar = await loadWorkingCalendar(db, actor.schoolId, now);
+  const calendar = await loadRecordingCalendar(db, actor.schoolId, now);
   const moment = schoolMoment(now, calendar);
   const weekday = DateTime.fromISO(onDate, { zone: calendar.timeZone }).weekday;
   const recordable = isWorkingDay(onDate, calendar) && onDate <= moment.today && onDate >= moment.oldest;
@@ -86,7 +98,7 @@ export async function getLessonDay(actor: SessionUser, onDate: string, clock: Cl
         absentTeacher: !own && row.cover ? { id: row.cover.absent_teacher_id, name: row.cover.absent_teacher_name } : null,
         coveredBy: own && row.cover ? { id: row.cover.relief_teacher_id, name: row.cover.relief_teacher_name } : null,
         record: records.get(row.id) ?? null,
-        canRecord: recordable && started && recorderOf(row, now) === actor.id,
+        canRecord: recordable && started && onDate >= addedOn(row, calendar.timeZone) && recorderOf(row, now) === actor.id,
       };
     }),
   };

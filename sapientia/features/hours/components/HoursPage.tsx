@@ -14,15 +14,21 @@ import styles from '../styles/Hours.module.css';
 import { AddHoursEntryForm } from './AddHoursEntryForm';
 import { HoursShareCard } from './HoursShareCard';
 
-/** Private hours log (plan Phase 3, Sprint 9): the caller's own entries for a month, the total, and sharing that total. */
-export function HoursPage() {
+/**
+ * Private hours log (plan Phase 3, Sprint 9): the caller's own entries for a month, the total, and sharing that total.
+ * initialMonth (YYYY-MM) is the month it opens on, this month unless given.
+ */
+export function HoursPage({ initialMonth }: { initialMonth?: string } = {}) {
   const text = useMessages(HOURS_MESSAGES);
   const { lang } = useLanguage();
   const user = useStaffUser();
   const queryClient = useQueryClient();
   const thisMonth = todayInZone(user.timeZone).slice(0, 7);
-  const [month, setMonth] = useState(thisMonth);
-  const data = useQuery({ queryKey: hoursMonthKey(month), queryFn: () => fetchHoursMonth(month), enabled: /^\d{4}-\d{2}$/.test(month) });
+  const [month, setMonth] = useState(initialMonth ?? thisMonth);
+  // A cleared or half-typed month field leaves the query switched off, and a switched-off query stays pending for ever:
+  // show nothing until the month is whole, as the report and lesson pages do.
+  const valid = /^\d{4}-\d{2}$/.test(month);
+  const data = useQuery({ queryKey: hoursMonthKey(month), queryFn: () => fetchHoursMonth(month), enabled: valid });
   const remove = useMutation({
     mutationFn: deleteHoursEntry,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: hoursMonthKey(month) }),
@@ -46,8 +52,8 @@ export function HoursPage() {
           <input id="hours-month" type="month" className={calm.input} value={month} max={thisMonth}
             onChange={(event) => setMonth(event.target.value)} />
         </div>
-        <h2 id="hours-month-title">{text.monthTitle(month ? formatMonth(month, lang) : '')}</h2>
-        {data.isPending ? (
+        <h2 id="hours-month-title">{text.monthTitle(valid ? formatMonth(month, lang) : '')}</h2>
+        {!valid ? null : data.isPending ? (
           <p className={calm.loading} role="status">{text.loading}</p>
         ) : data.isError ? (
           <div className={`${calm.alert} ${calm.alertError}`} role="alert">{describeApiError(data.error, lang)}</div>

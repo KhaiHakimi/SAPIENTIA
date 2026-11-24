@@ -72,7 +72,8 @@ function Suggestions({ slot, onDate, onDone }: { slot: TimetableSlot; onDate: st
   );
 }
 
-function Cover({ relief, time }: { relief: ReliefCover; time: string }) {
+/** Who covers the period. Cancelling is offered only while relief can still be arranged that day; the server checks the time. */
+function Cover({ relief, time, canCancel }: { relief: ReliefCover; time: string; canCancel: boolean }) {
   const text = useMessages(RELIEF_MESSAGES);
   const { lang } = useLanguage();
   const { timeZone } = useStaffUser();
@@ -90,12 +91,14 @@ function Cover({ relief, time }: { relief: ReliefCover; time: string }) {
             {relief.held ? text.heldUntil(describeDeliveryTime(relief.deliverAt, timeZone, lang)) : text.told}
           </span>
         </p>
-        <button type="button" className={`${calm.button} ${calm.small} ${calm.danger}`} disabled={cancel.isPending}
-          aria-label={text.cancelLabel(relief.reliefTeacher.name, time)} onClick={() => cancel.mutate()}>
-          {cancel.isPending ? text.cancelling : text.cancel}
-        </button>
+        {canCancel && (
+          <button type="button" className={`${calm.button} ${calm.small} ${calm.danger}`} disabled={cancel.isPending}
+            aria-label={text.cancelLabel(relief.reliefTeacher.name, time)} onClick={() => cancel.mutate()}>
+            {cancel.isPending ? text.cancelling : text.cancel}
+          </button>
+        )}
       </div>
-      {cancel.isError && <div className={calm.fieldError} role="alert">{describeApiError(cancel.error, lang)}</div>}
+      {cancel.isError && <div className={calm.fieldError} role="alert">{describeReliefError(cancel.error, text, lang)}</div>}
     </>
   );
 }
@@ -128,7 +131,7 @@ export function ReliefPeriod({ slot, relief, onDate, canArrange }: ReliefPeriodP
           </button>
         )}
       </div>
-      {relief ? <Cover relief={relief} time={time} /> : <p className={calm.muted}>{text.notCovered}</p>}
+      {relief ? <Cover relief={relief} time={time} canCancel={canArrange} /> : <p className={calm.muted}>{text.notCovered}</p>}
       {!relief && canArrange && open && <Suggestions slot={slot} onDate={onDate} onDone={() => setOpen(false)} />}
     </li>
   );

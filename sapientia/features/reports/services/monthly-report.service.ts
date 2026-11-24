@@ -50,8 +50,9 @@ function addTo(counts: LessonCounts, record: LessonRecordFact | undefined): void
 
 /**
  * Scheduled lessons against what was recorded. A lesson is scheduled on each working day of the period that falls on its
- * weekday, from the day its period was added. A record whose period has since been deleted, or whose day later became a
- * holiday, still counts as a scheduled lesson: the record is the evidence that it was.
+ * weekday, from the day its period was added and until the day its teacher's login was removed (nobody records it after
+ * that). A record whose period has since been deleted, or whose day later became a holiday, still counts as a scheduled
+ * lesson: the record is the evidence that it was.
  */
 export function countLessons(input: LessonInput): Omit<MonthlyLessons, 'relief'> {
   const recordsByKey = new Map<string, LessonRecordFact>();
@@ -75,6 +76,7 @@ export function countLessons(input: LessonInput): Omit<MonthlyLessons, 'relief'>
     const weekday = DateTime.fromISO(day, { zone: 'UTC' }).weekday;
     for (const slot of input.slots) {
       if (slot.weekday !== weekday || slot.createdOn > day) continue;
+      if (slot.teacherRemovedOn !== null && day >= slot.teacherRemovedOn) continue;
       const key = `${slot.id}|${day}`;
       counted.add(key);
       tally(slot.subjectName, recordsByKey.get(key));

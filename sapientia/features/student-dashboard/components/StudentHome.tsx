@@ -2,6 +2,7 @@
 
 import { ChoosePasswordPage } from '@/features/students/components/ChoosePasswordPage';
 import { useCurrentStudent } from '@/features/students/hooks/useCurrentStudent';
+import { PupilStoreProvider } from '@/shared/components/PupilStoreProvider';
 import { StudentProgressProvider } from '../context/StudentProgressProvider';
 import { SAMPLE_BASELINE } from '../data/sample-student';
 import { StudentDashboard } from './StudentDashboard';
@@ -17,9 +18,12 @@ export function StudentHome() {
   if (data.mustChangePassword) return <ChoosePasswordPage name={data.student.name} />;
   const { id, name, className, timeZone } = data.student;
   return (
-    // Keyed by pupil, so a different pupil never inherits the previous one's quest ticks or battle wins.
-    <StudentProgressProvider key={id} student={{ name, className: className ?? '', timeZone }} baseline={SAMPLE_BASELINE}>
-      <StudentDashboard />
-    </StudentProgressProvider>
+    // Keyed by pupil, so a different pupil starts this visit's state afresh (quest ticks, rewards claimed). What this browser
+    // remembers (photo, shop, battle records, pahlawan) is kept apart by PupilStoreProvider, under keys carrying the pupil's id.
+    <PupilStoreProvider key={id} studentId={id}>
+      <StudentProgressProvider student={{ name, className: className ?? '', timeZone }} baseline={SAMPLE_BASELINE}>
+        <StudentDashboard />
+      </StudentProgressProvider>
+    </PupilStoreProvider>
   );
 }

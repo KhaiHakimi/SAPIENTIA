@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { usePersistentStore } from '@/shared/hooks/usePersistentStore';
 import { prefersReducedMotion } from '@/shared/services/motion.service';
 import { SKIN_EFFECT_COUNTS } from '../constants/skin-effects.constants';
-import { shopStore } from '../services/shop.store';
+import { shopStores } from '../services/shop.store';
 import styles from '../styles/SkinEffects.module.css';
 
 const randomIn = (min: number, max: number) => min + Math.random() * (max - min);
@@ -14,7 +15,7 @@ const randomIn = (min: number, max: number) => min + Math.random() * (max - min)
  * built in an effect (never during render) and rebuilt whenever the skin changes. Skipped when the device asks for less motion.
  */
 export function SkinEffects() {
-  const skin = usePersistentStore(shopStore).equipped.skin;
+  const skin = usePersistentStore(usePupilStore(shopStores)).equipped.skin;
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

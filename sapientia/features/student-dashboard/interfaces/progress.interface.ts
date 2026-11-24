@@ -7,9 +7,11 @@ import type { ProgressBaseline, Student, SubjectMastery } from './student.interf
 export interface QuestToggleResult {
   quest: Quest;
   nowDone: boolean;
-  /** Relics this change unlocked, for the "new relic" toast and pop animation. */
+  /** True the first time this quest is ticked on this visit; the coin burst plays only then. */
+  firstTick: boolean;
+  /** Relics this change unlocked for the first time this visit, for the "new relic" toast and pop animation. */
   freshRelics: Relic[];
-  /** The new level when this change crossed one; null otherwise. */
+  /** The new level when this change reached one not yet celebrated this visit; null otherwise. */
   levelUp: number | null;
 }
 

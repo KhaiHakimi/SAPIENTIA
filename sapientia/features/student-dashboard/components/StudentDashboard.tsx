@@ -9,12 +9,13 @@ import { AppearanceSync } from '@/features/shop/components/AppearanceSync';
 import { ShopDialog } from '@/features/shop/components/ShopDialog';
 import { SkinEffects } from '@/features/shop/components/SkinEffects';
 import { burstCoins } from '@/shared/feedback/coin-burst';
+import { usePupilStore } from '@/shared/components/PupilStoreProvider';
 import { useToast } from '@/shared/feedback/ToastProvider';
 import { formatDay } from '@/shared/i18n/format-date';
 import { useLanguage, useMessages } from '@/shared/i18n/useLanguage';
 import { useStudentProgress } from '../hooks/useStudentProgress';
 import { DASHBOARD_MESSAGES } from '../i18n/dashboard.messages';
-import { profilePhotoStore } from '../services/profile-photo.service';
+import { profilePhotoStores } from '../services/profile-photo.service';
 import styles from '../styles/StudentDashboard.module.css';
 import { ClassPartyCard } from './cards/ClassPartyCard';
 import { QuestMapCard } from './cards/QuestMapCard';
@@ -39,6 +40,7 @@ export function StudentDashboard() {
   const { lang, pick } = useLanguage();
   const showToast = useToast();
   const progress = useStudentProgress();
+  const photoStore = usePupilStore(profilePhotoStores);
 
   const [openQuestId, setOpenQuestId] = useState<string | null>(null);
   const [weekOpen, setWeekOpen] = useState(false);
@@ -58,7 +60,7 @@ export function StudentDashboard() {
     if (!result) return;
     setFreshRelicIds(result.freshRelics.map((relic) => relic.id));
     if (result.nowDone) {
-      burstCoins();
+      if (result.firstTick) burstCoins();
       showToast(text.toastLoot(result.quest.xp, result.quest.coins));
     }
     const [firstRelic] = result.freshRelics;
@@ -113,7 +115,7 @@ export function StudentDashboard() {
         open={shopOpen}
         onClose={() => setShopOpen(false)}
         balance={progress.coins}
-        onAvatarChosen={() => profilePhotoStore.clear()}
+        onAvatarChosen={() => photoStore.clear()}
       />
       <PahlawanDialog open={pahlawanOpen} onClose={() => setPahlawanOpen(false)} />
       <BattleDialog stage={battleStage} onClose={() => setBattleStage(null)} onLevelUp={setLevelUp} />

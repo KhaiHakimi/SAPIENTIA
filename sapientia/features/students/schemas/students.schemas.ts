@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { looksLikeMyKad } from '@/shared/services/mykad.service';
 import {
   SCHOOL_NUMBER_MAX,
   STUDENT_NAME_MAX,
@@ -9,19 +10,19 @@ import {
 
 /** Error messages are codes; the web app translates them. Unknown fields are refused (strictObject). */
 
-/** A MyKad number is 12 digits (YYMMDD-PB-###G), with or without dashes. Never stored, so refused if typed by habit. */
-const MYKAD = /^\d{6}-?\d{2}-?\d{4}$/;
-
 export const studentIdSchema = z.uuid({ error: 'not_found' });
 
 const studentNameSchema = z.string({ error: 'required' }).trim()
   .min(1, { error: 'required' })
-  .max(STUDENT_NAME_MAX, { error: 'too_long' });
+  .max(STUDENT_NAME_MAX, { error: 'too_long' })
+  // Names go on slips and lists; a MyKad number pasted into one (a spare column, say) is refused like a school number.
+  .refine((value) => !looksLikeMyKad(value), { error: 'name_has_mykad' });
 
 /** Optional; an empty value means none. Letters, digits, '/' and '-' only. */
 const schoolNumberSchema = z.string({ error: 'invalid_school_number' }).trim()
   .max(SCHOOL_NUMBER_MAX, { error: 'too_long' })
-  .refine((value) => !MYKAD.test(value), { error: 'looks_like_mykad' })
+  // A MyKad number is never stored, so one typed by habit is refused, however it is written.
+  .refine((value) => !looksLikeMyKad(value), { error: 'looks_like_mykad' })
   .refine((value) => value === '' || /^[A-Za-z0-9/-]+$/.test(value), { error: 'invalid_school_number' })
   .transform((value) => value || null)
   .nullable();

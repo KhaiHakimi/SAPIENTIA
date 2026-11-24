@@ -162,6 +162,14 @@ export async function revokeGuardianSessions(db: Queryable, schoolId: string, gu
   await db.query('DELETE FROM guardian_sessions WHERE school_id = $1 AND guardian_id = $2', [schoolId, guardianId]);
 }
 
+/**
+ * Holds the guardian's row until the transaction ends, so what is counted against their limits (links, waiting meeting
+ * requests) is counted and added one request at a time: two quick requests cannot both pass the limit.
+ */
+export async function lockGuardian(db: Queryable, schoolId: string, guardianId: string): Promise<void> {
+  await db.query('SELECT 1 FROM guardians WHERE school_id = $1 AND id = $2 FOR UPDATE', [schoolId, guardianId]);
+}
+
 export async function countActiveLinks(db: Queryable, schoolId: string, guardianId: string): Promise<number> {
   const { rows } = await db.query<{ count: number }>(
     `SELECT count(*)::int AS count FROM guardian_links WHERE school_id = $1 AND guardian_id = $2 AND status = 'active'`,

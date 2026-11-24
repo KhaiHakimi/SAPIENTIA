@@ -18,6 +18,15 @@ export interface NewStudentRow {
   schoolNumber?: string | null;
 }
 
+/** Why a pasted class-list line cannot be read; shown against the line, and nothing is sent until it is fixed. */
+export type ClassListProblem = 'too_many_values';
+
+/** One pupil read from a pasted line, with the line number (from 1) so problems can be shown against it. */
+export interface ParsedPupil extends NewStudentRow {
+  line: number;
+  problem?: ClassListProblem;
+}
+
 /** Body of POST /api/students. */
 export interface AddStudentsRequest {
   classId: string;

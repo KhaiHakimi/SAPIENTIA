@@ -27,11 +27,6 @@ export async function listClassTeachers(db: Queryable, schoolId: string, classId
   return rows;
 }
 
-/** Holds the guardian's row until the transaction ends, so their requests are counted and made one at a time. */
-export async function lockGuardian(db: Queryable, schoolId: string, guardianId: string): Promise<void> {
-  await db.query('SELECT 1 FROM guardians WHERE school_id = $1 AND id = $2 FOR UPDATE', [schoolId, guardianId]);
-}
-
 export async function countPendingForGuardian(db: Queryable, schoolId: string, guardianId: string): Promise<number> {
   const { rows } = await db.query<{ total: number }>(
     `SELECT count(*)::int AS total FROM meeting_requests m
@@ -125,11 +120,50 @@ export async function withdrawMeeting(db: Queryable, schoolId: string, guardianI
   return rows[0]?.link_id ?? null;
 }
 
-/** When a link ends, its waiting requests end with it: the teacher no longer needs to answer them. */
-export async function cancelPendingForLink(db: Queryable, schoolId: string, linkId: string, now: Date): Promise<number> {
+/**
+ * A request belongs to the link and ends with it (docs/phase-4-students.md): one still waiting, and one accepted for a time
+ * still to come, so a guardian who no longer has the link is not expected at school. A meeting already held keeps its answer.
+ * The meeting time is cleared because only an accepted request carries one (meeting_requests_accepted). `$1` is the school
+ * and `$2` the time now in every query that uses this.
+ */
+const CANCEL_OPEN = `UPDATE meeting_requests m SET status = 'cancelled', meeting_at = NULL, closed_at = $2`;
+const IS_OPEN = `(m.status = 'pending' OR (m.status = 'accepted' AND m.meeting_at > $2))`;
+
+/** When a link ends, its open requests end with it. */
+export async function cancelOpenForLink(db: Queryable, schoolId: string, linkId: string, now: Date): Promise<number> {
+  const result = await db.query(`${CANCEL_OPEN} WHERE m.school_id = $1 AND m.link_id = $3 AND ${IS_OPEN}`, [schoolId, now, linkId]);
+  return result.rowCount ?? 0;
+}
+
+/** When a guardian is disabled, the open requests on all their links end: they can no longer see or withdraw them. */
+export async function cancelOpenForGuardian(db: Queryable, schoolId: string, guardianId: string, now: Date): Promise<number> {
   const result = await db.query(
-    `UPDATE meeting_requests SET status = 'cancelled', closed_at = $3 WHERE school_id = $1 AND link_id = $2 AND status = 'pending'`,
-    [schoolId, linkId, now],
+    `${CANCEL_OPEN}
+       FROM guardian_links l
+      WHERE m.school_id = $1 AND l.id = m.link_id AND l.school_id = m.school_id AND l.guardian_id = $3 AND ${IS_OPEN}`,
+    [schoolId, now, guardianId],
+  );
+  return result.rowCount ?? 0;
+}
+
+/**
+ * When a pupil moves class, open requests about them to teachers who do not teach the new class end; a teacher who still
+ * teaches them keeps theirs. Who teaches a class is read from the timetable, as when a request is made (listClassTeachers).
+ */
+export async function cancelOpenOutsideClass(
+  db: Queryable,
+  schoolId: string,
+  pupil: { studentId: string; classId: string },
+  now: Date,
+): Promise<number> {
+  const result = await db.query(
+    `${CANCEL_OPEN}
+       FROM guardian_links l
+      WHERE m.school_id = $1 AND l.id = m.link_id AND l.school_id = m.school_id AND l.student_id = $3 AND ${IS_OPEN}
+        AND NOT EXISTS (
+          SELECT 1 FROM timetable_slots s WHERE s.school_id = m.school_id AND s.class_id = $4 AND s.teacher_id = m.teacher_id
+        )`,
+    [schoolId, now, pupil.studentId, pupil.classId],
   );
   return result.rowCount ?? 0;
 }

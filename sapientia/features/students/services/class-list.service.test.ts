@@ -17,8 +17,13 @@ describe('parseClassList', () => {
     ]);
   });
 
-  it('uses the last comma, so the number is always the last value', () => {
-    expect(parseClassList('Tan, Mei Ling, 1234')).toEqual([{ line: 1, name: 'Tan, Mei Ling', schoolNumber: '1234' }]);
+  it('flags a line with more than one comma or tab instead of folding the extra value into the name', () => {
+    expect(parseClassList('Ali bin Abu, 010203-14-5678, A123\nSiti\t010203-14-5678\tA124\nTan, Mei Ling\tA125\nDaniel Lee, A126')).toEqual([
+      { line: 1, name: 'Ali bin Abu, 010203-14-5678, A123', schoolNumber: null, problem: 'too_many_values' },
+      { line: 2, name: 'Siti\t010203-14-5678\tA124', schoolNumber: null, problem: 'too_many_values' },
+      { line: 3, name: 'Tan, Mei Ling\tA125', schoolNumber: null, problem: 'too_many_values' },
+      { line: 4, name: 'Daniel Lee', schoolNumber: 'A126' },
+    ]);
   });
 
   it('returns nothing for an empty paste', () => {
